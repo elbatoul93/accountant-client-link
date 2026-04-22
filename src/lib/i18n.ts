@@ -101,6 +101,25 @@ const en = {
   toast_signup_success: "Account created — welcome!",
   toast_uploaded: "Document uploaded",
   toast_logout: "Signed out",
+
+  // Algerian features
+  dash_g50_title: "Upcoming G50 Declarations",
+  dash_g50_subtitle: "Monthly tax bundle (TAP, IRG, TVA, IBS)",
+  dash_social_title: "Social Declarations",
+  dash_social_subtitle: "CNAS · CASNOS · CACOBATPH compliance",
+  dash_notif_title: "Smart Notifications",
+  dash_notif_subtitle: "Reminders & alerts",
+  dash_fin_summary: "Financial Summary",
+  dash_tax_estimate: "Tax Estimate",
+  dash_social_contrib: "Social Contributions",
+  dash_deadline: "Deadline",
+  dash_compliance: "Compliance",
+  dash_action: "Action",
+  dash_remind: "Send reminder",
+  dash_view_all: "View all",
+  dash_overdue: "Overdue",
+  dash_upcoming: "Upcoming",
+  dash_paid: "Paid",
 };
 
 const fr: typeof en = {
@@ -200,6 +219,24 @@ const fr: typeof en = {
   toast_signup_success: "Compte créé — bienvenue !",
   toast_uploaded: "Document téléchargé",
   toast_logout: "Déconnecté",
+
+  dash_g50_title: "Déclarations G50 à venir",
+  dash_g50_subtitle: "Liasse fiscale mensuelle (TAP, IRG, TVA, IBS)",
+  dash_social_title: "Déclarations Sociales",
+  dash_social_subtitle: "Conformité CNAS · CASNOS · CACOBATPH",
+  dash_notif_title: "Notifications Intelligentes",
+  dash_notif_subtitle: "Rappels & alertes",
+  dash_fin_summary: "Résumé Financier",
+  dash_tax_estimate: "Estimation Fiscale",
+  dash_social_contrib: "Cotisations Sociales",
+  dash_deadline: "Échéance",
+  dash_compliance: "Conformité",
+  dash_action: "Action",
+  dash_remind: "Envoyer rappel",
+  dash_view_all: "Tout voir",
+  dash_overdue: "En retard",
+  dash_upcoming: "À venir",
+  dash_paid: "Payé",
 };
 
 const ar: typeof en = {
@@ -299,6 +336,24 @@ const ar: typeof en = {
   toast_signup_success: "تم إنشاء الحساب — أهلاً بك!",
   toast_uploaded: "تم رفع المستند",
   toast_logout: "تم تسجيل الخروج",
+
+  dash_g50_title: "تصريحات G50 القادمة",
+  dash_g50_subtitle: "الحزمة الضريبية الشهرية (TAP, IRG, TVA, IBS)",
+  dash_social_title: "التصريحات الاجتماعية",
+  dash_social_subtitle: "الامتثال CNAS · CASNOS · CACOBATPH",
+  dash_notif_title: "إشعارات ذكية",
+  dash_notif_subtitle: "تذكيرات وتنبيهات",
+  dash_fin_summary: "الملخص المالي",
+  dash_tax_estimate: "تقدير الضرائب",
+  dash_social_contrib: "المساهمات الاجتماعية",
+  dash_deadline: "الموعد النهائي",
+  dash_compliance: "الامتثال",
+  dash_action: "إجراء",
+  dash_remind: "إرسال تذكير",
+  dash_view_all: "عرض الكل",
+  dash_overdue: "متأخر",
+  dash_upcoming: "قادم",
+  dash_paid: "مدفوع",
 };
 
 export const translations = { en, fr, ar };
