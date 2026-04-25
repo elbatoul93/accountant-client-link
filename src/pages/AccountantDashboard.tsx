@@ -13,7 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Users, FileText, TrendingUp, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2, Inbox,
+  Users, FileText, TrendingUp, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2, Inbox, FileDown,
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -39,6 +39,7 @@ const AccountantDashboard = () => {
   const [clients, setClients] = useState<Client[]>(() => load<Client>(KEY_CLIENTS));
   const [invoices, setInvoices] = useState<Invoice[]>(() => load<Invoice>(KEY_INVOICES));
   const [decls, setDecls] = useState<Decl[]>(() => load<Decl>(KEY_DECLS));
+  const [obligationsClient, setObligationsClient] = useState<Client | null>(null);
 
   useEffect(() => { localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients)); }, [clients]);
   useEffect(() => { localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices)); }, [invoices]);
@@ -99,15 +100,21 @@ const AccountantDashboard = () => {
                       <td className="py-3 text-muted-foreground hidden sm:table-cell">{c.contact}</td>
                       <td className="py-3"><Badge variant="secondary" className="text-[10px] capitalize">{c.status}</Badge></td>
                       <td className="py-3 text-end">
-                        <Button size="icon" variant="ghost" className="h-7 w-7"
-                          onClick={() => {
-                            setClients((p) => p.filter((x) => x.id !== c.id));
-                            setInvoices((p) => p.filter((x) => x.clientId !== c.id));
-                            setDecls((p) => p.filter((x) => x.clientId !== c.id));
-                            toast.success("Client supprimé");
-                          }}>
-                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs"
+                            onClick={() => setObligationsClient(c)}>
+                            <FileDown className="h-3.5 w-3.5" /> {t("acc_extract")}
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7"
+                            onClick={() => {
+                              setClients((p) => p.filter((x) => x.id !== c.id));
+                              setInvoices((p) => p.filter((x) => x.clientId !== c.id));
+                              setDecls((p) => p.filter((x) => x.clientId !== c.id));
+                              toast.success("Supprimé");
+                            }}>
+                            <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
