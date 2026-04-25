@@ -1138,6 +1138,23 @@ const G50GeneratorDialog = ({
             </div>
           </div>
 
+          {(() => {
+            const sel = clients.find((c) => c.id === clientId);
+            if (!sel) return null;
+            return (
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("client_nif")}</div>
+                  <div className="font-mono text-sm font-semibold">{sel.taxId || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("client_bp")}</div>
+                  <div className="font-mono text-sm font-semibold">{sel.bp || "—"}</div>
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="space-y-2">
             <div className="text-xs font-semibold text-primary uppercase">Bases imposables</div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
