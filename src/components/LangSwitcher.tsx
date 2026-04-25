@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 const labels: Record<Lang, { flag: string; name: string }> = {
   en: { flag: "🇬🇧", name: "English" },
   fr: { flag: "🇫🇷", name: "Français" },
-  ar: { flag: "🇸🇦", name: "العربية" },
+  ar: { flag: "🇩🇿", name: "العربية" },
 };
 
 export const LangSwitcher = () => {
