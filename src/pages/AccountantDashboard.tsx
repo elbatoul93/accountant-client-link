@@ -521,7 +521,7 @@ const ClientProfileView = ({
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 pt-5 border-t border-border/60">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mt-5 pt-5 border-t border-border/60">
           <InfoCell label="NIF" value={client.taxId} />
           <InfoCell label="BP" value={client.bp} />
           <InfoCell label="NIS" value={client.nis} />
