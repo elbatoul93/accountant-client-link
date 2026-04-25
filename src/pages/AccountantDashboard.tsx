@@ -27,7 +27,7 @@ const fmtDZD = (n: number) =>
 
 interface Client {
   id: string; name: string; company?: string;
-  taxId: string; nis?: string; rc?: string; socialNo?: string; socialRegime?: "CNAS" | "CASNOS" | "CACOBATPH";
+  taxId: string; bp?: string; nis?: string; rc?: string; socialNo?: string; socialRegime?: "CNAS" | "CASNOS" | "CACOBATPH";
   email?: string; phone?: string; address?: string; legalForm?: string; activity?: string;
   contact: string; // legacy email used by client portal matching
   status: "active" | "review";
@@ -86,7 +86,7 @@ const AccountantDashboard = () => {
     const q = search.trim().toLowerCase();
     if (!q) return clients;
     return clients.filter((c) =>
-      [c.name, c.company, c.taxId, c.nis, c.rc, c.email, c.phone].some((v) => v?.toLowerCase().includes(q))
+      [c.name, c.company, c.taxId, c.bp, c.nis, c.rc, c.email, c.phone].some((v) => v?.toLowerCase().includes(q))
     );
   }, [clients, search]);
 
@@ -439,6 +439,7 @@ const ClientsListView = ({
               <tr className="text-xs uppercase text-muted-foreground border-b border-border">
                 <th className="text-start font-medium py-2.5">{t("client_section_identity")}</th>
                 <th className="text-start font-medium py-2.5">{t("client_nif")}</th>
+                <th className="text-start font-medium py-2.5">{t("client_bp")}</th>
                 <th className="text-start font-medium py-2.5 hidden md:table-cell">{t("client_rc")}</th>
                 <th className="text-start font-medium py-2.5 hidden lg:table-cell">{t("client_phone")}</th>
                 <th className="text-start font-medium py-2.5">{t("dash_status")}</th>
@@ -454,6 +455,7 @@ const ClientsListView = ({
                     {c.company && <div className="text-[11px] text-muted-foreground">{c.company}</div>}
                   </td>
                   <td className="py-3 font-mono text-xs text-muted-foreground">{c.taxId}</td>
+                  <td className="py-3 font-mono text-xs text-muted-foreground">{c.bp || "—"}</td>
                   <td className="py-3 font-mono text-xs text-muted-foreground hidden md:table-cell">{c.rc || "—"}</td>
                   <td className="py-3 text-muted-foreground hidden lg:table-cell">{c.phone || c.email || c.contact}</td>
                   <td className="py-3"><Badge variant="secondary" className="text-[10px] capitalize">{c.status}</Badge></td>
@@ -521,6 +523,7 @@ const ClientProfileView = ({
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 pt-5 border-t border-border/60">
           <InfoCell label="NIF" value={client.taxId} />
+          <InfoCell label="BP" value={client.bp} />
           <InfoCell label="NIS" value={client.nis} />
           <InfoCell label="RC" value={client.rc} />
           <InfoCell label={t("client_social_no")} value={client.socialNo} sub={client.socialRegime} />
