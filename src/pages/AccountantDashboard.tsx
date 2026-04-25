@@ -27,7 +27,8 @@ const fmtDZD = (n: number) =>
 
 interface Client {
   id: string; name: string; company?: string;
-  taxId: string; bp?: string; nis?: string; rc?: string; socialNo?: string; socialRegime?: "CNAS" | "CASNOS" | "CACOBATPH";
+  taxId: string; bp?: string; nis?: string; rc?: string;
+  cnasNo?: string; casnosNo?: string; hasCacobatph?: boolean;
   email?: string; phone?: string; address?: string; legalForm?: string; activity?: string;
   contact: string; // legacy email used by client portal matching
   status: "active" | "review";
