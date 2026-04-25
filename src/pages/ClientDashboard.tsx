@@ -141,14 +141,20 @@ const ClientDashboard = () => {
                         <Button
                           size="icon" variant="ghost" className="h-7 w-7"
                           onClick={() => {
-                            const blob = new Blob(
-                              [`${s.label}\n\nType: ${s.type}\nDate: ${s.date}\n\n${s.payload || ""}`],
-                              { type: "text/plain" }
-                            );
-                            const url = URL.createObjectURL(blob);
                             const a = document.createElement("a");
-                            a.href = url; a.download = `${s.type}-${s.id.slice(0, 6)}.txt`;
-                            a.click(); URL.revokeObjectURL(url);
+                            if (s.fileData) {
+                              a.href = s.fileData;
+                              a.download = s.fileName || `${s.type}-${s.id.slice(0, 6)}`;
+                            } else {
+                              const blob = new Blob(
+                                [`${s.label}\n\nType: ${s.type}\nDate: ${s.date}\n\n${s.payload || ""}`],
+                                { type: "text/plain" }
+                              );
+                              a.href = URL.createObjectURL(blob);
+                              a.download = `${s.type}-${s.id.slice(0, 6)}.txt`;
+                            }
+                            a.click();
+                            if (!s.fileData) URL.revokeObjectURL(a.href);
                             toast.success(t("cli_download"));
                           }}
                         >
