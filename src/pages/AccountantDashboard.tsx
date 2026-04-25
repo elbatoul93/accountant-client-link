@@ -591,38 +591,47 @@ const G50GeneratorDialog = ({
 }: { open: boolean; onOpenChange: (o: boolean) => void; clients: Client[]; t: (k: string) => string; onGenerate: (d: Decl, shared: SharedDoc | null) => void }) => {
   const [clientId, setClientId] = useState("");
   const [period, setPeriod] = useState(new Date().toISOString().slice(0, 7));
-  const [tap, setTap] = useState("");
-  const [irg, setIrg] = useState("");
-  const [tva, setTva] = useState("");
-  const [ibs, setIbs] = useState("");
-  const total = (Number(tap || 0) + Number(irg || 0) + Number(tva || 0) + Number(ibs || 0));
+  const [caHt, setCaHt] = useState("");
+  const [salaries, setSalaries] = useState("");
+  const [benefice, setBenefice] = useState("");
+  const [rTap, setRTap] = useState("2");
+  const [rTva, setRTva] = useState("19");
+  const [rIrg, setRIrg] = useState("10");
+  const [rIbs, setRIbs] = useState("23");
+
+  const tap = (Number(caHt || 0) * Number(rTap || 0)) / 100;
+  const tva = (Number(caHt || 0) * Number(rTva || 0)) / 100;
+  const irg = (Number(salaries || 0) * Number(rIrg || 0)) / 100;
+  const ibs = (Number(benefice || 0) * Number(rIbs || 0)) / 100;
+  const total = tap + tva + irg + ibs;
+
   const submit = () => {
     const c = clients.find((x) => x.id === clientId);
     if (!c || !period || total <= 0) { toast.error("Champs requis"); return; }
     const decl: Decl = {
       id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
-      type: "G50", amount: total, due: `${period}-20`, status: "upcoming",
+      type: "G50", amount: Math.round(total), due: `${period}-20`, status: "upcoming",
     };
     const shared: SharedDoc = {
       id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
       clientEmail: c.contact, type: "G50",
       label: `G50 ${period} — ${fmtDZD(total)}`,
       date: new Date().toLocaleDateString("fr-DZ"),
-      payload: JSON.stringify({ tap, irg, tva, ibs, total, period }),
+      payload: JSON.stringify({ caHt, salaries, benefice, rTap, rTva, rIrg, rIbs, tap, tva, irg, ibs, total, period }),
     };
     onGenerate(decl, shared);
     toast.success("G50 généré et envoyé au client");
-    setClientId(""); setTap(""); setIrg(""); setTva(""); setIbs("");
+    setClientId(""); setCaHt(""); setSalaries(""); setBenefice("");
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calculator className="h-4 w-4 text-gold-deep" /> {t("tools_g50_title")}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>{t("dash_client")}</Label>
@@ -636,12 +645,26 @@ const G50GeneratorDialog = ({
               <Input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label>{t("tools_g50_tap")} (DA)</Label><Input type="number" value={tap} onChange={(e) => setTap(e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>{t("tools_g50_irg")} (DA)</Label><Input type="number" value={irg} onChange={(e) => setIrg(e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>{t("tools_g50_tva")} (DA)</Label><Input type="number" value={tva} onChange={(e) => setTva(e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>{t("tools_g50_ibs")} (DA)</Label><Input type="number" value={ibs} onChange={(e) => setIbs(e.target.value)} /></div>
+
+          <div className="space-y-2">
+            <div className="text-xs font-semibold text-primary uppercase">Bases imposables</div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Chiffre d'affaires HT (DA)</Label><Input type="number" value={caHt} onChange={(e) => setCaHt(e.target.value)} placeholder="1000000" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Salaires bruts (DA)</Label><Input type="number" value={salaries} onChange={(e) => setSalaries(e.target.value)} placeholder="200000" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Bénéfice imposable (DA)</Label><Input type="number" value={benefice} onChange={(e) => setBenefice(e.target.value)} placeholder="150000" /></div>
+            </div>
           </div>
+
+          <div className="space-y-2">
+            <div className="text-xs font-semibold text-primary uppercase">Taux & calcul automatique</div>
+            <div className="space-y-1.5">
+              <CalcRow label={`${t("tools_g50_tap")} (TAP)`} rate={rTap} setRate={setRTap} amount={tap} />
+              <CalcRow label={t("tools_g50_tva")} rate={rTva} setRate={setRTva} amount={tva} />
+              <CalcRow label={`${t("tools_g50_irg")} / Salaires`} rate={rIrg} setRate={setRIrg} amount={irg} />
+              <CalcRow label={t("tools_g50_ibs")} rate={rIbs} setRate={setRIbs} amount={ibs} />
+            </div>
+          </div>
+
           <div className="p-3 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 flex items-center justify-between">
             <span className="text-sm font-semibold text-primary">{t("tools_g50_total")}</span>
             <span className="text-2xl font-bold text-gold-deep">{fmtDZD(total)}</span>
@@ -652,6 +675,17 @@ const G50GeneratorDialog = ({
     </Dialog>
   );
 };
+
+const CalcRow = ({ label, rate, setRate, amount }: { label: string; rate: string; setRate: (v: string) => void; amount: number }) => (
+  <div className="grid grid-cols-12 gap-2 items-center p-2 rounded border border-border/60 bg-card">
+    <Label className="col-span-5 text-xs">{label}</Label>
+    <div className="col-span-3 flex items-center gap-1">
+      <Input type="number" value={rate} onChange={(e) => setRate(e.target.value)} className="h-8 text-xs" />
+      <span className="text-xs text-muted-foreground">%</span>
+    </div>
+    <div className="col-span-4 text-end font-semibold text-sm text-gold-deep">{fmtDZD(amount)}</div>
+  </div>
+);
 
 const SendDocumentDialog = ({
   open, onOpenChange, clients, t, onSend,
