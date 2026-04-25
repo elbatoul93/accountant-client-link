@@ -522,13 +522,19 @@ const ClientProfileView = ({
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mt-5 pt-5 border-t border-border/60">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-5 pt-5 border-t border-border/60">
           <InfoCell label="NIF" value={client.taxId} />
           <InfoCell label="BP" value={client.bp} />
           <InfoCell label="NIS" value={client.nis} />
           <InfoCell label="RC" value={client.rc} />
-          <InfoCell label={t("client_social_no")} value={client.socialNo} sub={client.socialRegime} />
+          <InfoCell label={t("client_cnas_no")} value={client.cnasNo} sub={client.hasCacobatph ? "BTPH" : undefined} />
+          <InfoCell label={t("client_casnos_no")} value={client.casnosNo} />
         </div>
+        {client.hasCacobatph && (
+          <div className="mt-3 inline-flex items-center gap-2 rounded-md border border-gold-deep/40 bg-gold-deep/10 px-2.5 py-1 text-[11px] font-medium text-gold-deep">
+            <ShieldCheck className="h-3 w-3" /> {t("client_btph_indicator")}
+          </div>
+        )}
       </Card>
 
       <Tabs defaultValue="overview" className="w-full">
