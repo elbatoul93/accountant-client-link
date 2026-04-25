@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { SiteHeader } from "@/components/SiteHeader";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
@@ -27,7 +28,8 @@ const fmtDZD = (n: number) =>
 
 interface Client {
   id: string; name: string; company?: string;
-  taxId: string; bp?: string; nis?: string; rc?: string; socialNo?: string; socialRegime?: "CNAS" | "CASNOS" | "CACOBATPH";
+  taxId: string; bp?: string; nis?: string; rc?: string;
+  cnasNo?: string; casnosNo?: string; hasCacobatph?: boolean;
   email?: string; phone?: string; address?: string; legalForm?: string; activity?: string;
   contact: string; // legacy email used by client portal matching
   status: "active" | "review";
@@ -521,13 +523,19 @@ const ClientProfileView = ({
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mt-5 pt-5 border-t border-border/60">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-5 pt-5 border-t border-border/60">
           <InfoCell label="NIF" value={client.taxId} />
           <InfoCell label="BP" value={client.bp} />
           <InfoCell label="NIS" value={client.nis} />
           <InfoCell label="RC" value={client.rc} />
-          <InfoCell label={t("client_social_no")} value={client.socialNo} sub={client.socialRegime} />
+          <InfoCell label={t("client_cnas_no")} value={client.cnasNo} sub={client.hasCacobatph ? "BTPH" : undefined} />
+          <InfoCell label={t("client_casnos_no")} value={client.casnosNo} />
         </div>
+        {client.hasCacobatph && (
+          <div className="mt-3 inline-flex items-center gap-2 rounded-md border border-gold-deep/40 bg-gold-deep/10 px-2.5 py-1 text-[11px] font-medium text-gold-deep">
+            <ShieldCheck className="h-3 w-3" /> {t("client_btph_indicator")}
+          </div>
+        )}
       </Card>
 
       <Tabs defaultValue="overview" className="w-full">
@@ -703,15 +711,17 @@ const AddClientDialog = ({
   const [bp, setBp] = useState("");
   const [nis, setNis] = useState("");
   const [rc, setRc] = useState("");
-  const [socialNo, setSocialNo] = useState("");
-  const [socialRegime, setSocialRegime] = useState<"CNAS" | "CASNOS" | "CACOBATPH">("CNAS");
+  const [cnasNo, setCnasNo] = useState("");
+  const [casnosNo, setCasnosNo] = useState("");
+  const [hasCacobatph, setHasCacobatph] = useState(false);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
 
   const reset = () => {
     setName(""); setCompany(""); setLegalForm(""); setActivity("");
-    setTaxId(""); setBp(""); setNis(""); setRc(""); setSocialNo(""); setSocialRegime("CNAS");
+    setTaxId(""); setBp(""); setNis(""); setRc("");
+    setCnasNo(""); setCasnosNo(""); setHasCacobatph(false);
     setEmail(""); setPhone(""); setAddress("");
   };
 
@@ -725,7 +735,7 @@ const AddClientDialog = ({
       name: name.trim(), company: company.trim() || undefined,
       legalForm: legalForm.trim() || undefined, activity: activity.trim() || undefined,
       taxId: taxId.trim(), bp: bp.trim() || undefined, nis: nis.trim() || undefined, rc: rc.trim() || undefined,
-      socialNo: socialNo.trim() || undefined, socialRegime,
+      cnasNo: cnasNo.trim() || undefined, casnosNo: casnosNo.trim() || undefined, hasCacobatph,
       email: email.trim() || undefined, phone: phone.trim() || undefined, address: address.trim() || undefined,
       contact: email.trim(), // for client portal email matching
       status: "active",
@@ -771,18 +781,27 @@ const AddClientDialog = ({
 
           <Section title={t("client_section_social")} icon={ShieldCheck}>
             <div className="grid sm:grid-cols-2 gap-3">
-              <Field label={t("client_social_regime")}>
-                <Select value={socialRegime} onValueChange={(v) => setSocialRegime(v as any)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CNAS">CNAS</SelectItem>
-                    <SelectItem value="CASNOS">CASNOS</SelectItem>
-                    <SelectItem value="CACOBATPH">CACOBATPH</SelectItem>
-                  </SelectContent>
-                </Select>
+              <Field label={t("client_cnas_no")}>
+                <Input value={cnasNo} onChange={(e) => setCnasNo(e.target.value)} placeholder="N° CNAS" className="font-mono" />
               </Field>
-              <Field label={t("client_social_no")}><Input value={socialNo} onChange={(e) => setSocialNo(e.target.value)} placeholder="N° d'affiliation" className="font-mono" /></Field>
+              <Field label={t("client_casnos_no")}>
+                <Input value={casnosNo} onChange={(e) => setCasnosNo(e.target.value)} placeholder="N° CASNOS" className="font-mono" />
+              </Field>
             </div>
+            <div className="mt-3 flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
+              <div className="flex items-center gap-2">
+                <Switch id="cacobatph" checked={hasCacobatph} onCheckedChange={setHasCacobatph} />
+                <label htmlFor="cacobatph" className="text-sm font-medium cursor-pointer">
+                  {t("client_has_cacobatph")}
+                </label>
+              </div>
+              {hasCacobatph && (
+                <span className="inline-flex items-center gap-1 rounded-md border border-gold-deep/40 bg-gold-deep/10 px-2 py-0.5 text-[11px] font-semibold text-gold-deep">
+                  <ShieldCheck className="h-3 w-3" /> BTPH
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-2">{t("client_social_hint")}</p>
           </Section>
 
           <Section title={t("client_section_contact")} icon={Mail}>
