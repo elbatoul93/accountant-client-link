@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import {
   Users, FileText, TrendingUp, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2, Inbox, FileDown,
+  Wrench, BookOpen, Calculator, Send, Download,
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -25,9 +26,14 @@ interface Client { id: string; name: string; taxId: string; contact: string; sta
 interface Invoice { id: string; clientId: string; clientName: string; amount: number; date: string; status: "pending" | "processed" | "review" }
 interface Decl { id: string; clientId: string; clientName: string; type: "G50" | "CNAS" | "CASNOS" | "CACOBATPH"; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
 
+interface FinStmt { id: string; clientId: string; clientName: string; year: string; assets: number; liabilities: number; equity: number; revenue: number; netResult: number; createdAt: string }
+interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string }
+
 const KEY_CLIENTS = "mgmtk_acc_clients";
 const KEY_INVOICES = "mgmtk_acc_invoices";
 const KEY_DECLS = "mgmtk_acc_declarations";
+const KEY_FS = "mgmtk_acc_fs";
+const KEY_SHARED = "mgmtk_acc_shared_docs";
 
 const load = <T,>(k: string): T[] => {
   const raw = localStorage.getItem(k);
@@ -39,11 +45,16 @@ const AccountantDashboard = () => {
   const [clients, setClients] = useState<Client[]>(() => load<Client>(KEY_CLIENTS));
   const [invoices, setInvoices] = useState<Invoice[]>(() => load<Invoice>(KEY_INVOICES));
   const [decls, setDecls] = useState<Decl[]>(() => load<Decl>(KEY_DECLS));
+  const [fsList, setFsList] = useState<FinStmt[]>(() => load<FinStmt>(KEY_FS));
+  const [sharedDocs, setSharedDocs] = useState<SharedDoc[]>(() => load<SharedDoc>(KEY_SHARED));
   const [obligationsClient, setObligationsClient] = useState<Client | null>(null);
+  const [openTool, setOpenTool] = useState<null | "fs" | "g50" | "send">(null);
 
   useEffect(() => { localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients)); }, [clients]);
   useEffect(() => { localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices)); }, [invoices]);
   useEffect(() => { localStorage.setItem(KEY_DECLS, JSON.stringify(decls)); }, [decls]);
+  useEffect(() => { localStorage.setItem(KEY_FS, JSON.stringify(fsList)); }, [fsList]);
+  useEffect(() => { localStorage.setItem(KEY_SHARED, JSON.stringify(sharedDocs)); }, [sharedDocs]);
 
   if (!user) return <Navigate to="/login" replace />;
   // ROLE GUARD: only accountants can see accountant portal
