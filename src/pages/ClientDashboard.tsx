@@ -148,18 +148,53 @@ const ClientDashboard = () => {
 
           <div className="space-y-5">
             <Card className="p-5 shadow-card">
-              <h2 className="text-base font-bold text-primary mb-2">{t("dash_tax_status")}</h2>
-              <p className="text-xs text-muted-foreground mb-4">{t("empty_no_tax")}</p>
-              <div className="text-center py-6 border border-dashed border-border rounded-lg">
-                <div className="text-xs text-muted-foreground">{t("empty_pending_acc")}</div>
-              </div>
+              <h2 className="text-base font-bold text-primary mb-3 flex items-center gap-2">
+                <Receipt className="h-4 w-4" /> {t("cli_my_obligations")}
+              </h2>
+              {myDecls.length === 0 ? (
+                <div className="text-center py-6 border border-dashed border-border rounded-lg">
+                  <div className="text-xs text-muted-foreground">{t("cli_no_obligations")}</div>
+                </div>
+              ) : (
+                <>
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-gold/10 to-gold/5 border border-gold/30 mb-3">
+                    <div className="text-xs text-muted-foreground">{t("cli_total_due")}</div>
+                    <div className="text-2xl font-bold text-gold-deep">{fmtDZD(totalDue)}</div>
+                  </div>
+                  <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                    {myDecls.map((d) => (
+                      <div key={d.id} className="flex items-center justify-between p-2 rounded border border-border/60 text-xs">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="font-mono text-[10px]">{d.type}</Badge>
+                          <span className="text-muted-foreground">{d.due}</span>
+                        </div>
+                        <span className="font-semibold">{fmtDZD(d.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </Card>
 
             <Card className="p-5 shadow-card">
-              <h2 className="text-base font-bold text-primary mb-4">{t("dash_my_accountant")}</h2>
-              <div className="text-center py-6 border border-dashed border-border rounded-lg">
-                <div className="text-xs text-muted-foreground">{t("empty_no_accountant")}</div>
-              </div>
+              <h2 className="text-base font-bold text-primary mb-3 flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4" /> {t("cli_from_accountant")}
+              </h2>
+              {myInvoices.length === 0 ? (
+                <div className="text-center py-6 border border-dashed border-border rounded-lg">
+                  <div className="text-xs text-muted-foreground">{t("empty_pending_acc")}</div>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <div className="text-xs text-muted-foreground mb-2">{myInvoices.length} {t("cli_invoices_received")}</div>
+                  {myInvoices.slice(0, 5).map((inv) => (
+                    <div key={inv.id} className="flex items-center justify-between p-2 rounded border border-border/60 text-xs">
+                      <span className="font-mono text-muted-foreground">{inv.id}</span>
+                      <span className="font-semibold text-gold-deep">{fmtDZD(inv.amount)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
           </div>
         </div>
