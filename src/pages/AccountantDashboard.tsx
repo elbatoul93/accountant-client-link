@@ -13,7 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Users, FileText, TrendingUp, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2, Inbox,
+  Users, FileText, TrendingUp, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2, Inbox, FileDown,
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -39,6 +39,7 @@ const AccountantDashboard = () => {
   const [clients, setClients] = useState<Client[]>(() => load<Client>(KEY_CLIENTS));
   const [invoices, setInvoices] = useState<Invoice[]>(() => load<Invoice>(KEY_INVOICES));
   const [decls, setDecls] = useState<Decl[]>(() => load<Decl>(KEY_DECLS));
+  const [obligationsClient, setObligationsClient] = useState<Client | null>(null);
 
   useEffect(() => { localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients)); }, [clients]);
   useEffect(() => { localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices)); }, [invoices]);
@@ -99,15 +100,21 @@ const AccountantDashboard = () => {
                       <td className="py-3 text-muted-foreground hidden sm:table-cell">{c.contact}</td>
                       <td className="py-3"><Badge variant="secondary" className="text-[10px] capitalize">{c.status}</Badge></td>
                       <td className="py-3 text-end">
-                        <Button size="icon" variant="ghost" className="h-7 w-7"
-                          onClick={() => {
-                            setClients((p) => p.filter((x) => x.id !== c.id));
-                            setInvoices((p) => p.filter((x) => x.clientId !== c.id));
-                            setDecls((p) => p.filter((x) => x.clientId !== c.id));
-                            toast.success("Client supprimé");
-                          }}>
-                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs"
+                            onClick={() => setObligationsClient(c)}>
+                            <FileDown className="h-3.5 w-3.5" /> {t("acc_extract")}
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7"
+                            onClick={() => {
+                              setClients((p) => p.filter((x) => x.id !== c.id));
+                              setInvoices((p) => p.filter((x) => x.clientId !== c.id));
+                              setDecls((p) => p.filter((x) => x.clientId !== c.id));
+                              toast.success("Supprimé");
+                            }}>
+                            <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -200,6 +207,57 @@ const AccountantDashboard = () => {
           </h2>
           <EmptyState label={t("empty_no_notifs")} />
         </Card>
+
+        {/* Obligations extraction dialog */}
+        <Dialog open={!!obligationsClient} onOpenChange={(o) => !o && setObligationsClient(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {t("acc_obligations_title")} — {obligationsClient?.name}
+              </DialogTitle>
+            </DialogHeader>
+            {obligationsClient && (() => {
+              const cDecls = decls.filter((d) => d.clientId === obligationsClient.id);
+              const cInvoices = invoices.filter((i) => i.clientId === obligationsClient.id);
+              const totalDue = cDecls.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
+              return (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                      <div className="text-xs text-muted-foreground">{t("acc_total_due")}</div>
+                      <div className="text-xl font-bold text-gold-deep">{fmtDZD(totalDue)}</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                      <div className="text-xs text-muted-foreground">NIF</div>
+                      <div className="font-mono text-sm">{obligationsClient.taxId}</div>
+                    </div>
+                  </div>
+                  {cDecls.length === 0 ? (
+                    <EmptyState label={t("acc_no_obligations")} />
+                  ) : (
+                    <div className="space-y-1.5 max-h-80 overflow-y-auto">
+                      {cDecls.map((d) => (
+                        <div key={d.id} className="flex items-center justify-between p-2.5 rounded border border-border/60">
+                          <div>
+                            <Badge variant="outline" className="font-mono text-[10px] me-2">{d.type}</Badge>
+                            <span className="text-xs text-muted-foreground">{t("dash_deadline")}: {d.due}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm">{fmtDZD(d.amount)}</span>
+                            <Badge variant="outline" className="text-[10px]">{t(`dash_${d.status}`)}</Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="text-xs text-muted-foreground border-t pt-2">
+                    {cInvoices.length} {t("cli_invoices_received")}
+                  </div>
+                </div>
+              );
+            })()}
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

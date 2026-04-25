@@ -140,6 +140,15 @@ const en = {
   acc_contact: "Contact",
   acc_select_client: "Select a customer",
   acc_save: "Save",
+  acc_extract: "Extract obligations",
+  acc_obligations_title: "All obligations",
+  acc_total_due: "Total due",
+  acc_no_obligations: "No obligations recorded for this customer.",
+  cli_from_accountant: "Documents from my accountant",
+  cli_my_obligations: "My tax & social obligations",
+  cli_invoices_received: "Invoices on file",
+  cli_total_due: "Total amount due",
+  cli_no_obligations: "Your accountant has not added any declarations yet.",
 };
 
 const fr: typeof en = {
@@ -276,6 +285,15 @@ const fr: typeof en = {
   acc_contact: "Contact",
   acc_select_client: "Sélectionner un client",
   acc_save: "Enregistrer",
+  acc_extract: "Extraire les obligations",
+  acc_obligations_title: "Toutes les obligations",
+  acc_total_due: "Total dû",
+  acc_no_obligations: "Aucune obligation enregistrée pour ce client.",
+  cli_from_accountant: "Documents de mon comptable",
+  cli_my_obligations: "Mes obligations fiscales & sociales",
+  cli_invoices_received: "Factures enregistrées",
+  cli_total_due: "Montant total dû",
+  cli_no_obligations: "Votre comptable n'a encore ajouté aucune déclaration.",
 };
 
 const ar: typeof en = {
@@ -412,6 +430,15 @@ const ar: typeof en = {
   acc_contact: "جهة الاتصال",
   acc_select_client: "اختر زبوناً",
   acc_save: "حفظ",
+  acc_extract: "استخراج الالتزامات",
+  acc_obligations_title: "جميع الالتزامات",
+  acc_total_due: "إجمالي المستحق",
+  acc_no_obligations: "لا توجد التزامات مسجلة لهذا الزبون.",
+  cli_from_accountant: "وثائق من محاسبي",
+  cli_my_obligations: "التزاماتي الجبائية والاجتماعية",
+  cli_invoices_received: "الفواتير المسجلة",
+  cli_total_due: "المبلغ الإجمالي المستحق",
+  cli_no_obligations: "لم يضف محاسبك أي تصريحات بعد.",
 };
 
 export const translations = { en, fr, ar };
