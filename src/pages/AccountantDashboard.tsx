@@ -1109,7 +1109,7 @@ const G50GeneratorDialog = ({
       clientEmail: c.contact, type: "G50",
       label: `G50 ${period} — ${fmtDZD(total)}`,
       date: new Date().toLocaleDateString("fr-DZ"),
-      payload: JSON.stringify({ caHt, salaries, benefice, rTap, rTva, rIrg, rIbs, tap, tva, irg, ibs, total, period }),
+      payload: JSON.stringify({ nif: c.taxId, bp: c.bp, caHt, salaries, benefice, rTap, rTva, rIrg, rIbs, tap, tva, irg, ibs, total, period }),
     };
     onGenerate(decl, shared);
     toast.success("G50 généré et envoyé au client");
