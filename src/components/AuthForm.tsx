@@ -28,18 +28,44 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
       toast.error("Please fill in all fields");
       return;
     }
-    const displayName =
-      mode === "signup"
-        ? name || email.split("@")[0]
-        : email.split("@")[0].replace(/[^a-zA-Z]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "Demo User";
-    login({
-      name: displayName,
-      email,
-      role,
-      company: company || (role === "accountant" ? "Managementik & Co." : "My Business"),
-    });
-    toast.success(t(mode === "signup" ? "toast_signup_success" : "toast_login_success"));
-    navigate(role === "accountant" ? "/dashboard/accountant" : "/dashboard/client");
+
+    const accountsRaw = localStorage.getItem("mgmtk_accounts");
+    const accounts: Record<string, { name: string; email: string; role: Role; company?: string; password: string }> =
+      accountsRaw ? JSON.parse(accountsRaw) : {};
+
+    if (mode === "signup") {
+      if (accounts[email.toLowerCase()]) {
+        toast.error("An account with this email already exists. Please sign in.");
+        return;
+      }
+      const account = {
+        name: name || email.split("@")[0],
+        email,
+        role,
+        company: company || (role === "accountant" ? "Managementik & Co." : "My Business"),
+        password,
+      };
+      accounts[email.toLowerCase()] = account;
+      localStorage.setItem("mgmtk_accounts", JSON.stringify(accounts));
+      login({ name: account.name, email: account.email, role: account.role, company: account.company });
+      toast.success(t("toast_signup_success"));
+      navigate(role === "accountant" ? "/dashboard/accountant" : "/dashboard/client");
+      return;
+    }
+
+    // LOGIN: must match a stored account
+    const account = accounts[email.toLowerCase()];
+    if (!account) {
+      toast.error("No account found. Please sign up first.");
+      return;
+    }
+    if (account.password !== password) {
+      toast.error("Incorrect password.");
+      return;
+    }
+    login({ name: account.name, email: account.email, role: account.role, company: account.company });
+    toast.success(t("toast_login_success"));
+    navigate(account.role === "accountant" ? "/dashboard/accountant" : "/dashboard/client");
   };
 
   return (
