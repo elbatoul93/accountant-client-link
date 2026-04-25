@@ -1,15 +1,21 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useDropzone } from "react-dropzone";
 import { useApp } from "@/contexts/AppContext";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, FileText, CheckCircle2, Clock, FileImage, Inbox, Trash2 } from "lucide-react";
+import { UploadCloud, FileText, CheckCircle2, Clock, FileImage, Inbox, Trash2, Receipt, ShieldCheck } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface Doc { name: string; size: string; date: string; status: "processed" | "pending" }
+interface Decl { id: string; clientId: string; clientName: string; type: "G50" | "CNAS" | "CASNOS" | "CACOBATPH"; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
+interface Invoice { id: string; clientId: string; clientName: string; amount: number; date: string; status: string }
+interface ClientRow { id: string; name: string; taxId: string; contact: string }
+
+const fmtDZD = (n: number) =>
+  `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
 
 const STORAGE_KEY = "mgmtk_client_docs";
 
