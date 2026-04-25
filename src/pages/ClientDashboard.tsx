@@ -5,7 +5,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, FileText, CheckCircle2, Clock, FileImage, Inbox, Trash2, Receipt, ShieldCheck } from "lucide-react";
+import { UploadCloud, FileText, CheckCircle2, Clock, FileImage, Inbox, Trash2, Receipt, ShieldCheck, FolderOpen, Download } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -13,6 +13,7 @@ interface Doc { name: string; size: string; date: string; status: "processed" | 
 interface Decl { id: string; clientId: string; clientName: string; type: "G50" | "CNAS" | "CASNOS" | "CACOBATPH"; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
 interface Invoice { id: string; clientId: string; clientName: string; amount: number; date: string; status: string }
 interface ClientRow { id: string; name: string; taxId: string; contact: string }
+interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string }
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
@@ -46,19 +47,21 @@ const ClientDashboard = () => {
     accept: { "image/*": [], "application/pdf": [] },
   });
 
-  const { myDecls, myInvoices, totalDue } = useMemo(() => {
-    if (!user) return { myDecls: [] as Decl[], myInvoices: [] as Invoice[], totalDue: 0 };
+  const { myDecls, myInvoices, mySharedDocs, totalDue } = useMemo(() => {
+    if (!user) return { myDecls: [] as Decl[], myInvoices: [] as Invoice[], mySharedDocs: [] as SharedDoc[], totalDue: 0 };
     const allClients: ClientRow[] = JSON.parse(localStorage.getItem("mgmtk_acc_clients") || "[]");
     const allDecls: Decl[] = JSON.parse(localStorage.getItem("mgmtk_acc_declarations") || "[]");
     const allInvoices: Invoice[] = JSON.parse(localStorage.getItem("mgmtk_acc_invoices") || "[]");
+    const allShared: SharedDoc[] = JSON.parse(localStorage.getItem("mgmtk_acc_shared_docs") || "[]");
     const mine = allClients.filter(
       (c) => c.contact?.toLowerCase() === user.email.toLowerCase()
     );
     const ids = new Set(mine.map((c) => c.id));
     const myD = allDecls.filter((d) => ids.has(d.clientId));
     const myI = allInvoices.filter((i) => ids.has(i.clientId));
+    const myS = allShared.filter((s) => ids.has(s.clientId) || s.clientEmail?.toLowerCase() === user.email.toLowerCase());
     const due = myD.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
-    return { myDecls: myD, myInvoices: myI, totalDue: due };
+    return { myDecls: myD, myInvoices: myI, mySharedDocs: myS, totalDue: due };
   }, [user, docs]);
 
   if (!user) return <Navigate to="/login" replace />;
@@ -102,6 +105,60 @@ const ClientDashboard = () => {
                 <div className="text-sm text-muted-foreground mb-4">PDF, JPG, PNG • Max 10MB</div>
                 <Button variant="hero" size="sm" type="button">{t("dash_upload_cta")}</Button>
               </div>
+            </Card>
+
+            {/* Documents from Accountant */}
+            <Card className="p-5 sm:p-6 shadow-card border-gold/30 bg-gradient-to-br from-card to-gold/5">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-lg font-bold text-primary flex items-center gap-2">
+                  <FolderOpen className="h-4 w-4 text-gold-deep" /> {t("cli_docs_acc_title")}
+                </h2>
+                <Badge variant="secondary" className="text-xs">{mySharedDocs.length}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mb-4">{t("cli_docs_acc_subtitle")}</p>
+              {mySharedDocs.length === 0 ? (
+                <div className="text-center py-8 border border-dashed border-gold/30 rounded-lg">
+                  <div className="inline-flex p-3 rounded-full bg-gold/10 text-gold-deep mb-3">
+                    <FolderOpen className="h-5 w-5" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">{t("cli_docs_empty")}</p>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {mySharedDocs.map((s) => (
+                    <div key={s.id} className="p-3 rounded-lg border border-border/60 hover:border-gold/60 hover:shadow-gold transition-smooth bg-card">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-md bg-gradient-gold text-gold-foreground flex-shrink-0 shadow-gold">
+                          <FileText className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="outline" className="font-mono text-[10px]">{s.type}</Badge>
+                            <span className="text-[10px] text-muted-foreground">{s.date}</span>
+                          </div>
+                          <div className="font-medium text-sm text-foreground truncate">{s.label}</div>
+                        </div>
+                        <Button
+                          size="icon" variant="ghost" className="h-7 w-7"
+                          onClick={() => {
+                            const blob = new Blob(
+                              [`${s.label}\n\nType: ${s.type}\nDate: ${s.date}\n\n${s.payload || ""}`],
+                              { type: "text/plain" }
+                            );
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url; a.download = `${s.type}-${s.id.slice(0, 6)}.txt`;
+                            a.click(); URL.revokeObjectURL(url);
+                            toast.success(t("cli_download"));
+                          }}
+                        >
+                          <Download className="h-3.5 w-3.5 text-gold-deep" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
 
             <Card className="p-5 sm:p-6 shadow-card">
