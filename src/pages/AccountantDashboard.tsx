@@ -27,7 +27,7 @@ const fmtDZD = (n: number) =>
 
 interface Client {
   id: string; name: string; company?: string;
-  taxId: string; nis?: string; rc?: string; socialNo?: string; socialRegime?: "CNAS" | "CASNOS" | "CACOBATPH";
+  taxId: string; bp?: string; nis?: string; rc?: string; socialNo?: string; socialRegime?: "CNAS" | "CASNOS" | "CACOBATPH";
   email?: string; phone?: string; address?: string; legalForm?: string; activity?: string;
   contact: string; // legacy email used by client portal matching
   status: "active" | "review";
@@ -86,7 +86,7 @@ const AccountantDashboard = () => {
     const q = search.trim().toLowerCase();
     if (!q) return clients;
     return clients.filter((c) =>
-      [c.name, c.company, c.taxId, c.nis, c.rc, c.email, c.phone].some((v) => v?.toLowerCase().includes(q))
+      [c.name, c.company, c.taxId, c.bp, c.nis, c.rc, c.email, c.phone].some((v) => v?.toLowerCase().includes(q))
     );
   }, [clients, search]);
 
@@ -439,6 +439,7 @@ const ClientsListView = ({
               <tr className="text-xs uppercase text-muted-foreground border-b border-border">
                 <th className="text-start font-medium py-2.5">{t("client_section_identity")}</th>
                 <th className="text-start font-medium py-2.5">{t("client_nif")}</th>
+                <th className="text-start font-medium py-2.5">{t("client_bp")}</th>
                 <th className="text-start font-medium py-2.5 hidden md:table-cell">{t("client_rc")}</th>
                 <th className="text-start font-medium py-2.5 hidden lg:table-cell">{t("client_phone")}</th>
                 <th className="text-start font-medium py-2.5">{t("dash_status")}</th>
@@ -454,6 +455,7 @@ const ClientsListView = ({
                     {c.company && <div className="text-[11px] text-muted-foreground">{c.company}</div>}
                   </td>
                   <td className="py-3 font-mono text-xs text-muted-foreground">{c.taxId}</td>
+                  <td className="py-3 font-mono text-xs text-muted-foreground">{c.bp || "—"}</td>
                   <td className="py-3 font-mono text-xs text-muted-foreground hidden md:table-cell">{c.rc || "—"}</td>
                   <td className="py-3 text-muted-foreground hidden lg:table-cell">{c.phone || c.email || c.contact}</td>
                   <td className="py-3"><Badge variant="secondary" className="text-[10px] capitalize">{c.status}</Badge></td>
@@ -519,8 +521,9 @@ const ClientProfileView = ({
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 pt-5 border-t border-border/60">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mt-5 pt-5 border-t border-border/60">
           <InfoCell label="NIF" value={client.taxId} />
+          <InfoCell label="BP" value={client.bp} />
           <InfoCell label="NIS" value={client.nis} />
           <InfoCell label="RC" value={client.rc} />
           <InfoCell label={t("client_social_no")} value={client.socialNo} sub={client.socialRegime} />
@@ -697,6 +700,7 @@ const AddClientDialog = ({
   const [legalForm, setLegalForm] = useState("");
   const [activity, setActivity] = useState("");
   const [taxId, setTaxId] = useState("");
+  const [bp, setBp] = useState("");
   const [nis, setNis] = useState("");
   const [rc, setRc] = useState("");
   const [socialNo, setSocialNo] = useState("");
@@ -707,7 +711,7 @@ const AddClientDialog = ({
 
   const reset = () => {
     setName(""); setCompany(""); setLegalForm(""); setActivity("");
-    setTaxId(""); setNis(""); setRc(""); setSocialNo(""); setSocialRegime("CNAS");
+    setTaxId(""); setBp(""); setNis(""); setRc(""); setSocialNo(""); setSocialRegime("CNAS");
     setEmail(""); setPhone(""); setAddress("");
   };
 
@@ -720,7 +724,7 @@ const AddClientDialog = ({
       id: crypto.randomUUID(),
       name: name.trim(), company: company.trim() || undefined,
       legalForm: legalForm.trim() || undefined, activity: activity.trim() || undefined,
-      taxId: taxId.trim(), nis: nis.trim() || undefined, rc: rc.trim() || undefined,
+      taxId: taxId.trim(), bp: bp.trim() || undefined, nis: nis.trim() || undefined, rc: rc.trim() || undefined,
       socialNo: socialNo.trim() || undefined, socialRegime,
       email: email.trim() || undefined, phone: phone.trim() || undefined, address: address.trim() || undefined,
       contact: email.trim(), // for client portal email matching
@@ -748,9 +752,18 @@ const AddClientDialog = ({
             </div>
           </Section>
 
-          <Section title={t("client_section_legal")} icon={FileText}>
+          <Section title={t("client_section_tax")} icon={IdCard}>
             <div className="grid sm:grid-cols-2 gap-3">
               <Field label={t("client_nif") + " *"}><Input value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="000016001234567" className="font-mono" /></Field>
+              <Field label={t("client_bp")}><Input value={bp} onChange={(e) => setBp(e.target.value)} placeholder="16xxxxxxxx" className="font-mono" /></Field>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-2">
+              NIF & BP — Carte d'Immatriculation Fiscale
+            </p>
+          </Section>
+
+          <Section title={t("client_section_legal")} icon={FileText}>
+            <div className="grid sm:grid-cols-2 gap-3">
               <Field label={t("client_nis")}><Input value={nis} onChange={(e) => setNis(e.target.value)} placeholder="0916 0000123456 78" className="font-mono" /></Field>
               <Field label={t("client_rc")}><Input value={rc} onChange={(e) => setRc(e.target.value)} placeholder="16/00 - 1234567 B 24" className="font-mono" /></Field>
             </div>
@@ -1096,7 +1109,7 @@ const G50GeneratorDialog = ({
       clientEmail: c.contact, type: "G50",
       label: `G50 ${period} — ${fmtDZD(total)}`,
       date: new Date().toLocaleDateString("fr-DZ"),
-      payload: JSON.stringify({ caHt, salaries, benefice, rTap, rTva, rIrg, rIbs, tap, tva, irg, ibs, total, period }),
+      payload: JSON.stringify({ nif: c.taxId, bp: c.bp, caHt, salaries, benefice, rTap, rTva, rIrg, rIbs, tap, tva, irg, ibs, total, period }),
     };
     onGenerate(decl, shared);
     toast.success("G50 généré et envoyé au client");
@@ -1124,6 +1137,23 @@ const G50GeneratorDialog = ({
               <Input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} />
             </div>
           </div>
+
+          {(() => {
+            const sel = clients.find((c) => c.id === clientId);
+            if (!sel) return null;
+            return (
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("client_nif")}</div>
+                  <div className="font-mono text-sm font-semibold">{sel.taxId || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("client_bp")}</div>
+                  <div className="font-mono text-sm font-semibold">{sel.bp || "—"}</div>
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="space-y-2">
             <div className="text-xs font-semibold text-primary uppercase">Bases imposables</div>
