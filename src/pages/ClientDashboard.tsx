@@ -13,7 +13,7 @@ interface Doc { name: string; size: string; date: string; status: "processed" | 
 interface Decl { id: string; clientId: string; clientName: string; type: "G50" | "CNAS" | "CASNOS" | "CACOBATPH"; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
 interface Invoice { id: string; clientId: string; clientName: string; amount: number; date: string; status: string }
 interface ClientRow { id: string; name: string; taxId: string; contact: string }
-interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string }
+interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string; fileName?: string; mimeType?: string; fileData?: string }
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
@@ -141,14 +141,20 @@ const ClientDashboard = () => {
                         <Button
                           size="icon" variant="ghost" className="h-7 w-7"
                           onClick={() => {
-                            const blob = new Blob(
-                              [`${s.label}\n\nType: ${s.type}\nDate: ${s.date}\n\n${s.payload || ""}`],
-                              { type: "text/plain" }
-                            );
-                            const url = URL.createObjectURL(blob);
                             const a = document.createElement("a");
-                            a.href = url; a.download = `${s.type}-${s.id.slice(0, 6)}.txt`;
-                            a.click(); URL.revokeObjectURL(url);
+                            if (s.fileData) {
+                              a.href = s.fileData;
+                              a.download = s.fileName || `${s.type}-${s.id.slice(0, 6)}`;
+                            } else {
+                              const blob = new Blob(
+                                [`${s.label}\n\nType: ${s.type}\nDate: ${s.date}\n\n${s.payload || ""}`],
+                                { type: "text/plain" }
+                              );
+                              a.href = URL.createObjectURL(blob);
+                              a.download = `${s.type}-${s.id.slice(0, 6)}.txt`;
+                            }
+                            a.click();
+                            if (!s.fileData) URL.revokeObjectURL(a.href);
                             toast.success(t("cli_download"));
                           }}
                         >
