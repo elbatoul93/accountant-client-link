@@ -28,18 +28,44 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
       toast.error("Please fill in all fields");
       return;
     }
-    const displayName =
-      mode === "signup"
-        ? name || email.split("@")[0]
-        : email.split("@")[0].replace(/[^a-zA-Z]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "Demo User";
-    login({
-      name: displayName,
-      email,
-      role,
-      company: company || (role === "accountant" ? "Managementik & Co." : "My Business"),
-    });
-    toast.success(t(mode === "signup" ? "toast_signup_success" : "toast_login_success"));
-    navigate(role === "accountant" ? "/dashboard/accountant" : "/dashboard/client");
+
+    const accountsRaw = localStorage.getItem("mgmtk_accounts");
+    const accounts: Record<string, { name: string; email: string; role: Role; company?: string; password: string }> =
+      accountsRaw ? JSON.parse(accountsRaw) : {};
+
+    if (mode === "signup") {
+      if (accounts[email.toLowerCase()]) {
+        toast.error("An account with this email already exists. Please sign in.");
+        return;
+      }
+      const account = {
+        name: name || email.split("@")[0],
+        email,
+        role,
+        company: company || (role === "accountant" ? "Managementik & Co." : "My Business"),
+        password,
+      };
+      accounts[email.toLowerCase()] = account;
+      localStorage.setItem("mgmtk_accounts", JSON.stringify(accounts));
+      login({ name: account.name, email: account.email, role: account.role, company: account.company });
+      toast.success(t("toast_signup_success"));
+      navigate(role === "accountant" ? "/dashboard/accountant" : "/dashboard/client");
+      return;
+    }
+
+    // LOGIN: must match a stored account
+    const account = accounts[email.toLowerCase()];
+    if (!account) {
+      toast.error("No account found. Please sign up first.");
+      return;
+    }
+    if (account.password !== password) {
+      toast.error("Incorrect password.");
+      return;
+    }
+    login({ name: account.name, email: account.email, role: account.role, company: account.company });
+    toast.success(t("toast_login_success"));
+    navigate(account.role === "accountant" ? "/dashboard/accountant" : "/dashboard/client");
   };
 
   return (
@@ -106,24 +132,9 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
                 <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
               </div>
 
-              {mode === "login" && (
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setRole("client")}
-                    className={role === "client" ? "border-primary text-primary" : ""}>
-                    <Building2 className="h-4 w-4" /> {t("auth_role_client")}
-                  </Button>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setRole("accountant")}
-                    className={role === "accountant" ? "border-primary text-primary" : ""}>
-                    <Briefcase className="h-4 w-4" /> {t("auth_role_accountant")}
-                  </Button>
-                </div>
-              )}
-
               <Button type="submit" variant="hero" size="lg" className="w-full">
                 {t(mode === "login" ? "auth_signin_btn" : "auth_signup_btn")}
               </Button>
-
-              <p className="text-xs text-center text-muted-foreground italic">{t("auth_demo_hint")}</p>
             </form>
 
             <div className="mt-6 pt-6 border-t border-border/50 text-center text-sm">

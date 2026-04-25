@@ -120,6 +120,26 @@ const en = {
   dash_overdue: "Overdue",
   dash_upcoming: "Upcoming",
   dash_paid: "Paid",
+  dash_filed: "Filed",
+
+  // Empty states & forms
+  empty_no_clients: "No clients yet. Click 'Add client' to start your portfolio.",
+  empty_no_invoices: "No invoices yet. Add one to begin tracking.",
+  empty_no_decls: "No declarations recorded yet.",
+  empty_no_notifs: "Smart notifications will appear here as your portfolio grows.",
+  empty_no_docs: "No documents uploaded yet. Drop your first file above.",
+  empty_no_tax: "Your tax timeline will appear here once your accountant adds declarations.",
+  empty_no_accountant: "Awaiting assignment by your accounting firm.",
+  empty_pending_acc: "Pending sync with your accountant.",
+  acc_add_client: "Add client",
+  acc_add_invoice: "Add invoice",
+  acc_add_g50: "Add G50 declaration",
+  acc_add_social: "Add social declaration",
+  acc_client_name: "Client name",
+  acc_tax_id: "Tax ID",
+  acc_contact: "Contact",
+  acc_select_client: "Select a client",
+  acc_save: "Save",
 };
 
 const fr: typeof en = {
@@ -237,6 +257,25 @@ const fr: typeof en = {
   dash_overdue: "En retard",
   dash_upcoming: "À venir",
   dash_paid: "Payé",
+  dash_filed: "Déposé",
+
+  empty_no_clients: "Aucun client. Cliquez sur 'Ajouter un client' pour démarrer votre portefeuille.",
+  empty_no_invoices: "Aucune facture. Ajoutez-en une pour commencer le suivi.",
+  empty_no_decls: "Aucune déclaration enregistrée.",
+  empty_no_notifs: "Les notifications intelligentes s'afficheront ici.",
+  empty_no_docs: "Aucun document. Déposez votre premier fichier ci-dessus.",
+  empty_no_tax: "Votre échéancier fiscal apparaîtra ici dès que votre comptable ajoutera des déclarations.",
+  empty_no_accountant: "En attente d'affectation par votre cabinet.",
+  empty_pending_acc: "Synchronisation en attente avec votre comptable.",
+  acc_add_client: "Ajouter un client",
+  acc_add_invoice: "Ajouter une facture",
+  acc_add_g50: "Ajouter une déclaration G50",
+  acc_add_social: "Ajouter une déclaration sociale",
+  acc_client_name: "Nom du client",
+  acc_tax_id: "NIF (Identifiant fiscal)",
+  acc_contact: "Contact",
+  acc_select_client: "Sélectionner un client",
+  acc_save: "Enregistrer",
 };
 
 const ar: typeof en = {
@@ -354,6 +393,25 @@ const ar: typeof en = {
   dash_overdue: "متأخر",
   dash_upcoming: "قادم",
   dash_paid: "مدفوع",
+  dash_filed: "مودع",
+
+  empty_no_clients: "لا يوجد عملاء بعد. انقر على 'إضافة عميل' لبدء محفظتك.",
+  empty_no_invoices: "لا توجد فواتير بعد. أضف واحدة لبدء التتبع.",
+  empty_no_decls: "لا توجد تصريحات مسجلة.",
+  empty_no_notifs: "ستظهر الإشعارات الذكية هنا.",
+  empty_no_docs: "لم يتم رفع أي مستندات. أضف أول ملف أعلاه.",
+  empty_no_tax: "سيظهر جدولك الضريبي هنا بمجرد أن يضيف محاسبك التصريحات.",
+  empty_no_accountant: "في انتظار التعيين من قبل مكتب المحاسبة.",
+  empty_pending_acc: "في انتظار المزامنة مع محاسبك.",
+  acc_add_client: "إضافة عميل",
+  acc_add_invoice: "إضافة فاتورة",
+  acc_add_g50: "إضافة تصريح G50",
+  acc_add_social: "إضافة تصريح اجتماعي",
+  acc_client_name: "اسم العميل",
+  acc_tax_id: "الرقم الجبائي (NIF)",
+  acc_contact: "جهة الاتصال",
+  acc_select_client: "اختر عميلاً",
+  acc_save: "حفظ",
 };
 
 export const translations = { en, fr, ar };

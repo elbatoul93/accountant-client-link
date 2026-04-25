@@ -10,11 +10,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LayoutDashboard, LogOut, UserCog, Users } from "lucide-react";
+import { LayoutDashboard, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 export const SiteHeader = () => {
-  const { t, user, logout, switchRole } = useApp();
+  const { t, user, logout } = useApp();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -47,15 +47,13 @@ export const SiteHeader = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-popover w-56">
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                  {user.email}
+                  <div className="font-semibold text-foreground capitalize mt-0.5">{t(user.role === "accountant" ? "auth_role_accountant" : "auth_role_client")}</div>
+                </div>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate(user.role === "accountant" ? "/dashboard/accountant" : "/dashboard/client")}>
                   <LayoutDashboard className="me-2 h-4 w-4" /> {t("nav_dashboard")}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => { switchRole("accountant"); navigate("/dashboard/accountant"); }}>
-                  <UserCog className="me-2 h-4 w-4" /> {t("view_as_accountant")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { switchRole("client"); navigate("/dashboard/client"); }}>
-                  <Users className="me-2 h-4 w-4" /> {t("view_as_client")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive">

@@ -69,10 +69,10 @@ const Landing = () => {
               <div className="rounded-xl bg-gradient-subtle p-6 sm:p-8">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                   {[
-                    { l: t("dash_active_clients"), v: "248", c: "text-primary" },
-                    { l: t("dash_monthly_revenue"), v: "€84.2k", c: "text-gold-deep" },
-                    { l: t("dash_pending_invoices"), v: "32", c: "text-primary" },
-                    { l: t("dash_pending_tax"), v: "7", c: "text-gold-deep" },
+                    { l: t("dash_active_clients"), v: "0", c: "text-primary" },
+                    { l: t("dash_monthly_revenue"), v: "0 DA", c: "text-gold-deep" },
+                    { l: t("dash_pending_invoices"), v: "0", c: "text-primary" },
+                    { l: t("dash_pending_tax"), v: "0", c: "text-gold-deep" },
                   ].map((s, i) => (
                     <div key={i} className="bg-card rounded-lg p-3 sm:p-4 shadow-card text-start">
                       <div className="text-[10px] sm:text-xs uppercase tracking-wide text-muted-foreground font-medium">{s.l}</div>
@@ -138,8 +138,8 @@ const Landing = () => {
               <div className="text-xs text-muted-foreground mt-1">Uptime</div>
             </Card>
             <Card className="p-5 shadow-card hover:shadow-elegant transition-smooth">
-              <div className="text-3xl font-bold text-gold-deep">€2.4M</div>
-              <div className="text-xs text-muted-foreground mt-1">Processed monthly</div>
+              <div className="text-3xl font-bold text-gold-deep">DZD</div>
+              <div className="text-xs text-muted-foreground mt-1">Devise locale (Dinar Algérien)</div>
             </Card>
             <Card className="p-5 shadow-card mt-6 hover:shadow-elegant transition-smooth">
               <div className="text-3xl font-bold text-primary">3</div>
