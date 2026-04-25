@@ -710,15 +710,17 @@ const AddClientDialog = ({
   const [bp, setBp] = useState("");
   const [nis, setNis] = useState("");
   const [rc, setRc] = useState("");
-  const [socialNo, setSocialNo] = useState("");
-  const [socialRegime, setSocialRegime] = useState<"CNAS" | "CASNOS" | "CACOBATPH">("CNAS");
+  const [cnasNo, setCnasNo] = useState("");
+  const [casnosNo, setCasnosNo] = useState("");
+  const [hasCacobatph, setHasCacobatph] = useState(false);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
 
   const reset = () => {
     setName(""); setCompany(""); setLegalForm(""); setActivity("");
-    setTaxId(""); setBp(""); setNis(""); setRc(""); setSocialNo(""); setSocialRegime("CNAS");
+    setTaxId(""); setBp(""); setNis(""); setRc("");
+    setCnasNo(""); setCasnosNo(""); setHasCacobatph(false);
     setEmail(""); setPhone(""); setAddress("");
   };
 
@@ -732,7 +734,7 @@ const AddClientDialog = ({
       name: name.trim(), company: company.trim() || undefined,
       legalForm: legalForm.trim() || undefined, activity: activity.trim() || undefined,
       taxId: taxId.trim(), bp: bp.trim() || undefined, nis: nis.trim() || undefined, rc: rc.trim() || undefined,
-      socialNo: socialNo.trim() || undefined, socialRegime,
+      cnasNo: cnasNo.trim() || undefined, casnosNo: casnosNo.trim() || undefined, hasCacobatph,
       email: email.trim() || undefined, phone: phone.trim() || undefined, address: address.trim() || undefined,
       contact: email.trim(), // for client portal email matching
       status: "active",
