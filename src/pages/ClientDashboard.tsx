@@ -5,7 +5,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, FileText, CheckCircle2, Clock, FileImage, Inbox, Trash2, Receipt, ShieldCheck } from "lucide-react";
+import { UploadCloud, FileText, CheckCircle2, Clock, FileImage, Inbox, Trash2, Receipt, ShieldCheck, FolderOpen, Download } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -13,6 +13,7 @@ interface Doc { name: string; size: string; date: string; status: "processed" | 
 interface Decl { id: string; clientId: string; clientName: string; type: "G50" | "CNAS" | "CASNOS" | "CACOBATPH"; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
 interface Invoice { id: string; clientId: string; clientName: string; amount: number; date: string; status: string }
 interface ClientRow { id: string; name: string; taxId: string; contact: string }
+interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string }
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
@@ -46,19 +47,21 @@ const ClientDashboard = () => {
     accept: { "image/*": [], "application/pdf": [] },
   });
 
-  const { myDecls, myInvoices, totalDue } = useMemo(() => {
-    if (!user) return { myDecls: [] as Decl[], myInvoices: [] as Invoice[], totalDue: 0 };
+  const { myDecls, myInvoices, mySharedDocs, totalDue } = useMemo(() => {
+    if (!user) return { myDecls: [] as Decl[], myInvoices: [] as Invoice[], mySharedDocs: [] as SharedDoc[], totalDue: 0 };
     const allClients: ClientRow[] = JSON.parse(localStorage.getItem("mgmtk_acc_clients") || "[]");
     const allDecls: Decl[] = JSON.parse(localStorage.getItem("mgmtk_acc_declarations") || "[]");
     const allInvoices: Invoice[] = JSON.parse(localStorage.getItem("mgmtk_acc_invoices") || "[]");
+    const allShared: SharedDoc[] = JSON.parse(localStorage.getItem("mgmtk_acc_shared_docs") || "[]");
     const mine = allClients.filter(
       (c) => c.contact?.toLowerCase() === user.email.toLowerCase()
     );
     const ids = new Set(mine.map((c) => c.id));
     const myD = allDecls.filter((d) => ids.has(d.clientId));
     const myI = allInvoices.filter((i) => ids.has(i.clientId));
+    const myS = allShared.filter((s) => ids.has(s.clientId) || s.clientEmail?.toLowerCase() === user.email.toLowerCase());
     const due = myD.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
-    return { myDecls: myD, myInvoices: myI, totalDue: due };
+    return { myDecls: myD, myInvoices: myI, mySharedDocs: myS, totalDue: due };
   }, [user, docs]);
 
   if (!user) return <Navigate to="/login" replace />;
