@@ -132,24 +132,9 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
                 <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
               </div>
 
-              {mode === "login" && (
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setRole("client")}
-                    className={role === "client" ? "border-primary text-primary" : ""}>
-                    <Building2 className="h-4 w-4" /> {t("auth_role_client")}
-                  </Button>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setRole("accountant")}
-                    className={role === "accountant" ? "border-primary text-primary" : ""}>
-                    <Briefcase className="h-4 w-4" /> {t("auth_role_accountant")}
-                  </Button>
-                </div>
-              )}
-
               <Button type="submit" variant="hero" size="lg" className="w-full">
                 {t(mode === "login" ? "auth_signin_btn" : "auth_signup_btn")}
               </Button>
-
-              <p className="text-xs text-center text-muted-foreground italic">{t("auth_demo_hint")}</p>
             </form>
 
             <div className="mt-6 pt-6 border-t border-border/50 text-center text-sm">
