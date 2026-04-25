@@ -211,6 +211,52 @@ const AccountantDashboard = () => {
           </Card>
         </div>
 
+        {/* Professional Tools */}
+        <Card className="p-5 shadow-card border-gold/30 bg-gradient-to-br from-card to-gold/5">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-lg font-bold text-primary flex items-center gap-2">
+              <Wrench className="h-4 w-4 text-gold-deep" /> {t("tools_title")}
+            </h2>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">{t("tools_subtitle")}</p>
+          <div className="grid sm:grid-cols-3 gap-3">
+            <ToolCard
+              icon={BookOpen}
+              title={t("tools_fs_title")}
+              subtitle={t("tools_fs_subtitle")}
+              cta={t("tools_open")}
+              onClick={() => setOpenTool("fs")}
+              disabled={clients.length === 0}
+            />
+            <ToolCard
+              icon={Calculator}
+              title={t("tools_g50_title")}
+              subtitle={t("tools_g50_subtitle")}
+              cta={t("tools_open")}
+              onClick={() => setOpenTool("g50")}
+              disabled={clients.length === 0}
+            />
+            <ToolCard
+              icon={FileDown}
+              title={t("tools_extract_title")}
+              subtitle={t("tools_extract_subtitle")}
+              cta={t("acc_extract")}
+              onClick={() => clients[0] && setObligationsClient(clients[0])}
+              disabled={clients.length === 0}
+            />
+          </div>
+          {clients.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-border/60 flex items-center justify-between gap-3 flex-wrap">
+              <div className="text-xs text-muted-foreground">
+                {sharedDocs.length} document(s) shared with customers
+              </div>
+              <Button size="sm" variant="outlineGold" onClick={() => setOpenTool("send")}>
+                <Send className="h-3.5 w-3.5" /> {t("tools_send_to_client")}
+              </Button>
+            </div>
+          )}
+        </Card>
+
         {/* Notifications placeholder */}
         <Card className="p-5 shadow-card">
           <h2 className="text-lg font-bold text-primary flex items-center gap-2 mb-3">
@@ -218,6 +264,27 @@ const AccountantDashboard = () => {
           </h2>
           <EmptyState label={t("empty_no_notifs")} />
         </Card>
+
+        {/* Tool dialogs */}
+        <FinancialStatementsDialog
+          open={openTool === "fs"} onOpenChange={(o) => !o && setOpenTool(null)}
+          clients={clients} t={t}
+          onSave={(fs) => { setFsList((p) => [fs, ...p]); setOpenTool(null); }}
+        />
+        <G50GeneratorDialog
+          open={openTool === "g50"} onOpenChange={(o) => !o && setOpenTool(null)}
+          clients={clients} t={t}
+          onGenerate={(d, shared) => {
+            setDecls((p) => [d, ...p]);
+            if (shared) setSharedDocs((p) => [shared, ...p]);
+            setOpenTool(null);
+          }}
+        />
+        <SendDocumentDialog
+          open={openTool === "send"} onOpenChange={(o) => !o && setOpenTool(null)}
+          clients={clients} t={t}
+          onSend={(doc) => { setSharedDocs((p) => [doc, ...p]); setOpenTool(null); }}
+        />
 
         {/* Obligations extraction dialog */}
         <Dialog open={!!obligationsClient} onOpenChange={(o) => !o && setObligationsClient(null)}>
