@@ -700,6 +700,7 @@ const AddClientDialog = ({
   const [legalForm, setLegalForm] = useState("");
   const [activity, setActivity] = useState("");
   const [taxId, setTaxId] = useState("");
+  const [bp, setBp] = useState("");
   const [nis, setNis] = useState("");
   const [rc, setRc] = useState("");
   const [socialNo, setSocialNo] = useState("");
@@ -710,7 +711,7 @@ const AddClientDialog = ({
 
   const reset = () => {
     setName(""); setCompany(""); setLegalForm(""); setActivity("");
-    setTaxId(""); setNis(""); setRc(""); setSocialNo(""); setSocialRegime("CNAS");
+    setTaxId(""); setBp(""); setNis(""); setRc(""); setSocialNo(""); setSocialRegime("CNAS");
     setEmail(""); setPhone(""); setAddress("");
   };
 
@@ -723,7 +724,7 @@ const AddClientDialog = ({
       id: crypto.randomUUID(),
       name: name.trim(), company: company.trim() || undefined,
       legalForm: legalForm.trim() || undefined, activity: activity.trim() || undefined,
-      taxId: taxId.trim(), nis: nis.trim() || undefined, rc: rc.trim() || undefined,
+      taxId: taxId.trim(), bp: bp.trim() || undefined, nis: nis.trim() || undefined, rc: rc.trim() || undefined,
       socialNo: socialNo.trim() || undefined, socialRegime,
       email: email.trim() || undefined, phone: phone.trim() || undefined, address: address.trim() || undefined,
       contact: email.trim(), // for client portal email matching
@@ -751,9 +752,18 @@ const AddClientDialog = ({
             </div>
           </Section>
 
-          <Section title={t("client_section_legal")} icon={FileText}>
+          <Section title={t("client_section_tax")} icon={IdCard}>
             <div className="grid sm:grid-cols-2 gap-3">
               <Field label={t("client_nif") + " *"}><Input value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="000016001234567" className="font-mono" /></Field>
+              <Field label={t("client_bp")}><Input value={bp} onChange={(e) => setBp(e.target.value)} placeholder="16xxxxxxxx" className="font-mono" /></Field>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-2">
+              NIF & BP — Carte d'Immatriculation Fiscale
+            </p>
+          </Section>
+
+          <Section title={t("client_section_legal")} icon={FileText}>
+            <div className="grid sm:grid-cols-2 gap-3">
               <Field label={t("client_nis")}><Input value={nis} onChange={(e) => setNis(e.target.value)} placeholder="0916 0000123456 78" className="font-mono" /></Field>
               <Field label={t("client_rc")}><Input value={rc} onChange={(e) => setRc(e.target.value)} placeholder="16/00 - 1234567 B 24" className="font-mono" /></Field>
             </div>
