@@ -13,7 +13,7 @@ interface Doc { name: string; size: string; date: string; status: "processed" | 
 interface Decl { id: string; clientId: string; clientName: string; type: "G50" | "CNAS" | "CASNOS" | "CACOBATPH"; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
 interface Invoice { id: string; clientId: string; clientName: string; amount: number; date: string; status: string }
 interface ClientRow { id: string; name: string; taxId: string; contact: string }
-interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string }
+interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string; fileName?: string; mimeType?: string; fileData?: string }
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
