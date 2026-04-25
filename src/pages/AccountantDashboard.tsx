@@ -511,4 +511,203 @@ const DeclList = ({ items, onDelete, t, showType }: { items: Decl[]; onDelete: (
   );
 };
 
+const ToolCard = ({ icon: Icon, title, subtitle, cta, onClick, disabled }: {
+  icon: any; title: string; subtitle: string; cta: string; onClick: () => void; disabled?: boolean;
+}) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className="text-start p-4 rounded-xl border border-border/60 bg-card hover:border-gold/60 hover:shadow-gold transition-smooth disabled:opacity-50 disabled:cursor-not-allowed group"
+  >
+    <div className="inline-flex p-2 rounded-lg bg-gradient-gold text-gold-foreground shadow-gold mb-3 group-hover:scale-105 transition-smooth">
+      <Icon className="h-4 w-4" />
+    </div>
+    <div className="font-semibold text-sm text-foreground mb-1">{title}</div>
+    <div className="text-xs text-muted-foreground mb-3">{subtitle}</div>
+    <div className="text-xs font-semibold text-gold-deep">{cta} →</div>
+  </button>
+);
+
+const FinancialStatementsDialog = ({
+  open, onOpenChange, clients, t, onSave,
+}: { open: boolean; onOpenChange: (o: boolean) => void; clients: Client[]; t: (k: string) => string; onSave: (fs: FinStmt) => void }) => {
+  const [clientId, setClientId] = useState("");
+  const [year, setYear] = useState(String(new Date().getFullYear() - 1));
+  const [assets, setAssets] = useState("");
+  const [liab, setLiab] = useState("");
+  const [equity, setEquity] = useState("");
+  const [revenue, setRevenue] = useState("");
+  const [net, setNet] = useState("");
+  const submit = () => {
+    const c = clients.find((x) => x.id === clientId);
+    if (!c || !year || !assets) { toast.error("Champs requis"); return; }
+    onSave({
+      id: crypto.randomUUID(), clientId: c.id, clientName: c.name, year,
+      assets: Number(assets), liabilities: Number(liab || 0), equity: Number(equity || 0),
+      revenue: Number(revenue || 0), netResult: Number(net || 0),
+      createdAt: new Date().toLocaleDateString("fr-DZ"),
+    });
+    toast.success("Bilan enregistré");
+    setClientId(""); setAssets(""); setLiab(""); setEquity(""); setRevenue(""); setNet("");
+  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-gold-deep" /> {t("tools_fs_title")}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>{t("dash_client")}</Label>
+              <Select value={clientId} onValueChange={setClientId}>
+                <SelectTrigger><SelectValue placeholder={t("acc_select_client")} /></SelectTrigger>
+                <SelectContent>{clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("tools_year")}</Label>
+              <Input value={year} onChange={(e) => setYear(e.target.value)} placeholder="2024" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5"><Label>{t("tools_assets")} (DA)</Label><Input type="number" value={assets} onChange={(e) => setAssets(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>{t("tools_liabilities")} (DA)</Label><Input type="number" value={liab} onChange={(e) => setLiab(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>{t("tools_equity")} (DA)</Label><Input type="number" value={equity} onChange={(e) => setEquity(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>{t("tools_revenue")} (DA)</Label><Input type="number" value={revenue} onChange={(e) => setRevenue(e.target.value)} /></div>
+            <div className="space-y-1.5 col-span-2"><Label>{t("tools_net_result")} (DA)</Label><Input type="number" value={net} onChange={(e) => setNet(e.target.value)} /></div>
+          </div>
+        </div>
+        <DialogFooter><Button onClick={submit} variant="hero">{t("tools_save_fs")}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const G50GeneratorDialog = ({
+  open, onOpenChange, clients, t, onGenerate,
+}: { open: boolean; onOpenChange: (o: boolean) => void; clients: Client[]; t: (k: string) => string; onGenerate: (d: Decl, shared: SharedDoc | null) => void }) => {
+  const [clientId, setClientId] = useState("");
+  const [period, setPeriod] = useState(new Date().toISOString().slice(0, 7));
+  const [tap, setTap] = useState("");
+  const [irg, setIrg] = useState("");
+  const [tva, setTva] = useState("");
+  const [ibs, setIbs] = useState("");
+  const total = (Number(tap || 0) + Number(irg || 0) + Number(tva || 0) + Number(ibs || 0));
+  const submit = () => {
+    const c = clients.find((x) => x.id === clientId);
+    if (!c || !period || total <= 0) { toast.error("Champs requis"); return; }
+    const decl: Decl = {
+      id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
+      type: "G50", amount: total, due: `${period}-20`, status: "upcoming",
+    };
+    const shared: SharedDoc = {
+      id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
+      clientEmail: c.contact, type: "G50",
+      label: `G50 ${period} — ${fmtDZD(total)}`,
+      date: new Date().toLocaleDateString("fr-DZ"),
+      payload: JSON.stringify({ tap, irg, tva, ibs, total, period }),
+    };
+    onGenerate(decl, shared);
+    toast.success("G50 généré et envoyé au client");
+    setClientId(""); setTap(""); setIrg(""); setTva(""); setIbs("");
+  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Calculator className="h-4 w-4 text-gold-deep" /> {t("tools_g50_title")}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>{t("dash_client")}</Label>
+              <Select value={clientId} onValueChange={setClientId}>
+                <SelectTrigger><SelectValue placeholder={t("acc_select_client")} /></SelectTrigger>
+                <SelectContent>{clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("tools_g50_period")}</Label>
+              <Input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5"><Label>{t("tools_g50_tap")} (DA)</Label><Input type="number" value={tap} onChange={(e) => setTap(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>{t("tools_g50_irg")} (DA)</Label><Input type="number" value={irg} onChange={(e) => setIrg(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>{t("tools_g50_tva")} (DA)</Label><Input type="number" value={tva} onChange={(e) => setTva(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>{t("tools_g50_ibs")} (DA)</Label><Input type="number" value={ibs} onChange={(e) => setIbs(e.target.value)} /></div>
+          </div>
+          <div className="p-3 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 flex items-center justify-between">
+            <span className="text-sm font-semibold text-primary">{t("tools_g50_total")}</span>
+            <span className="text-2xl font-bold text-gold-deep">{fmtDZD(total)}</span>
+          </div>
+        </div>
+        <DialogFooter><Button onClick={submit} variant="gold">{t("tools_g50_generate")}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const SendDocumentDialog = ({
+  open, onOpenChange, clients, t, onSend,
+}: { open: boolean; onOpenChange: (o: boolean) => void; clients: Client[]; t: (k: string) => string; onSend: (d: SharedDoc) => void }) => {
+  const [clientId, setClientId] = useState("");
+  const [type, setType] = useState<SharedDoc["type"]>("G50");
+  const [label, setLabel] = useState("");
+  const submit = () => {
+    const c = clients.find((x) => x.id === clientId);
+    if (!c || !label) { toast.error("Champs requis"); return; }
+    onSend({
+      id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
+      clientEmail: c.contact, type, label,
+      date: new Date().toLocaleDateString("fr-DZ"),
+    });
+    toast.success("Document partagé avec le client");
+    setClientId(""); setLabel(""); setType("G50");
+  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Send className="h-4 w-4 text-gold-deep" /> {t("tools_send_to_client")}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>{t("tools_select_customer")}</Label>
+            <Select value={clientId} onValueChange={setClientId}>
+              <SelectTrigger><SelectValue placeholder={t("acc_select_client")} /></SelectTrigger>
+              <SelectContent>{clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("tools_doc_type")}</Label>
+            <Select value={type} onValueChange={(v) => setType(v as SharedDoc["type"])}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="G50">{t("tools_doc_g50")}</SelectItem>
+                <SelectItem value="CNAS">{t("tools_doc_cnas")}</SelectItem>
+                <SelectItem value="FS">{t("tools_doc_fs")}</SelectItem>
+                <SelectItem value="OTHER">{t("tools_doc_other")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Description</Label>
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="G50 - Mars 2025" />
+          </div>
+        </div>
+        <DialogFooter><Button onClick={submit} variant="hero">{t("tools_send_to_client")}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default AccountantDashboard;
+
