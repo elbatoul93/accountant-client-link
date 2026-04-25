@@ -780,18 +780,27 @@ const AddClientDialog = ({
 
           <Section title={t("client_section_social")} icon={ShieldCheck}>
             <div className="grid sm:grid-cols-2 gap-3">
-              <Field label={t("client_social_regime")}>
-                <Select value={socialRegime} onValueChange={(v) => setSocialRegime(v as any)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CNAS">CNAS</SelectItem>
-                    <SelectItem value="CASNOS">CASNOS</SelectItem>
-                    <SelectItem value="CACOBATPH">CACOBATPH</SelectItem>
-                  </SelectContent>
-                </Select>
+              <Field label={t("client_cnas_no")}>
+                <Input value={cnasNo} onChange={(e) => setCnasNo(e.target.value)} placeholder="N° CNAS" className="font-mono" />
               </Field>
-              <Field label={t("client_social_no")}><Input value={socialNo} onChange={(e) => setSocialNo(e.target.value)} placeholder="N° d'affiliation" className="font-mono" /></Field>
+              <Field label={t("client_casnos_no")}>
+                <Input value={casnosNo} onChange={(e) => setCasnosNo(e.target.value)} placeholder="N° CASNOS" className="font-mono" />
+              </Field>
             </div>
+            <div className="mt-3 flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
+              <div className="flex items-center gap-2">
+                <Switch id="cacobatph" checked={hasCacobatph} onCheckedChange={setHasCacobatph} />
+                <label htmlFor="cacobatph" className="text-sm font-medium cursor-pointer">
+                  {t("client_has_cacobatph")}
+                </label>
+              </div>
+              {hasCacobatph && (
+                <span className="inline-flex items-center gap-1 rounded-md border border-gold-deep/40 bg-gold-deep/10 px-2 py-0.5 text-[11px] font-semibold text-gold-deep">
+                  <ShieldCheck className="h-3 w-3" /> BTPH
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-2">{t("client_social_hint")}</p>
           </Section>
 
           <Section title={t("client_section_contact")} icon={Mail}>
