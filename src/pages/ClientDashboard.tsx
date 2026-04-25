@@ -46,6 +46,21 @@ const ClientDashboard = () => {
     accept: { "image/*": [], "application/pdf": [] },
   });
 
+  const { myDecls, myInvoices, totalDue } = useMemo(() => {
+    if (!user) return { myDecls: [] as Decl[], myInvoices: [] as Invoice[], totalDue: 0 };
+    const allClients: ClientRow[] = JSON.parse(localStorage.getItem("mgmtk_acc_clients") || "[]");
+    const allDecls: Decl[] = JSON.parse(localStorage.getItem("mgmtk_acc_declarations") || "[]");
+    const allInvoices: Invoice[] = JSON.parse(localStorage.getItem("mgmtk_acc_invoices") || "[]");
+    const mine = allClients.filter(
+      (c) => c.contact?.toLowerCase() === user.email.toLowerCase()
+    );
+    const ids = new Set(mine.map((c) => c.id));
+    const myD = allDecls.filter((d) => ids.has(d.clientId));
+    const myI = allInvoices.filter((i) => ids.has(i.clientId));
+    const due = myD.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
+    return { myDecls: myD, myInvoices: myI, totalDue: due };
+  }, [user, docs]);
+
   if (!user) return <Navigate to="/login" replace />;
   // ROLE GUARD: only clients can see client portal
   if (user.role !== "client") return <Navigate to="/dashboard/accountant" replace />;
