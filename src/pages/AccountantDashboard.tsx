@@ -693,6 +693,18 @@ const SendDocumentDialog = ({
   const [clientId, setClientId] = useState("");
   const [type, setType] = useState<SharedDoc["type"]>("G50");
   const [label, setLabel] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [fileData, setFileData] = useState<string>("");
+
+  const onFileChange = (f: File | null) => {
+    setFile(f);
+    if (!f) { setFileData(""); return; }
+    if (f.size > 5 * 1024 * 1024) { toast.error("Max 5 MB"); return; }
+    const reader = new FileReader();
+    reader.onload = () => setFileData(reader.result as string);
+    reader.readAsDataURL(f);
+  };
+
   const submit = () => {
     const c = clients.find((x) => x.id === clientId);
     if (!c || !label) { toast.error("Champs requis"); return; }
@@ -700,9 +712,10 @@ const SendDocumentDialog = ({
       id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
       clientEmail: c.contact, type, label,
       date: new Date().toLocaleDateString("fr-DZ"),
+      fileName: file?.name, mimeType: file?.type, fileData: fileData || undefined,
     });
     toast.success("Document partagé avec le client");
-    setClientId(""); setLabel(""); setType("G50");
+    setClientId(""); setLabel(""); setType("G50"); setFile(null); setFileData("");
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -735,6 +748,12 @@ const SendDocumentDialog = ({
           <div className="space-y-1.5">
             <Label>Description</Label>
             <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="G50 - Mars 2025" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Fichier (PDF / Image, max 5 MB)</Label>
+            <Input type="file" accept="application/pdf,image/*"
+              onChange={(e) => onFileChange(e.target.files?.[0] || null)} />
+            {file && <p className="text-xs text-muted-foreground">{file.name} • {(file.size / 1024).toFixed(0)} KB</p>}
           </div>
         </div>
         <DialogFooter><Button onClick={submit} variant="hero">{t("tools_send_to_client")}</Button></DialogFooter>
