@@ -18,7 +18,7 @@ import {
 import {
   Users, FileText, TrendingUp, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2, Inbox, FileDown,
   Wrench, BookOpen, Calculator, Send, Download, LayoutDashboard, FolderOpen, ChevronRight, ArrowLeft, Search,
-  Building2, IdCard, Phone, Mail, MapPin, Upload, FileCheck2, Wallet,
+  Building2, IdCard, Phone, Mail, MapPin, Upload, FileCheck2, Wallet, Pencil, Lock,
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -95,6 +95,9 @@ const AccountantDashboard = () => {
   const [activeClientId, setActiveClientId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [openAdd, setOpenAdd] = useState(false);
+  // Secure edit flow: clicking Edit triggers a password lock; on success the form opens.
+  const [pendingEditClient, setPendingEditClient] = useState<Client | null>(null);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   useEffect(() => { localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients)); }, [clients]);
   useEffect(() => { localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices)); }, [invoices]);
@@ -201,6 +204,7 @@ const AccountantDashboard = () => {
                 search={search} setSearch={setSearch}
                 onOpen={openProfile}
                 onAdd={() => setOpenAdd(true)}
+                onEdit={(c) => setPendingEditClient(c)}
                 onDelete={(id) => {
                   setClients((p) => p.filter((x) => x.id !== id));
                   setInvoices((p) => p.filter((x) => x.clientId !== id));
@@ -323,6 +327,26 @@ const AccountantDashboard = () => {
       {/* Global dialogs */}
       <AddClientDialog open={openAdd} onOpenChange={setOpenAdd}
         onAdd={(c) => { setClients((p) => [c, ...p]); setOpenAdd(false); }} t={t} />
+
+      {/* Secure edit: password lock then edit form */}
+      <LockDialog
+        open={!!pendingEditClient}
+        onOpenChange={(o) => { if (!o) setPendingEditClient(null); }}
+        onUnlock={() => { setEditingClient(pendingEditClient); setPendingEditClient(null); }}
+        t={t}
+      />
+      <AddClientDialog
+        open={!!editingClient}
+        onOpenChange={(o) => { if (!o) setEditingClient(null); }}
+        onAdd={() => {}}
+        mode="edit"
+        initial={editingClient}
+        onUpdate={(updated) => {
+          setClients((p) => p.map((x) => (x.id === updated.id ? updated : x)));
+          setEditingClient(null);
+        }}
+        t={t}
+      />
 
       <FinancialStatementsDialog
         open={openTool === "fs"} onOpenChange={(o) => !o && setOpenTool(null)}
@@ -456,10 +480,10 @@ const DashboardView = ({
 );
 
 const ClientsListView = ({
-  t, clients, totalCount, search, setSearch, onOpen, onAdd, onDelete, onExtract,
+  t, clients, totalCount, search, setSearch, onOpen, onAdd, onEdit, onDelete, onExtract,
 }: {
   t: (k: string) => string; clients: Client[]; totalCount: number; search: string; setSearch: (v: string) => void;
-  onOpen: (c: Client) => void; onAdd: () => void; onDelete: (id: string) => void; onExtract: (c: Client) => void;
+  onOpen: (c: Client) => void; onAdd: () => void; onEdit: (c: Client) => void; onDelete: (id: string) => void; onExtract: (c: Client) => void;
 }) => (
   <>
     <div className="flex items-center justify-between flex-wrap gap-3">
@@ -516,6 +540,10 @@ const ClientsListView = ({
                     <div className="flex items-center justify-end gap-1">
                       <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => onExtract(c)}>
                         <FileDown className="h-3.5 w-3.5" /> {t("acc_extract")}
+                      </Button>
+                      <Button size="sm" variant="outlineGold" className="h-7 gap-1.5 text-xs" onClick={() => onEdit(c)}>
+                        <Lock className="h-3 w-3" />
+                        <Pencil className="h-3.5 w-3.5" /> {t("acc_edit")}
                       </Button>
                       <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => onOpen(c)}>
                         {t("client_open_profile")} <ChevronRight className="h-3.5 w-3.5" />
@@ -791,8 +819,16 @@ const KPI = ({ icon: Icon, label, value, tone }: { icon: any; label: string; val
 /* ============== ADD CLIENT (full Algerian form) ============== */
 
 const AddClientDialog = ({
-  open, onOpenChange, onAdd, t,
-}: { open: boolean; onOpenChange: (o: boolean) => void; onAdd: (c: Client) => void; t: (k: string) => string }) => {
+  open, onOpenChange, onAdd, t, mode = "create", initial, onUpdate,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onAdd: (c: Client) => void;
+  t: (k: string) => string;
+  mode?: "create" | "edit";
+  initial?: Client | null;
+  onUpdate?: (c: Client) => void;
+}) => {
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
   const [legalForm, setLegalForm] = useState("");
@@ -817,32 +853,61 @@ const AddClientDialog = ({
     setEmail(""); setPhone(""); setAddress("");
   };
 
+  // Seed form when entering edit mode (or when the target client changes).
+  useEffect(() => {
+    if (mode === "edit" && initial && open) {
+      setName(initial.name || "");
+      setCompany(initial.company || "");
+      setLegalForm(initial.legalForm || "");
+      setActivity(initial.activity || "");
+      setTaxId(initial.taxId || "");
+      setBp(initial.bp || "");
+      setNis(initial.nis || "");
+      setRc(initial.rc || "");
+      setCnasNo(initial.cnasNo || "");
+      setCasnosNo(initial.casnosNo || "");
+      setHasCacobatph(!!initial.hasCacobatph);
+      setTaxRegime((initial.taxRegime as TaxRegime) || "");
+      setEmail(initial.email || "");
+      setPhone(initial.phone || "");
+      setAddress(initial.address || "");
+    }
+  }, [mode, initial, open]);
+
   const submit = () => {
     if (!name.trim() || !taxId.trim() || !legalForm || !taxRegime) {
       toast.error([t("acc_client_name"), t("client_nif"), t("client_legal_form"), t("client_tax_regime")].join(" • "));
       return;
     }
-    onAdd({
-      id: crypto.randomUUID(),
+    const payload: Client = {
+      id: mode === "edit" && initial ? initial.id : crypto.randomUUID(),
       name: name.trim(), company: company.trim() || undefined,
       legalForm: legalForm.trim() || undefined, activity: activity.trim() || undefined,
       taxId: taxId.trim(), bp: bp.trim() || undefined, nis: nis.trim() || undefined, rc: rc.trim() || undefined,
       cnasNo: cnasNo.trim() || undefined, casnosNo: casnosNo.trim() || undefined, hasCacobatph,
       taxRegime: taxRegime as TaxRegime,
       email: email.trim() || undefined, phone: phone.trim() || undefined, address: address.trim() || undefined,
-      contact: email.trim(), // for client portal email matching
-      status: "active",
-    });
-    toast.success("Client ajouté");
-    reset();
+      contact: email.trim() || (initial?.contact ?? ""),
+      status: initial?.status ?? "active",
+    };
+    if (mode === "edit" && onUpdate) {
+      onUpdate(payload);
+      toast.success(t("edit_client_saved"));
+    } else {
+      onAdd(payload);
+      toast.success("Client ajouté");
+      reset();
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
+    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o && mode === "create") reset(); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-gold-deep" /> {t("acc_new_client")}
+            {mode === "edit"
+              ? <><Pencil className="h-5 w-5 text-gold-deep" /> {t("edit_client_title")}</>
+              : <><Building2 className="h-5 w-5 text-gold-deep" /> {t("acc_new_client")}</>}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-5">
@@ -951,6 +1016,65 @@ const AddClientDialog = ({
           </Section>
         </div>
         <DialogFooter><Button onClick={submit} variant="hero">{t("acc_save")}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+/* ============== SECURE EDIT LOCK ============== */
+
+const LockDialog = ({
+  open, onOpenChange, onUnlock, t,
+}: { open: boolean; onOpenChange: (o: boolean) => void; onUnlock: () => void; t: (k: string) => string }) => {
+  const { user } = useApp();
+  const [pw, setPw] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => { if (!open) { setPw(""); setError(""); } }, [open]);
+
+  const verify = () => {
+    if (!user) { setError(t("edit_lock_no_account")); return; }
+    const raw = localStorage.getItem("mgmtk_accounts");
+    const accounts: Record<string, { password: string }> = raw ? JSON.parse(raw) : {};
+    const acc = accounts[user.email.toLowerCase()];
+    if (!acc) { setError(t("edit_lock_no_account")); return; }
+    if (acc.password !== pw) { setError(t("edit_lock_wrong")); return; }
+    onUnlock();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-primary">
+            <Lock className="h-4 w-4 text-gold-deep" /> {t("edit_lock_title")}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">{t("edit_lock_subtitle")}</p>
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t("edit_lock_password")}</Label>
+            <Input
+              type="password"
+              autoFocus
+              value={pw}
+              onChange={(e) => { setPw(e.target.value); setError(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter") verify(); }}
+              placeholder="••••••••"
+            />
+            {error && (
+              <p className="text-[11px] text-destructive font-medium flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" /> {error}
+              </p>
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>{t("edit_lock_cancel")}</Button>
+          <Button variant="hero" onClick={verify} disabled={!pw}>
+            <Lock className="h-3.5 w-3.5" /> {t("edit_lock_unlock")}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
