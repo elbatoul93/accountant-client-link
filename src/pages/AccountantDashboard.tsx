@@ -22,7 +22,8 @@ import {
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
-import { PayrollView, BillingView, JournalView, useSuiteData, aggregateForG50 } from "./accountant/SuiteModules";
+import { BillingView, JournalView, useSuiteData, aggregateForG50 } from "./accountant/SuiteModules";
+import { PayrollAdvanced } from "./accountant/PayrollAdvanced";
 import { ReportsView } from "./accountant/ReportsView";
 import { TaxIntelView } from "./accountant/TaxIntelView";
 import { lockPeriod, computeG50FromJournal } from "@/lib/accounting/engine";
@@ -314,9 +315,9 @@ const AccountantDashboard = () => {
             )}
 
             {view === "payroll" && (
-              <PayrollView t={t} employees={employees} setEmployees={setEmployees}
+              <PayrollAdvanced t={t} employees={employees} setEmployees={setEmployees}
                 clients={clients.map((c) => ({ id: c.id, name: c.name, hasCacobatph: c.hasCacobatph }))}
-                journal={journal} setJournal={setJournal} locks={locks} />
+                setJournal={setJournal} locks={locks} />
             )}
             {view === "billing" && (
               <BillingView t={t} bills={bills} setBills={setBills}
