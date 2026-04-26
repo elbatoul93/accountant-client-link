@@ -23,6 +23,8 @@ import {
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PayrollView, BillingView, JournalView, useSuiteData, aggregateForG50 } from "./accountant/SuiteModules";
+import { ReportsView } from "./accountant/ReportsView";
+import { lockPeriod, computeG50FromJournal } from "@/lib/accounting/engine";
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
@@ -78,7 +80,7 @@ const load = <T,>(k: string): T[] => {
   return raw ? JSON.parse(raw) : [];
 };
 
-type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal";
+type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports";
 
 const AccountantDashboard = () => {
   const { t, user } = useApp();
@@ -88,7 +90,7 @@ const AccountantDashboard = () => {
   const [fsList, setFsList] = useState<FinStmt[]>(() => load<FinStmt>(KEY_FS));
   const [sharedDocs, setSharedDocs] = useState<SharedDoc[]>(() => load<SharedDoc>(KEY_SHARED));
   const [legalDocs, setLegalDocs] = useState<LegalDoc[]>(() => load<LegalDoc>(KEY_LEGAL));
-  const { employees, setEmployees, bills, setBills, journal, setJournal } = useSuiteData();
+  const { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks } = useSuiteData();
   const [obligationsClient, setObligationsClient] = useState<Client | null>(null);
   const [openTool, setOpenTool] = useState<null | "fs" | "g50" | "send">(null);
   const [view, setView] = useState<View>("dashboard");
@@ -134,6 +136,7 @@ const AccountantDashboard = () => {
     { key: "billing", label: t("side_billing"), icon: Receipt, count: bills.length },
     { key: "payroll", label: t("side_payroll"), icon: Wallet, count: employees.length },
     { key: "journal", label: t("side_journal"), icon: BookOpen, count: journal.length },
+    { key: "reports", label: t("side_reports"), icon: Calculator },
     { key: "invoices", label: t("side_invoices"), icon: FileText, count: invoices.length },
     { key: "obligations", label: t("side_obligations"), icon: Receipt, count: decls.length },
     { key: "tools", label: t("side_tools"), icon: Wrench },
@@ -310,14 +313,20 @@ const AccountantDashboard = () => {
 
             {view === "payroll" && (
               <PayrollView t={t} employees={employees} setEmployees={setEmployees}
-                clients={clients.map((c) => ({ id: c.id, name: c.name }))} />
+                clients={clients.map((c) => ({ id: c.id, name: c.name, hasCacobatph: c.hasCacobatph }))}
+                journal={journal} setJournal={setJournal} locks={locks} />
             )}
             {view === "billing" && (
               <BillingView t={t} bills={bills} setBills={setBills}
-                clients={clients.map((c) => ({ id: c.id, name: c.name }))} />
+                clients={clients.map((c) => ({ id: c.id, name: c.name }))}
+                journal={journal} setJournal={setJournal} locks={locks} />
             )}
             {view === "journal" && (
               <JournalView t={t} journal={journal} setJournal={setJournal}
+                clients={clients.map((c) => ({ id: c.id, name: c.name }))} locks={locks} />
+            )}
+            {view === "reports" && (
+              <ReportsView t={t} journal={journal} locks={locks}
                 clients={clients.map((c) => ({ id: c.id, name: c.name }))} />
             )}
           </main>
