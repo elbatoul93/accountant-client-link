@@ -44,10 +44,16 @@ export const KEY_EMPLOYEES = "mgmtk_acc_employees";
 export const KEY_BILLS = "mgmtk_acc_bills";
 export const KEY_JOURNAL = "mgmtk_acc_journal";
 export const KEY_LOCKS = "mgmtk_acc_period_locks";
+export const KEY_PRECOMPTE = "mgmtk_acc_tva_precompte";
 
 const load = <T,>(k: string): T[] => {
   const raw = localStorage.getItem(k);
   return raw ? JSON.parse(raw) : [];
+};
+
+const loadObj = <T extends object>(k: string, def: T): T => {
+  const raw = localStorage.getItem(k);
+  return raw ? { ...def, ...JSON.parse(raw) } : def;
 };
 
 const Empty = ({ label }: { label: string }) => (
@@ -59,17 +65,24 @@ const Empty = ({ label }: { label: string }) => (
   </div>
 );
 
+/** Précompte registry: { "<clientId|_>__YYYY-MM": amount } */
+export type PrecompteMap = Record<string, number>;
+export const precompteKey = (clientId: string | undefined, period: string) =>
+  `${clientId ?? "_"}__${period}`;
+
 /* ===== Hooks ===== */
 export function useSuiteData() {
   const [employees, setEmployees] = useState<Employee[]>(() => load<Employee>(KEY_EMPLOYEES));
   const [bills, setBills] = useState<BillInvoice[]>(() => load<BillInvoice>(KEY_BILLS));
   const [journal, setJournal] = useState<JournalEntry[]>(() => load<JournalEntry>(KEY_JOURNAL));
   const [locks, setLocks] = useState<PeriodLock[]>(() => load<PeriodLock>(KEY_LOCKS));
+  const [precompte, setPrecompte] = useState<PrecompteMap>(() => loadObj<PrecompteMap>(KEY_PRECOMPTE, {}));
   useEffect(() => { localStorage.setItem(KEY_EMPLOYEES, JSON.stringify(employees)); }, [employees]);
   useEffect(() => { localStorage.setItem(KEY_BILLS, JSON.stringify(bills)); }, [bills]);
   useEffect(() => { localStorage.setItem(KEY_JOURNAL, JSON.stringify(journal)); }, [journal]);
   useEffect(() => { localStorage.setItem(KEY_LOCKS, JSON.stringify(locks)); }, [locks]);
-  return { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks };
+  useEffect(() => { localStorage.setItem(KEY_PRECOMPTE, JSON.stringify(precompte)); }, [precompte]);
+  return { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks, precompte, setPrecompte };
 }
 
 /** Aggregate totals for G50 sync (per client, all-time, in DA). */
