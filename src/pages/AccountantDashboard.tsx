@@ -137,11 +137,14 @@ const AccountantDashboard = () => {
 
   const sidebarItems: { key: View; label: string; icon: any; count?: number }[] = [
     { key: "dashboard", label: t("side_dashboard"), icon: LayoutDashboard },
+    { key: "calendar", label: t("side_calendar"), icon: Bell },
     { key: "clients", label: t("side_clients"), icon: Users, count: clients.length },
     { key: "billing", label: t("side_billing"), icon: Receipt, count: bills.length },
     { key: "payroll", label: t("side_payroll"), icon: Wallet, count: employees.length },
+    { key: "assets", label: t("side_assets"), icon: Building2 },
     { key: "journal", label: t("side_journal"), icon: BookOpen, count: journal.length },
     { key: "reports", label: t("side_reports"), icon: Calculator },
+    { key: "liasse", label: t("side_liasse"), icon: FileCheck2 },
     { key: "taxintel", label: t("side_taxintel"), icon: Landmark },
     { key: "invoices", label: t("side_invoices"), icon: FileText, count: invoices.length },
     { key: "obligations", label: t("side_obligations"), icon: Receipt, count: decls.length },
