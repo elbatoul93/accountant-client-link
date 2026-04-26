@@ -18,12 +18,13 @@ import {
 import {
   Users, FileText, TrendingUp, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2, Inbox, FileDown,
   Wrench, BookOpen, Calculator, Send, Download, LayoutDashboard, FolderOpen, ChevronRight, ArrowLeft, Search,
-  Building2, IdCard, Phone, Mail, MapPin, Upload, FileCheck2, Wallet, Pencil, Lock,
+  Building2, IdCard, Phone, Mail, MapPin, Upload, FileCheck2, Wallet, Pencil, Lock, Landmark,
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PayrollView, BillingView, JournalView, useSuiteData, aggregateForG50 } from "./accountant/SuiteModules";
 import { ReportsView } from "./accountant/ReportsView";
+import { TaxIntelView } from "./accountant/TaxIntelView";
 import { lockPeriod, computeG50FromJournal } from "@/lib/accounting/engine";
 
 const fmtDZD = (n: number) =>
@@ -80,7 +81,7 @@ const load = <T,>(k: string): T[] => {
   return raw ? JSON.parse(raw) : [];
 };
 
-type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports";
+type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports" | "taxintel";
 
 const AccountantDashboard = () => {
   const { t, user } = useApp();
@@ -137,6 +138,7 @@ const AccountantDashboard = () => {
     { key: "payroll", label: t("side_payroll"), icon: Wallet, count: employees.length },
     { key: "journal", label: t("side_journal"), icon: BookOpen, count: journal.length },
     { key: "reports", label: t("side_reports"), icon: Calculator },
+    { key: "taxintel", label: t("side_taxintel"), icon: Landmark },
     { key: "invoices", label: t("side_invoices"), icon: FileText, count: invoices.length },
     { key: "obligations", label: t("side_obligations"), icon: Receipt, count: decls.length },
     { key: "tools", label: t("side_tools"), icon: Wrench },
@@ -328,6 +330,10 @@ const AccountantDashboard = () => {
             {view === "reports" && (
               <ReportsView t={t} journal={journal} locks={locks}
                 clients={clients.map((c) => ({ id: c.id, name: c.name }))} />
+            )}
+            {view === "taxintel" && (
+              <TaxIntelView t={t} journal={journal}
+                clients={clients.map((c) => ({ id: c.id, name: c.name, legalForm: c.legalForm }))} />
             )}
           </main>
         </div>
