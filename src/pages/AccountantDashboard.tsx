@@ -812,7 +812,32 @@ const AddClientDialog = ({
               <div className="grid sm:grid-cols-2 gap-3">
                 <Field label={t("client_nif") + " *"}><Input value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="000016001234567" className="font-mono" /></Field>
                 <Field label={t("client_bp")}><Input value={bp} onChange={(e) => setBp(e.target.value)} placeholder="16xxxxxxxx" className="font-mono" /></Field>
+                <Field label={t("client_tax_regime") + " *"} full>
+                  <Select value={taxRegime} onValueChange={(v) => setTaxRegime(v as TaxRegime)}>
+                    <SelectTrigger><SelectValue placeholder={t("client_tax_regime_placeholder")} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="REEL">{t("client_tax_regime_reel")}</SelectItem>
+                      <SelectItem value="SIMPLIFIE">{t("client_tax_regime_simplifie")}</SelectItem>
+                      <SelectItem value="IFU">{t("client_tax_regime_ifu")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
               </div>
+              {taxRegime && (
+                <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-2.5">
+                  <div className="text-[11px] uppercase tracking-wide text-primary font-semibold mb-1">
+                    {t("client_required_decls")}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {REGIME_DECLS[taxRegime as TaxRegime].map((d) => (
+                      <Badge key={d} variant="outline" className="font-mono text-[10px] border-gold-deep/40 text-gold-deep bg-gold/5">{d}</Badge>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                    {taxRegime === "IFU" ? t("client_tax_regime_hint_ifu") : t("client_tax_regime_hint_real")}
+                  </p>
+                </div>
+              )}
               <p className="text-[11px] text-muted-foreground mt-2">
                 NIF & BP — Carte d'Immatriculation Fiscale
               </p>
