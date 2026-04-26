@@ -600,6 +600,16 @@ const fr: typeof en = {
   jrn_no_entries: "Aucune écriture comptable.",
   jrn_unbalanced: "Le débit et le crédit doivent être équilibrés",
   sync_from_modules: "Pré-rempli depuis Facturation & Paie",
+  acc_edit: "Modifier",
+  edit_lock_title: "Accès sécurisé requis",
+  edit_lock_subtitle: "Saisissez le mot de passe de votre compte pour modifier les informations sensibles de ce client.",
+  edit_lock_password: "Votre mot de passe",
+  edit_lock_unlock: "Déverrouiller",
+  edit_lock_cancel: "Annuler",
+  edit_lock_wrong: "Mot de passe incorrect.",
+  edit_lock_no_account: "Compte introuvable — veuillez vous reconnecter.",
+  edit_client_title: "Modifier le client",
+  edit_client_saved: "Informations du client mises à jour avec succès.",
 };
 
 const ar: typeof en = {
