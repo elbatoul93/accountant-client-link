@@ -237,6 +237,20 @@ const ClientDashboard = () => {
               <h2 className="text-base font-bold text-primary mb-3 flex items-center gap-2">
                 <Receipt className="h-4 w-4" /> {t("cli_my_obligations")}
               </h2>
+              {myRegime && requiredTypes.length > 0 && (
+                <div className="mb-3 rounded-md border border-primary/30 bg-primary/5 p-2.5">
+                  <div className="text-[10px] uppercase tracking-wide text-primary font-semibold mb-1.5">
+                    {t("client_required_decls")}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {requiredTypes.map((type) => (
+                      <Badge key={type} variant="outline" className="font-mono text-[10px] border-gold-deep/40 text-gold-deep bg-gold/5">
+                        {type}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
               {myDecls.length === 0 ? (
                 <div className="text-center py-6 border border-dashed border-border rounded-lg">
                   <div className="text-xs text-muted-foreground">{t("cli_no_obligations")}</div>
