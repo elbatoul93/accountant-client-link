@@ -901,6 +901,16 @@ const ar: typeof en = {
   jrn_no_entries: "لا توجد قيود محاسبية.",
   jrn_unbalanced: "يجب أن يتوازن المدين والدائن",
   sync_from_modules: "تعبئة تلقائية من الفواتير والأجور",
+  acc_edit: "تعديل",
+  edit_lock_title: "وصول آمن مطلوب",
+  edit_lock_subtitle: "أدخل كلمة مرور حسابك للوصول إلى المعلومات الحساسة لهذا الزبون وتعديلها.",
+  edit_lock_password: "كلمة المرور",
+  edit_lock_unlock: "فتح القفل",
+  edit_lock_cancel: "إلغاء",
+  edit_lock_wrong: "كلمة المرور غير صحيحة.",
+  edit_lock_no_account: "لم يتم العثور على الحساب — يرجى إعادة تسجيل الدخول.",
+  edit_client_title: "تعديل بيانات الزبون",
+  edit_client_saved: "تم تحديث معلومات الزبون بنجاح.",
 };
 
 export const translations = { en, fr, ar };
