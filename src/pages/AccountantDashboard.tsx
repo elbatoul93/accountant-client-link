@@ -328,6 +328,26 @@ const AccountantDashboard = () => {
       <AddClientDialog open={openAdd} onOpenChange={setOpenAdd}
         onAdd={(c) => { setClients((p) => [c, ...p]); setOpenAdd(false); }} t={t} />
 
+      {/* Secure edit: password lock then edit form */}
+      <LockDialog
+        open={!!pendingEditClient}
+        onOpenChange={(o) => { if (!o) setPendingEditClient(null); }}
+        onUnlock={() => { setEditingClient(pendingEditClient); setPendingEditClient(null); }}
+        t={t}
+      />
+      <AddClientDialog
+        open={!!editingClient}
+        onOpenChange={(o) => { if (!o) setEditingClient(null); }}
+        onAdd={() => {}}
+        mode="edit"
+        initial={editingClient}
+        onUpdate={(updated) => {
+          setClients((p) => p.map((x) => (x.id === updated.id ? updated : x)));
+          setEditingClient(null);
+        }}
+        t={t}
+      />
+
       <FinancialStatementsDialog
         open={openTool === "fs"} onOpenChange={(o) => !o && setOpenTool(null)}
         clients={clients} t={t}
