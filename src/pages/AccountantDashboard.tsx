@@ -18,7 +18,7 @@ import {
 import {
   Users, FileText, TrendingUp, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2, Inbox, FileDown,
   Wrench, BookOpen, Calculator, Send, Download, LayoutDashboard, FolderOpen, ChevronRight, ArrowLeft, Search,
-  Building2, IdCard, Phone, Mail, MapPin, Upload, FileCheck2, Wallet,
+  Building2, IdCard, Phone, Mail, MapPin, Upload, FileCheck2, Wallet, Pencil, Lock,
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -95,6 +95,9 @@ const AccountantDashboard = () => {
   const [activeClientId, setActiveClientId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [openAdd, setOpenAdd] = useState(false);
+  // Secure edit flow: clicking Edit triggers a password lock; on success the form opens.
+  const [pendingEditClient, setPendingEditClient] = useState<Client | null>(null);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   useEffect(() => { localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients)); }, [clients]);
   useEffect(() => { localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices)); }, [invoices]);
