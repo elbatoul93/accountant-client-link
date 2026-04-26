@@ -22,7 +22,8 @@ import {
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
-import { PayrollView, BillingView, JournalView, useSuiteData, aggregateForG50 } from "./accountant/SuiteModules";
+import { BillingView, JournalView, useSuiteData, aggregateForG50 } from "./accountant/SuiteModules";
+import { PayrollAdvanced } from "./accountant/PayrollAdvanced";
 import { ReportsView } from "./accountant/ReportsView";
 import { TaxIntelView } from "./accountant/TaxIntelView";
 import { lockPeriod, computeG50FromJournal } from "@/lib/accounting/engine";
