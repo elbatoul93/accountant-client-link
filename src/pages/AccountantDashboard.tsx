@@ -1371,10 +1371,17 @@ const FinancialStatementsDialog = ({
 };
 
 const G50GeneratorDialog = ({
-  open, onOpenChange, clients, t, onGenerate, getAggregates,
+  open, onOpenChange, clients, t, onGenerate, getAggregates, getLiveG50,
 }: { open: boolean; onOpenChange: (o: boolean) => void; clients: Client[]; t: (k: string) => string;
-     onGenerate: (d: Decl, shared: SharedDoc | null) => void;
-     getAggregates?: (clientId: string) => { caHt: number; tvaCollected: number; tvaDeductible: number; tvaDue: number; salaries: number } }) => {
+     onGenerate: (
+       d: Decl,
+       shared: SharedDoc | null,
+       lockOpts: { clientId?: string; period: string; reference: string } | null,
+     ) => void;
+     getAggregates?: (clientId: string) => { caHt: number; tvaCollected: number; tvaDeductible: number; tvaDue: number; salaries: number };
+     getLiveG50?: (clientId: string | undefined, period: string) => {
+       caHt: number; tvaDue: number; salaries: number; irgSalaries: number; tap: number; ibs: number; total: number;
+     } }) => {
   const [clientId, setClientId] = useState("");
   const [period, setPeriod] = useState(new Date().toISOString().slice(0, 7));
   const [caHt, setCaHt] = useState("");
@@ -1385,19 +1392,31 @@ const G50GeneratorDialog = ({
   const [rIrg, setRIrg] = useState("10");
   const [rIbs, setRIbs] = useState("23");
   const [synced, setSynced] = useState(false);
+  const [validateAndLock, setValidateAndLock] = useState(true);
 
-  // Auto-fill from billing & payroll when client changes
+  // Auto-fill from live journal aggregates when client/period changes
   useEffect(() => {
-    if (!clientId || !getAggregates) { setSynced(false); return; }
-    const agg = getAggregates(clientId);
-    if (agg.caHt > 0 || agg.salaries > 0) {
-      if (agg.caHt > 0) setCaHt(String(agg.caHt));
-      if (agg.salaries > 0) setSalaries(String(agg.salaries));
-      setSynced(true);
-    } else {
-      setSynced(false);
+    if (!clientId) { setSynced(false); return; }
+    if (getLiveG50) {
+      const live = getLiveG50(clientId, period);
+      if (live.caHt > 0 || live.salaries > 0) {
+        if (live.caHt > 0) setCaHt(String(live.caHt));
+        if (live.salaries > 0) setSalaries(String(live.salaries));
+        setSynced(true);
+        return;
+      }
     }
-  }, [clientId, getAggregates]);
+    if (getAggregates) {
+      const agg = getAggregates(clientId);
+      if (agg.caHt > 0 || agg.salaries > 0) {
+        if (agg.caHt > 0) setCaHt(String(agg.caHt));
+        if (agg.salaries > 0) setSalaries(String(agg.salaries));
+        setSynced(true);
+        return;
+      }
+    }
+    setSynced(false);
+  }, [clientId, period, getLiveG50, getAggregates]);
 
   const tap = (Number(caHt || 0) * Number(rTap || 0)) / 100;
   const tva = (Number(caHt || 0) * Number(rTva || 0)) / 100;
@@ -1408,9 +1427,10 @@ const G50GeneratorDialog = ({
   const submit = () => {
     const c = clients.find((x) => x.id === clientId);
     if (!c || !period || total <= 0) { toast.error("Champs requis"); return; }
+    const declId = crypto.randomUUID();
     const decl: Decl = {
-      id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
-      type: "G50", amount: Math.round(total), due: `${period}-20`, status: "upcoming",
+      id: declId, clientId: c.id, clientName: c.name,
+      type: "G50", amount: Math.round(total), due: `${period}-20`, status: validateAndLock ? "filed" : "upcoming",
     };
     const shared: SharedDoc = {
       id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
@@ -1419,8 +1439,11 @@ const G50GeneratorDialog = ({
       date: new Date().toLocaleDateString("fr-DZ"),
       payload: JSON.stringify({ nif: c.taxId, bp: c.bp, caHt, salaries, benefice, rTap, rTva, rIrg, rIbs, tap, tva, irg, ibs, total, period }),
     };
-    onGenerate(decl, shared);
-    toast.success("G50 généré et envoyé au client");
+    const lockOpts = validateAndLock
+      ? { clientId: c.id, period, reference: declId }
+      : null;
+    onGenerate(decl, shared, lockOpts);
+    toast.success(validateAndLock ? t("eng_g50_filed_locked") : "G50 généré et envoyé au client");
     setClientId(""); setCaHt(""); setSalaries(""); setBenefice("");
   };
   return (
