@@ -1515,6 +1515,13 @@ const G50GeneratorDialog = ({
             <span className="text-sm font-semibold text-primary">{t("tools_g50_total")}</span>
             <span className="text-2xl font-bold text-gold-deep">{fmtDZD(total)}</span>
           </div>
+          <label className="flex items-center gap-2 text-xs cursor-pointer rounded-md border border-border/60 p-2.5 hover:bg-muted/40">
+            <Switch checked={validateAndLock} onCheckedChange={setValidateAndLock} />
+            <div className="flex-1">
+              <div className="font-semibold text-primary">{t("eng_validate_and_lock")}</div>
+              <div className="text-[11px] text-muted-foreground">{t("eng_validate_and_lock_hint")}</div>
+            </div>
+          </label>
         </div>
         <DialogFooter><Button onClick={submit} variant="gold">{t("tools_g50_generate")}</Button></DialogFooter>
       </DialogContent>
