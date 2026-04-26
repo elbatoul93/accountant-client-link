@@ -545,7 +545,14 @@ const ClientProfileView = ({
             {client.name.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-primary">{client.name}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold text-primary">{client.name}</h1>
+              {client.taxRegime && (
+                <Badge variant="outline" className="border-primary/40 text-primary bg-primary/5 font-mono text-[10px]">
+                  {t(regimeLabelKey(client.taxRegime))}
+                </Badge>
+              )}
+            </div>
             {client.company && <p className="text-sm text-muted-foreground">{client.company}</p>}
             <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
               {client.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {client.email}</span>}
