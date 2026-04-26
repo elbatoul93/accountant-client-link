@@ -484,6 +484,13 @@ const ClientsListView = ({
                   <td className="py-3 font-mono text-xs text-muted-foreground">{c.taxId}</td>
                   <td className="py-3 font-mono text-xs text-muted-foreground">{c.bp || "—"}</td>
                   <td className="py-3 font-mono text-xs text-muted-foreground hidden md:table-cell">{c.rc || "—"}</td>
+                  <td className="py-3 hidden md:table-cell">
+                    {c.taxRegime ? (
+                      <Badge variant="outline" className="text-[10px] border-primary/40 text-primary bg-primary/5 font-mono">
+                        {c.taxRegime === "IFU" ? "IFU" : c.taxRegime === "REEL" ? "Réel" : "Simplifié"}
+                      </Badge>
+                    ) : <span className="text-xs text-muted-foreground">—</span>}
+                  </td>
                   <td className="py-3 text-muted-foreground hidden lg:table-cell">{c.phone || c.email || c.contact}</td>
                   <td className="py-3"><Badge variant="secondary" className="text-[10px] capitalize">{c.status}</Badge></td>
                   <td className="py-3 text-end" onClick={(e) => e.stopPropagation()}>
