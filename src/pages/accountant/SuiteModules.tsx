@@ -10,8 +10,14 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Inbox, Users, FileText, BookOpen, FileDown, Receipt } from "lucide-react";
+import { Plus, Trash2, Inbox, Users, FileText, BookOpen, FileDown, Receipt, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { PcnPicker } from "@/components/PcnPicker";
+import {
+  type JournalLine, type PeriodLock,
+  postSalesInvoice, postPurchaseInvoice, postPayrollRun,
+  isLineLocked,
+} from "@/lib/accounting/engine";
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
@@ -25,15 +31,19 @@ export interface BillInvoice {
   id: string; kind: "purchase" | "sales"; clientId?: string; clientName?: string;
   number: string; date: string; party: string;
   ht: number; tvaRate: number; tva: number; ttc: number;
+  /** PCN account override (sales: class 7, purchase: class 6) */
+  account?: string;
+  /** batchId of generated journal lines, used to find/remove on delete */
+  postedBatch?: string;
 }
-export interface JournalEntry {
-  id: string; date: string; account: string; label: string;
-  debit: number; credit: number; clientId?: string;
-}
+
+// Journal entries are now JournalLine from engine.
+export type JournalEntry = JournalLine;
 
 export const KEY_EMPLOYEES = "mgmtk_acc_employees";
 export const KEY_BILLS = "mgmtk_acc_bills";
 export const KEY_JOURNAL = "mgmtk_acc_journal";
+export const KEY_LOCKS = "mgmtk_acc_period_locks";
 
 const load = <T,>(k: string): T[] => {
   const raw = localStorage.getItem(k);
@@ -54,10 +64,12 @@ export function useSuiteData() {
   const [employees, setEmployees] = useState<Employee[]>(() => load<Employee>(KEY_EMPLOYEES));
   const [bills, setBills] = useState<BillInvoice[]>(() => load<BillInvoice>(KEY_BILLS));
   const [journal, setJournal] = useState<JournalEntry[]>(() => load<JournalEntry>(KEY_JOURNAL));
+  const [locks, setLocks] = useState<PeriodLock[]>(() => load<PeriodLock>(KEY_LOCKS));
   useEffect(() => { localStorage.setItem(KEY_EMPLOYEES, JSON.stringify(employees)); }, [employees]);
   useEffect(() => { localStorage.setItem(KEY_BILLS, JSON.stringify(bills)); }, [bills]);
   useEffect(() => { localStorage.setItem(KEY_JOURNAL, JSON.stringify(journal)); }, [journal]);
-  return { employees, setEmployees, bills, setBills, journal, setJournal };
+  useEffect(() => { localStorage.setItem(KEY_LOCKS, JSON.stringify(locks)); }, [locks]);
+  return { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks };
 }
 
 /** Aggregate totals for G50 sync (per client, all-time, in DA). */
@@ -78,18 +90,70 @@ export function aggregateForG50(
   return { caHt, tvaCollected, tvaDeductible, tvaDue, salaries };
 }
 
+/* ===== IRG bracket (Algerian monthly, simplified) ===== */
+const computeIRG = (taxable: number): number => {
+  if (taxable <= 30000) return 0;
+  let irg = 0;
+  const brackets = [
+    { upTo: 30000, rate: 0 },
+    { upTo: 35000, rate: 0.20 },
+    { upTo: 40000, rate: 0.23 },
+    { upTo: 80000, rate: 0.27 },
+    { upTo: 160000, rate: 0.30 },
+    { upTo: 320000, rate: 0.33 },
+    { upTo: Infinity, rate: 0.35 },
+  ];
+  let prev = 0;
+  for (const b of brackets) {
+    const slice = Math.min(taxable, b.upTo) - prev;
+    if (slice > 0) irg += slice * b.rate;
+    prev = b.upTo;
+    if (taxable <= b.upTo) break;
+  }
+  return Math.round(irg);
+};
+
 /* ===== Payroll ===== */
-type ClientLite = { id: string; name: string };
+type ClientLite = { id: string; name: string; hasCacobatph?: boolean };
 
 export const PayrollView = ({
-  t, employees, setEmployees, clients,
+  t, employees, setEmployees, clients, journal, setJournal, locks,
 }: {
   t: (k: string) => string; employees: Employee[];
   setEmployees: React.Dispatch<React.SetStateAction<Employee[]>>;
   clients: ClientLite[];
+  journal: JournalEntry[];
+  setJournal: React.Dispatch<React.SetStateAction<JournalEntry[]>>;
+  locks: PeriodLock[];
 }) => {
   const [open, setOpen] = useState(false);
   const [slip, setSlip] = useState<Employee | null>(null);
+
+  const runPayroll = (e: Employee) => {
+    const gross = e.basic + e.iew + e.prc;
+    const ss = Math.round(gross * 0.09);
+    const taxable = gross - ss;
+    const irg = computeIRG(taxable);
+    const net = gross - ss - irg;
+    const today = new Date().toISOString().slice(0, 10);
+    const period = today.slice(0, 7);
+    if (locks.some((l) => l.period === period && l.clientId === e.clientId)) {
+      toast.error(t("eng_period_locked_payroll"));
+      return;
+    }
+    const client = clients.find((c) => c.id === e.clientId);
+    const lines = postPayrollRun({
+      date: today,
+      clientId: e.clientId,
+      sourceRef: `${e.id}-${period}`,
+      employeeId: e.id, employeeName: e.name,
+      gross, ssEmployee: ss, irg, net,
+      hasCacobatph: client?.hasCacobatph,
+    });
+    setJournal((p) => [...lines, ...p]);
+    toast.success(`${t("eng_payroll_posted")} — ${e.name}`);
+    setSlip(e);
+  };
 
   return (
     <Card className="p-5 shadow-card">
@@ -98,7 +162,7 @@ export const PayrollView = ({
           <h2 className="text-lg font-bold text-primary flex items-center gap-2">
             <Users className="h-4 w-4" /> {t("pay_title")}
           </h2>
-          <p className="text-xs text-muted-foreground">{t("pay_subtitle")}</p>
+          <p className="text-xs text-muted-foreground">{t("pay_subtitle")} • {t("eng_auto_post_payroll")}</p>
         </div>
         <Button variant="gold" size="sm" onClick={() => setOpen(true)}>
           <Plus className="h-4 w-4" /> {t("pay_add_employee")}
@@ -138,8 +202,8 @@ export const PayrollView = ({
                     <td className="py-3 text-end font-bold text-gold-deep">{fmtDZD(net)}</td>
                     <td className="py-3 text-end">
                       <div className="flex items-center justify-end gap-1">
-                        <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => setSlip(e)}>
-                          <FileDown className="h-3.5 w-3.5" /> {t("pay_generate_slip")}
+                        <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => runPayroll(e)}>
+                          <FileDown className="h-3.5 w-3.5" /> {t("pay_run_post")}
                         </Button>
                         <Button size="icon" variant="ghost" className="h-7 w-7"
                           onClick={() => setEmployees((p) => p.filter((x) => x.id !== e.id))}>
@@ -161,31 +225,6 @@ export const PayrollView = ({
       <PayslipDialog employee={slip} onClose={() => setSlip(null)} t={t} />
     </Card>
   );
-};
-
-const computeIRG = (taxable: number): number => {
-  // Algerian IRG monthly brackets (simplified)
-  let irg = 0;
-  if (taxable <= 30000) return 0;
-  let remaining = taxable;
-  const brackets = [
-    { upTo: 30000, rate: 0 },
-    { upTo: 35000, rate: 0.20 },
-    { upTo: 40000, rate: 0.23 },
-    { upTo: 80000, rate: 0.27 },
-    { upTo: 160000, rate: 0.30 },
-    { upTo: 320000, rate: 0.33 },
-    { upTo: Infinity, rate: 0.35 },
-  ];
-  let prev = 0;
-  for (const b of brackets) {
-    if (remaining <= 0) break;
-    const slice = Math.min(taxable, b.upTo) - prev;
-    if (slice > 0) irg += slice * b.rate;
-    prev = b.upTo;
-    if (taxable <= b.upTo) break;
-  }
-  return Math.round(irg);
 };
 
 const AddEmployeeDialog = ({
@@ -285,13 +324,16 @@ const Row = ({ label, value, bold, muted }: { label: string; value: string; bold
   </div>
 );
 
-/* ===== Billing ===== */
+/* ===== Billing (auto-posts journal) ===== */
 export const BillingView = ({
-  t, bills, setBills, clients,
+  t, bills, setBills, clients, journal, setJournal, locks,
 }: {
   t: (k: string) => string; bills: BillInvoice[];
   setBills: React.Dispatch<React.SetStateAction<BillInvoice[]>>;
   clients: ClientLite[];
+  journal: JournalEntry[];
+  setJournal: React.Dispatch<React.SetStateAction<JournalEntry[]>>;
+  locks: PeriodLock[];
 }) => {
   const [open, setOpen] = useState(false);
   const sales = bills.filter((b) => b.kind === "sales");
@@ -299,6 +341,43 @@ export const BillingView = ({
   const totalSalesHT = sales.reduce((s, b) => s + b.ht, 0);
   const tvaCollected = sales.reduce((s, b) => s + b.tva, 0);
   const tvaDeductible = purchases.reduce((s, b) => s + b.tva, 0);
+
+  const handleAdd = (b: BillInvoice) => {
+    const period = b.date.slice(0, 7);
+    if (locks.some((l) => l.period === period && l.clientId === b.clientId)) {
+      toast.error(t("eng_period_locked_bill"));
+      return;
+    }
+    const lines =
+      b.kind === "sales"
+        ? postSalesInvoice({
+            date: b.date, clientId: b.clientId, sourceRef: b.id,
+            ht: b.ht, tva: b.tva, ttc: b.ttc,
+            party: b.party, number: b.number, salesAccount: b.account,
+          })
+        : postPurchaseInvoice({
+            date: b.date, clientId: b.clientId, sourceRef: b.id,
+            ht: b.ht, tva: b.tva, ttc: b.ttc,
+            party: b.party, number: b.number, purchaseAccount: b.account,
+          });
+    const batchId = lines[0]?.batchId;
+    setBills((p) => [{ ...b, postedBatch: batchId }, ...p]);
+    setJournal((p) => [...lines, ...p]);
+    toast.success(t("eng_invoice_posted"));
+    setOpen(false);
+  };
+
+  const handleDelete = (b: BillInvoice) => {
+    const refLines = journal.filter((l) => l.batchId === b.postedBatch);
+    if (refLines.some((l) => isLineLocked(l, locks))) {
+      toast.error(t("eng_cannot_delete_locked"));
+      return;
+    }
+    setBills((p) => p.filter((x) => x.id !== b.id));
+    setJournal((p) => p.filter((l) => l.batchId !== b.postedBatch));
+    toast.success("Facture & écritures supprimées");
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -314,7 +393,7 @@ export const BillingView = ({
             <h2 className="text-lg font-bold text-primary flex items-center gap-2">
               <Receipt className="h-4 w-4" /> {t("bill_title")}
             </h2>
-            <p className="text-xs text-muted-foreground">{t("bill_subtitle")}</p>
+            <p className="text-xs text-muted-foreground">{t("bill_subtitle")} • {t("eng_auto_post_bill")}</p>
           </div>
           <Button variant="gold" size="sm" onClick={() => setOpen(true)}>
             <Plus className="h-4 w-4" /> {t("bill_add")}
@@ -329,6 +408,7 @@ export const BillingView = ({
                   <th className="text-start py-2.5 font-medium">{t("bill_number")}</th>
                   <th className="text-start py-2.5 font-medium">{t("bill_party")}</th>
                   <th className="text-start py-2.5 font-medium hidden md:table-cell">{t("dash_client")}</th>
+                  <th className="text-start py-2.5 font-medium hidden lg:table-cell">PCN</th>
                   <th className="text-end py-2.5 font-medium">{t("bill_ht")}</th>
                   <th className="text-end py-2.5 font-medium hidden sm:table-cell">{t("bill_tva")}</th>
                   <th className="text-end py-2.5 font-medium">{t("bill_ttc")}</th>
@@ -336,34 +416,43 @@ export const BillingView = ({
                 </tr>
               </thead>
               <tbody>
-                {bills.map((b) => (
-                  <tr key={b.id} className="border-b border-border/50 last:border-0 hover:bg-muted/40">
-                    <td className="py-3">
-                      <Badge variant="outline" className={`text-[10px] capitalize ${b.kind === "sales" ? "border-primary/40 text-primary bg-primary/5" : "border-gold-deep/40 text-gold-deep bg-gold/5"}`}>
-                        {b.kind === "sales" ? t("bill_sales") : t("bill_purchase")}
-                      </Badge>
-                    </td>
-                    <td className="py-3 font-mono text-xs">{b.number}</td>
-                    <td className="py-3">{b.party}</td>
-                    <td className="py-3 text-muted-foreground text-xs hidden md:table-cell">{b.clientName || "—"}</td>
-                    <td className="py-3 text-end font-mono text-xs">{fmtDZD(b.ht)}</td>
-                    <td className="py-3 text-end font-mono text-xs hidden sm:table-cell">{fmtDZD(b.tva)}</td>
-                    <td className="py-3 text-end font-bold text-gold-deep">{fmtDZD(b.ttc)}</td>
-                    <td className="py-3 text-end">
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setBills((p) => p.filter((x) => x.id !== b.id))}>
-                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
+                {bills.map((b) => {
+                  const lockedRef = b.postedBatch && journal.find((l) => l.batchId === b.postedBatch && isLineLocked(l, locks));
+                  return (
+                    <tr key={b.id} className="border-b border-border/50 last:border-0 hover:bg-muted/40">
+                      <td className="py-3">
+                        <Badge variant="outline" className={`text-[10px] capitalize ${b.kind === "sales" ? "border-primary/40 text-primary bg-primary/5" : "border-gold-deep/40 text-gold-deep bg-gold/5"}`}>
+                          {b.kind === "sales" ? t("bill_sales") : t("bill_purchase")}
+                        </Badge>
+                      </td>
+                      <td className="py-3 font-mono text-xs">{b.number}</td>
+                      <td className="py-3">{b.party}</td>
+                      <td className="py-3 text-muted-foreground text-xs hidden md:table-cell">{b.clientName || "—"}</td>
+                      <td className="py-3 hidden lg:table-cell">
+                        {b.account ? <Badge variant="outline" className="font-mono text-[10px]">{b.account}</Badge> : <span className="text-xs text-muted-foreground">—</span>}
+                      </td>
+                      <td className="py-3 text-end font-mono text-xs">{fmtDZD(b.ht)}</td>
+                      <td className="py-3 text-end font-mono text-xs hidden sm:table-cell">{fmtDZD(b.tva)}</td>
+                      <td className="py-3 text-end font-bold text-gold-deep">{fmtDZD(b.ttc)}</td>
+                      <td className="py-3 text-end">
+                        {lockedRef ? (
+                          <Lock className="h-3.5 w-3.5 text-gold-deep inline" />
+                        ) : (
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(b)}>
+                            <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </Card>
 
-      <AddBillDialog open={open} onOpenChange={setOpen} clients={clients} t={t}
-        onAdd={(b) => { setBills((p) => [b, ...p]); setOpen(false); }} />
+      <AddBillDialog open={open} onOpenChange={setOpen} clients={clients} t={t} onAdd={handleAdd} />
     </div>
   );
 };
@@ -383,8 +472,16 @@ const AddBillDialog = ({
   const [number, setNumber] = useState("");
   const [party, setParty] = useState("");
   const [clientId, setClientId] = useState<string>("none");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [ht, setHt] = useState("");
   const [rate, setRate] = useState("19");
+  const [account, setAccount] = useState<string>(kind === "sales" ? "70" : "60");
+
+  // when kind changes, reset suggested account
+  useEffect(() => {
+    setAccount(kind === "sales" ? "70" : "60");
+  }, [kind]);
+
   const tva = (Number(ht || 0) * Number(rate || 0)) / 100;
   const ttc = Number(ht || 0) + tva;
   const submit = () => {
@@ -393,15 +490,15 @@ const AddBillDialog = ({
     onAdd({
       id: crypto.randomUUID(), kind, number: number.trim(), party: party.trim(),
       clientId: c?.id, clientName: c?.name,
-      date: new Date().toLocaleDateString("fr-DZ"),
+      date,
       ht: Number(ht), tvaRate: Number(rate), tva: Math.round(tva), ttc: Math.round(ttc),
+      account,
     });
-    toast.success("Facture enregistrée");
     setNumber(""); setParty(""); setClientId("none"); setHt(""); setRate("19");
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>{t("bill_add")}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -417,7 +514,10 @@ const AddBillDialog = ({
             </div>
             <div className="space-y-1.5"><Label className="text-xs">{t("bill_number")}</Label><Input value={number} onChange={(e) => setNumber(e.target.value)} placeholder="F-2025-001" /></div>
           </div>
-          <div className="space-y-1.5"><Label className="text-xs">{t("bill_party")}</Label><Input value={party} onChange={(e) => setParty(e.target.value)} placeholder="Fournisseur / Client X" /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5"><Label className="text-xs">{t("bill_party")}</Label><Input value={party} onChange={(e) => setParty(e.target.value)} placeholder="Fournisseur / Client X" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">{t("dash_date")}</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+          </div>
           {clients.length > 0 && (
             <div className="space-y-1.5">
               <Label className="text-xs">{t("dash_client")}</Label>
@@ -430,6 +530,14 @@ const AddBillDialog = ({
               </Select>
             </div>
           )}
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t("eng_pcn_account")} ({kind === "sales" ? "Classe 7" : "Classe 6"})</Label>
+            <PcnPicker
+              value={account}
+              onChange={(c) => setAccount(c)}
+              classes={kind === "sales" ? [7] : [6]}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5"><Label className="text-xs">{t("bill_ht")}</Label><Input type="number" value={ht} onChange={(e) => setHt(e.target.value)} placeholder="100000" /></div>
             <div className="space-y-1.5"><Label className="text-xs">{t("bill_tva_rate")} (%)</Label><Input type="number" value={rate} onChange={(e) => setRate(e.target.value)} /></div>
@@ -437,9 +545,12 @@ const AddBillDialog = ({
           <div className="p-3 rounded-lg bg-gradient-to-br from-gold/10 to-card border border-gold/30 space-y-1">
             <div className="flex justify-between text-sm"><span>{t("bill_tva")}</span><span className="font-mono">{fmtDZD(tva)}</span></div>
             <div className="flex justify-between text-base font-bold"><span className="text-primary">{t("bill_ttc")}</span><span className="font-mono text-gold-deep">{fmtDZD(ttc)}</span></div>
+            <div className="text-[10px] text-muted-foreground pt-1 border-t border-border/40">
+              {t("eng_will_post")}: D 411 / C {account} {Number(rate) > 0 ? "+ C 44551" : ""}
+            </div>
           </div>
         </div>
-        <DialogFooter><Button onClick={submit} variant="hero">{t("acc_save")}</Button></DialogFooter>
+        <DialogFooter><Button onClick={submit} variant="hero">{t("eng_save_post")}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -447,16 +558,24 @@ const AddBillDialog = ({
 
 /* ===== Journal ===== */
 export const JournalView = ({
-  t, journal, setJournal, clients,
+  t, journal, setJournal, clients, locks,
 }: {
   t: (k: string) => string; journal: JournalEntry[];
   setJournal: React.Dispatch<React.SetStateAction<JournalEntry[]>>;
   clients: ClientLite[];
+  locks: PeriodLock[];
 }) => {
   const [open, setOpen] = useState(false);
   const totalDebit = journal.reduce((s, j) => s + j.debit, 0);
   const totalCredit = journal.reduce((s, j) => s + j.credit, 0);
   const balance = totalDebit - totalCredit;
+
+  const tryDelete = (j: JournalEntry) => {
+    if (isLineLocked(j, locks)) { toast.error(t("eng_cannot_delete_locked")); return; }
+    if (j.source !== "manual") { toast.error(t("eng_cannot_delete_auto")); return; }
+    setJournal((p) => p.filter((x) => x.id !== j.id));
+  };
+
   return (
     <Card className="p-5 shadow-card">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
@@ -479,30 +598,41 @@ export const JournalView = ({
                 <th className="text-start py-2.5 font-medium">{t("dash_date")}</th>
                 <th className="text-start py-2.5 font-medium">{t("jrn_account")}</th>
                 <th className="text-start py-2.5 font-medium">{t("jrn_label")}</th>
+                <th className="text-start py-2.5 font-medium hidden sm:table-cell">{t("eng_source")}</th>
                 <th className="text-end py-2.5 font-medium">{t("jrn_debit")}</th>
                 <th className="text-end py-2.5 font-medium">{t("jrn_credit")}</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {journal.map((j) => (
-                <tr key={j.id} className="border-b border-border/50 last:border-0 hover:bg-muted/40">
-                  <td className="py-3 text-xs text-muted-foreground">{j.date}</td>
-                  <td className="py-3 font-mono text-xs">{j.account}</td>
-                  <td className="py-3">{j.label}</td>
-                  <td className="py-3 text-end font-mono text-xs">{j.debit ? fmtDZD(j.debit) : "—"}</td>
-                  <td className="py-3 text-end font-mono text-xs">{j.credit ? fmtDZD(j.credit) : "—"}</td>
-                  <td className="py-3 text-end">
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setJournal((p) => p.filter((x) => x.id !== j.id))}>
-                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
+              {journal.map((j) => {
+                const locked = isLineLocked(j, locks);
+                return (
+                  <tr key={j.id} className={`border-b border-border/50 last:border-0 hover:bg-muted/40 ${locked ? "bg-gold/5" : ""}`}>
+                    <td className="py-3 text-xs text-muted-foreground">{j.date}</td>
+                    <td className="py-3 font-mono text-xs font-bold text-primary">{j.account}</td>
+                    <td className="py-3 text-xs">{j.label}</td>
+                    <td className="py-3 hidden sm:table-cell">
+                      <Badge variant="outline" className="text-[9px] capitalize">{j.source}</Badge>
+                    </td>
+                    <td className="py-3 text-end font-mono text-xs">{j.debit ? fmtDZD(j.debit) : "—"}</td>
+                    <td className="py-3 text-end font-mono text-xs">{j.credit ? fmtDZD(j.credit) : "—"}</td>
+                    <td className="py-3 text-end">
+                      {locked ? (
+                        <Lock className="h-3.5 w-3.5 text-gold-deep inline" />
+                      ) : (
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => tryDelete(j)}>
+                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-border font-bold">
-                <td colSpan={3} className="py-3 text-end text-xs uppercase text-muted-foreground">{t("jrn_balance")}</td>
+                <td colSpan={4} className="py-3 text-end text-xs uppercase text-muted-foreground">{t("jrn_balance")}</td>
                 <td className="py-3 text-end font-mono">{fmtDZD(totalDebit)}</td>
                 <td className="py-3 text-end font-mono">{fmtDZD(totalCredit)}</td>
                 <td className="py-3 text-end">
@@ -516,28 +646,16 @@ export const JournalView = ({
         </div>
       )}
 
-      <AddJournalDialog open={open} onOpenChange={setOpen} clients={clients} t={t}
+      <AddJournalDialog open={open} onOpenChange={setOpen} clients={clients} t={t} locks={locks}
         onAdd={(rows) => { setJournal((p) => [...rows, ...p]); setOpen(false); }} />
     </Card>
   );
 };
 
-const PCN_HINTS = [
-  "101 — Capital",
-  "401 — Fournisseurs",
-  "411 — Clients",
-  "445 — TVA",
-  "512 — Banque",
-  "530 — Caisse",
-  "601 — Achats",
-  "631 — Salaires",
-  "701 — Ventes",
-];
-
 const AddJournalDialog = ({
-  open, onOpenChange, clients, onAdd, t,
+  open, onOpenChange, clients, onAdd, t, locks,
 }: { open: boolean; onOpenChange: (o: boolean) => void; clients: ClientLite[];
-     onAdd: (rows: JournalEntry[]) => void; t: (k: string) => string }) => {
+     onAdd: (rows: JournalEntry[]) => void; t: (k: string) => string; locks: PeriodLock[] }) => {
   type Row = { account: string; label: string; debit: string; credit: string };
   const blank: Row = { account: "", label: "", debit: "", credit: "" };
   const [rows, setRows] = useState<Row[]>([{ ...blank }, { ...blank }]);
@@ -548,17 +666,24 @@ const AddJournalDialog = ({
   const totalCredit = rows.reduce((s, r) => s + Number(r.credit || 0), 0);
   const balanced = totalDebit === totalCredit && totalDebit > 0;
 
+  const period = date.slice(0, 7);
+  const cid = clientId === "none" ? undefined : clientId;
+  const periodLocked = locks.some((l) => l.period === period && l.clientId === cid);
+
   const update = (i: number, k: keyof Row, v: string) =>
     setRows((p) => p.map((r, idx) => (idx === i ? { ...r, [k]: v } : r)));
 
   const submit = () => {
+    if (periodLocked) { toast.error(t("eng_period_locked_journal")); return; }
     if (!balanced) { toast.error(t("jrn_unbalanced")); return; }
     const valid = rows.filter((r) => r.account && (r.debit || r.credit));
     if (valid.length === 0) { toast.error("Aucune ligne"); return; }
+    const batchId = crypto.randomUUID();
     onAdd(valid.map((r) => ({
-      id: crypto.randomUUID(), date, account: r.account.trim(), label: r.label.trim() || "—",
+      id: crypto.randomUUID(), date, period,
+      account: r.account.trim(), label: r.label.trim() || "—",
       debit: Number(r.debit || 0), credit: Number(r.credit || 0),
-      clientId: clientId === "none" ? undefined : clientId,
+      clientId: cid, source: "manual" as const, batchId,
     })));
     toast.success("Écriture enregistrée");
     setRows([{ ...blank }, { ...blank }]); setClientId("none");
@@ -566,7 +691,7 @@ const AddJournalDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>{t("jrn_add")}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -584,14 +709,25 @@ const AddJournalDialog = ({
               </div>
             )}
           </div>
-          <div className="text-[11px] text-muted-foreground">PCN: {PCN_HINTS.join(" · ")}</div>
+
+          {periodLocked && (
+            <div className="rounded-md border border-gold-deep/40 bg-gold/10 px-3 py-2 text-xs text-gold-deep flex items-center gap-2">
+              <Lock className="h-3.5 w-3.5" /> {t("eng_period_locked_journal")}
+            </div>
+          )}
+
           <div className="space-y-2">
             {rows.map((r, i) => (
-              <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                <Input className="col-span-2 font-mono text-xs h-9" placeholder="411" value={r.account} onChange={(e) => update(i, "account", e.target.value)} />
-                <Input className="col-span-4 h-9" placeholder={t("jrn_label")} value={r.label} onChange={(e) => update(i, "label", e.target.value)} />
-                <Input className="col-span-3 h-9 text-end font-mono text-xs" placeholder={t("jrn_debit")} type="number" value={r.debit} onChange={(e) => update(i, "debit", e.target.value)} />
-                <Input className="col-span-3 h-9 text-end font-mono text-xs" placeholder={t("jrn_credit")} type="number" value={r.credit} onChange={(e) => update(i, "credit", e.target.value)} />
+              <div key={i} className="grid grid-cols-12 gap-2 items-start">
+                <div className="col-span-4">
+                  <PcnPicker value={r.account} onChange={(c) => update(i, "account", c)} placeholder="Compte PCN" />
+                </div>
+                <Input className="col-span-3 h-9" placeholder={t("jrn_label")} value={r.label} onChange={(e) => update(i, "label", e.target.value)} />
+                <Input className="col-span-2 h-9 text-end font-mono text-xs" placeholder="Débit" type="number" value={r.debit} onChange={(e) => update(i, "debit", e.target.value)} />
+                <Input className="col-span-2 h-9 text-end font-mono text-xs" placeholder="Crédit" type="number" value={r.credit} onChange={(e) => update(i, "credit", e.target.value)} />
+                <Button variant="ghost" size="icon" className="col-span-1 h-9 w-9" onClick={() => setRows((p) => p.filter((_, idx) => idx !== i))} disabled={rows.length <= 2}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
               </div>
             ))}
             <Button variant="outline" size="sm" onClick={() => setRows((p) => [...p, { ...blank }])}>
@@ -606,7 +742,7 @@ const AddJournalDialog = ({
             </div>
           </div>
         </div>
-        <DialogFooter><Button onClick={submit} variant="hero" disabled={!balanced}>{t("acc_save")}</Button></DialogFooter>
+        <DialogFooter><Button onClick={submit} variant="hero" disabled={!balanced || periodLocked}>{t("acc_save")}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
