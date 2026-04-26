@@ -30,6 +30,8 @@ export interface Employee {
 export interface BillInvoice {
   id: string; kind: "purchase" | "sales"; clientId?: string; clientName?: string;
   number: string; date: string; party: string;
+  /** Supplier / client NIF — required for État 104 */
+  partyTaxId?: string;
   ht: number; tvaRate: number; tva: number; ttc: number;
   /** PCN account override (sales: class 7, purchase: class 6) */
   account?: string;
@@ -44,10 +46,16 @@ export const KEY_EMPLOYEES = "mgmtk_acc_employees";
 export const KEY_BILLS = "mgmtk_acc_bills";
 export const KEY_JOURNAL = "mgmtk_acc_journal";
 export const KEY_LOCKS = "mgmtk_acc_period_locks";
+export const KEY_PRECOMPTE = "mgmtk_acc_tva_precompte";
 
 const load = <T,>(k: string): T[] => {
   const raw = localStorage.getItem(k);
   return raw ? JSON.parse(raw) : [];
+};
+
+const loadObj = <T extends object>(k: string, def: T): T => {
+  const raw = localStorage.getItem(k);
+  return raw ? { ...def, ...JSON.parse(raw) } : def;
 };
 
 const Empty = ({ label }: { label: string }) => (
@@ -59,17 +67,24 @@ const Empty = ({ label }: { label: string }) => (
   </div>
 );
 
+/** Précompte registry: { "<clientId|_>__YYYY-MM": amount } */
+export type PrecompteMap = Record<string, number>;
+export const precompteKey = (clientId: string | undefined, period: string) =>
+  `${clientId ?? "_"}__${period}`;
+
 /* ===== Hooks ===== */
 export function useSuiteData() {
   const [employees, setEmployees] = useState<Employee[]>(() => load<Employee>(KEY_EMPLOYEES));
   const [bills, setBills] = useState<BillInvoice[]>(() => load<BillInvoice>(KEY_BILLS));
   const [journal, setJournal] = useState<JournalEntry[]>(() => load<JournalEntry>(KEY_JOURNAL));
   const [locks, setLocks] = useState<PeriodLock[]>(() => load<PeriodLock>(KEY_LOCKS));
+  const [precompte, setPrecompte] = useState<PrecompteMap>(() => loadObj<PrecompteMap>(KEY_PRECOMPTE, {}));
   useEffect(() => { localStorage.setItem(KEY_EMPLOYEES, JSON.stringify(employees)); }, [employees]);
   useEffect(() => { localStorage.setItem(KEY_BILLS, JSON.stringify(bills)); }, [bills]);
   useEffect(() => { localStorage.setItem(KEY_JOURNAL, JSON.stringify(journal)); }, [journal]);
   useEffect(() => { localStorage.setItem(KEY_LOCKS, JSON.stringify(locks)); }, [locks]);
-  return { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks };
+  useEffect(() => { localStorage.setItem(KEY_PRECOMPTE, JSON.stringify(precompte)); }, [precompte]);
+  return { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks, precompte, setPrecompte };
 }
 
 /** Aggregate totals for G50 sync (per client, all-time, in DA). */
@@ -475,26 +490,32 @@ const AddBillDialog = ({
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [ht, setHt] = useState("");
   const [rate, setRate] = useState("19");
-  const [account, setAccount] = useState<string>(kind === "sales" ? "70" : "60");
+  const [account, setAccount] = useState<string>(kind === "sales" ? "701" : "601");
+  const [partyTaxId, setPartyTaxId] = useState("");
 
   // when kind changes, reset suggested account
   useEffect(() => {
-    setAccount(kind === "sales" ? "70" : "60");
+    setAccount(kind === "sales" ? "701" : "601");
   }, [kind]);
 
   const tva = (Number(ht || 0) * Number(rate || 0)) / 100;
   const ttc = Number(ht || 0) + tva;
   const submit = () => {
     if (!number.trim() || !party.trim() || !ht) { toast.error("Champs requis"); return; }
+    if (kind === "purchase" && !partyTaxId.trim()) {
+      toast.error(t("bill_nif_required"));
+      return;
+    }
     const c = clients.find((x) => x.id === clientId);
     onAdd({
       id: crypto.randomUUID(), kind, number: number.trim(), party: party.trim(),
+      partyTaxId: partyTaxId.trim() || undefined,
       clientId: c?.id, clientName: c?.name,
       date,
       ht: Number(ht), tvaRate: Number(rate), tva: Math.round(tva), ttc: Math.round(ttc),
       account,
     });
-    setNumber(""); setParty(""); setClientId("none"); setHt(""); setRate("19");
+    setNumber(""); setParty(""); setPartyTaxId(""); setClientId("none"); setHt(""); setRate("19");
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -516,20 +537,28 @@ const AddBillDialog = ({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5"><Label className="text-xs">{t("bill_party")}</Label><Input value={party} onChange={(e) => setParty(e.target.value)} placeholder="Fournisseur / Client X" /></div>
-            <div className="space-y-1.5"><Label className="text-xs">{t("dash_date")}</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
-          </div>
-          {clients.length > 0 && (
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("dash_client")}</Label>
-              <Select value={clientId} onValueChange={setClientId}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">—</SelectItem>
-                  {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs">
+                {t("bill_party_nif")} {kind === "purchase" && <span className="text-destructive">*</span>}
+              </Label>
+              <Input value={partyTaxId} onChange={(e) => setPartyTaxId(e.target.value)} placeholder="000016000000000" />
             </div>
-          )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5"><Label className="text-xs">{t("dash_date")}</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+            {clients.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t("dash_client")}</Label>
+                <Select value={clientId} onValueChange={setClientId}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">—</SelectItem>
+                    {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
           <div className="space-y-1.5">
             <Label className="text-xs">{t("eng_pcn_account")} ({kind === "sales" ? "Classe 7" : "Classe 6"})</Label>
             <PcnPicker
@@ -540,13 +569,25 @@ const AddBillDialog = ({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5"><Label className="text-xs">{t("bill_ht")}</Label><Input type="number" value={ht} onChange={(e) => setHt(e.target.value)} placeholder="100000" /></div>
-            <div className="space-y-1.5"><Label className="text-xs">{t("bill_tva_rate")} (%)</Label><Input type="number" value={rate} onChange={(e) => setRate(e.target.value)} /></div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t("bill_tva_rate")} (%)</Label>
+              <Select value={rate} onValueChange={setRate}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">0% — Exonéré</SelectItem>
+                  <SelectItem value="9">9% — Taux réduit</SelectItem>
+                  <SelectItem value="19">19% — Taux normal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="p-3 rounded-lg bg-gradient-to-br from-gold/10 to-card border border-gold/30 space-y-1">
             <div className="flex justify-between text-sm"><span>{t("bill_tva")}</span><span className="font-mono">{fmtDZD(tva)}</span></div>
             <div className="flex justify-between text-base font-bold"><span className="text-primary">{t("bill_ttc")}</span><span className="font-mono text-gold-deep">{fmtDZD(ttc)}</span></div>
-            <div className="text-[10px] text-muted-foreground pt-1 border-t border-border/40">
-              {t("eng_will_post")}: D 411 / C {account} {Number(rate) > 0 ? "+ C 44551" : ""}
+            <div className="text-[10px] text-muted-foreground pt-1 border-t border-border/40 font-mono">
+              {kind === "sales"
+                ? <>{t("eng_will_post")}: D 411 {fmtDZD(ttc)} / C {account} {fmtDZD(Number(ht || 0))}{Number(rate) > 0 ? <> / C 44551 {fmtDZD(tva)}</> : null}</>
+                : <>{t("eng_will_post")}: D {account} {fmtDZD(Number(ht || 0))}{Number(rate) > 0 ? <> / D 44562 {fmtDZD(tva)}</> : null} / C 401 {fmtDZD(ttc)}</>}
             </div>
           </div>
         </div>

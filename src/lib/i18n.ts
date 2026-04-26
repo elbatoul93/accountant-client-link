@@ -417,6 +417,20 @@ const en = {
   tax_g50_sources: "Data sources",
   tax_g50_due_date: "Filing deadline",
   tax_g50_due_hint: "Before the 20th of the month following the period.",
+
+  // Smart TVA / État 104 / Précompte
+  bill_party_nif: "Supplier / Client NIF",
+  bill_nif_required: "Supplier NIF is required for État 104 reporting.",
+  tax_tab_etat104: "État 104",
+  tax_etat104_title: "État 104 — Suppliers Statement",
+  tax_etat104_subtitle: "Auto-generated from purchase invoices for the selected period.",
+  tax_etat104_supplier: "Supplier",
+  tax_etat104_invoice: "Invoice #",
+  tax_etat104_empty: "No purchase invoices for this period.",
+  tax_etat104_hint: "Filed annually with the tax administration. NIF is mandatory for every supplier line.",
+  tax_g50_precompte_in: "Précompte carried forward from previous month",
+  tax_g50_precompte_out: "Précompte to carry forward to next month",
+  tax_g50_precompte_auto: "Auto-rolled month over month from VAT settlement.",
 };
 
 const fr: typeof en = {
@@ -826,6 +840,20 @@ const fr: typeof en = {
   tax_g50_sources: "Sources des données",
   tax_g50_due_date: "Échéance de dépôt",
   tax_g50_due_hint: "Avant le 20 du mois suivant la période concernée.",
+
+  // Smart TVA / État 104 / Précompte
+  bill_party_nif: "NIF Fournisseur / Client",
+  bill_nif_required: "Le NIF du fournisseur est requis pour l'État 104.",
+  tax_tab_etat104: "État 104",
+  tax_etat104_title: "État 104 — Liste des Fournisseurs (كشف الموردين)",
+  tax_etat104_subtitle: "Généré automatiquement depuis les factures d'achat de la période.",
+  tax_etat104_supplier: "Fournisseur",
+  tax_etat104_invoice: "N° Facture",
+  tax_etat104_empty: "Aucune facture d'achat sur cette période.",
+  tax_etat104_hint: "À déposer annuellement auprès de l'administration fiscale. Le NIF est obligatoire pour chaque ligne fournisseur.",
+  tax_g50_precompte_in: "Précompte reporté du mois précédent",
+  tax_g50_precompte_out: "Précompte à reporter au mois suivant",
+  tax_g50_precompte_auto: "Reporté automatiquement d'un mois sur l'autre.",
 };
 
 const ar: typeof en = {
@@ -1235,6 +1263,20 @@ const ar: typeof en = {
   tax_g50_sources: "مصادر البيانات",
   tax_g50_due_date: "أجل الإيداع",
   tax_g50_due_hint: "قبل العشرين من الشهر الموالي للفترة المعنية.",
+
+  // Smart TVA / État 104 / Précompte
+  bill_party_nif: "الرقم الجبائي للمورد / الزبون",
+  bill_nif_required: "الرقم الجبائي للمورد إلزامي لإعداد الكشف 104.",
+  tax_tab_etat104: "الكشف 104",
+  tax_etat104_title: "الكشف 104 — كشف الموردين",
+  tax_etat104_subtitle: "يُولَّد تلقائياً من فواتير الشراء للفترة المختارة.",
+  tax_etat104_supplier: "المورد",
+  tax_etat104_invoice: "رقم الفاتورة",
+  tax_etat104_empty: "لا توجد فواتير شراء في هذه الفترة.",
+  tax_etat104_hint: "يُودَع سنوياً لدى الإدارة الجبائية. الرقم الجبائي إلزامي لكل سطر.",
+  tax_g50_precompte_in: "رصيد دائن مُرحَّل من الشهر السابق",
+  tax_g50_precompte_out: "رصيد دائن للترحيل إلى الشهر الموالي",
+  tax_g50_precompte_auto: "ترحيل تلقائي من شهر لآخر بحسب تسوية الرسم.",
 };
 
 export const translations = { en, fr, ar };

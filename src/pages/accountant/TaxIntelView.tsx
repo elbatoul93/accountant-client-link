@@ -8,7 +8,7 @@
  *  4. TRWI (fixed annual fee PP/PM)
  *  5. G50 Preview — official-form layout aggregating the above
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,15 +19,18 @@ import {
 } from "@/components/ui/select";
 import {
   Calculator, Building2, Briefcase, Wallet, Tv, FileText, Landmark, Users,
+  Receipt, ArrowDownToLine, ArrowUpFromLine, AlertTriangle, FileSpreadsheet,
 } from "lucide-react";
 import {
   IBS_RATES, type IbsSector, computeIbs, computeIbsAcompte,
   IRG_PRO_BRACKETS_2024, computeIrgProfessionsLiberales,
   computeTfpTapp, TFP_TAPP_THRESHOLD,
   TRWI_FEES, type LegalEntityKind, computeTrwi,
-  buildG50Preview, type G50Line,
+  buildG50Preview, type G50Line, type G50Section,
+  TAP_RATE, buildEtat104,
 } from "@/lib/accounting/algerianTax";
 import { computeG50FromJournal, type JournalLine } from "@/lib/accounting/engine";
+import { type BillInvoice, type PrecompteMap, precompteKey } from "./SuiteModules";
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(n))} DA`;
@@ -38,9 +41,26 @@ interface Props {
   t: (k: string) => string;
   journal: JournalLine[];
   clients: ClientLite[];
+  bills: BillInvoice[];
+  precompte: PrecompteMap;
+  setPrecompte: React.Dispatch<React.SetStateAction<PrecompteMap>>;
 }
 
-export const TaxIntelView = ({ t, journal, clients }: Props) => {
+/** Compute the previous YYYY-MM string. */
+const prevPeriod = (period: string): string => {
+  const [y, m] = period.split("-").map(Number);
+  const d = new Date(y, m - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+};
+
+/** Compute the next YYYY-MM string. */
+const nextPeriod = (period: string): string => {
+  const [y, m] = period.split("-").map(Number);
+  const d = new Date(y, m, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+};
+
+export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecompte }: Props) => {
   const [clientId, setClientId] = useState<string>("ALL");
   const [period, setPeriod] = useState<string>(new Date().toISOString().slice(0, 7));
 
@@ -70,14 +90,15 @@ export const TaxIntelView = ({ t, journal, clients }: Props) => {
   const [trwiKind, setTrwiKind] = useState<LegalEntityKind>("PM");
   const trwi = computeTrwi(trwiKind);
 
-  /* G50 preview — pulls live amounts from journal then layers our calculators on top */
+  /* G50 — pulls live amounts from journal then layers our calculators on top.
+   * TAP forced to 1% (LF 2024). Précompte is auto-loaded from previous month. */
+  const cid = clientId === "ALL" ? undefined : clientId;
   const liveG50 = useMemo(
-    () => computeG50FromJournal(journal, {
-      clientId: clientId === "ALL" ? undefined : clientId,
-      period,
-    }),
-    [journal, clientId, period],
+    () => computeG50FromJournal(journal, { clientId: cid, period, tapRate: TAP_RATE }),
+    [journal, cid, period],
   );
+
+  const precompteFromPrev = precompte[precompteKey(cid, prevPeriod(period))] ?? 0;
 
   const g50 = useMemo(
     () => buildG50Preview({
@@ -85,13 +106,48 @@ export const TaxIntelView = ({ t, journal, clients }: Props) => {
       caHt: liveG50.caHt,
       tvaCollected: liveG50.tvaCollected,
       tvaDeductible: liveG50.tvaDeductible,
-      tapRate: liveG50.tapRate,
+      precompteFromPrev,
+      tapRate: TAP_RATE,
       irgSalaries: liveG50.irgSalaries,
       ibsAcompte: monthlyIbsShare,
       tfpTapp,
       trwi: Math.round(trwi / 12),
     }),
-    [period, liveG50, monthlyIbsShare, tfpTapp, trwi],
+    [period, liveG50, precompteFromPrev, monthlyIbsShare, tfpTapp, trwi],
+  );
+
+  /* Auto-persist the carry-forward Précompte for this period whenever it changes,
+   * so next month's G50 picks it up automatically. */
+  useEffect(() => {
+    const k = precompteKey(cid, period);
+    setPrecompte((p) => {
+      if (g50.tva.precompteToNext > 0) {
+        if (p[k] === g50.tva.precompteToNext) return p;
+        return { ...p, [k]: g50.tva.precompteToNext };
+      }
+      if (k in p) {
+        const { [k]: _, ...rest } = p;
+        return rest;
+      }
+      return p;
+    });
+  }, [cid, period, g50.tva.precompteToNext, setPrecompte]);
+
+  /* État 104 — supplier list (purchase invoices). */
+  const filteredBills = useMemo(
+    () => bills.filter((b) => (cid ? b.clientId === cid : true)),
+    [bills, cid],
+  );
+  const etat104 = useMemo(
+    () => buildEtat104(
+      filteredBills.map((b) => ({
+        number: b.number, date: b.date, party: b.party,
+        partyTaxId: b.partyTaxId,
+        ht: b.ht, tva: b.tva, ttc: b.ttc, kind: b.kind,
+      })),
+      { from: `${period}-01`, to: `${period}-31` },
+    ),
+    [filteredBills, period],
   );
 
   return (
@@ -121,12 +177,13 @@ export const TaxIntelView = ({ t, journal, clients }: Props) => {
         </div>
       </Card>
 
-      <Tabs defaultValue="ibs">
-        <TabsList className="grid grid-cols-5 w-full max-w-3xl">
+      <Tabs defaultValue="g50">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full max-w-4xl">
           <TabsTrigger value="ibs">{t("tax_tab_ibs")}</TabsTrigger>
           <TabsTrigger value="irg">{t("tax_tab_irg")}</TabsTrigger>
           <TabsTrigger value="tfp">{t("tax_tab_tfp")}</TabsTrigger>
           <TabsTrigger value="trwi">{t("tax_tab_trwi")}</TabsTrigger>
+          <TabsTrigger value="etat104">{t("tax_tab_etat104")}</TabsTrigger>
           <TabsTrigger value="g50">{t("tax_tab_g50")}</TabsTrigger>
         </TabsList>
 
@@ -306,7 +363,69 @@ export const TaxIntelView = ({ t, journal, clients }: Props) => {
           </Card>
         </TabsContent>
 
-        {/* ===== G50 Official-style Preview ===== */}
+        {/* ===== État 104 — Liste des Fournisseurs ===== */}
+        <TabsContent value="etat104" className="mt-4">
+          <Card className="p-5 shadow-card">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <div>
+                <h3 className="font-bold text-primary flex items-center gap-2">
+                  <FileSpreadsheet className="h-4 w-4 text-gold-deep" /> {t("tax_etat104_title")}
+                </h3>
+                <p className="text-xs text-muted-foreground">{t("tax_etat104_subtitle")}</p>
+              </div>
+              <Badge variant="outline" className="border-primary/40 text-primary bg-primary/5 text-[10px]">
+                {t("rep_period")}: {period}
+              </Badge>
+            </div>
+
+            {etat104.rows.length === 0 ? (
+              <div className="text-center py-10 border border-dashed border-border rounded-lg text-sm text-muted-foreground">
+                {t("tax_etat104_empty")}
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-md border border-border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-xs uppercase text-muted-foreground bg-muted/50">
+                      <th className="text-start py-2 px-3 font-medium">{t("tax_etat104_supplier")}</th>
+                      <th className="text-start py-2 px-3 font-medium">NIF</th>
+                      <th className="text-start py-2 px-3 font-medium hidden md:table-cell">{t("tax_etat104_invoice")}</th>
+                      <th className="text-start py-2 px-3 font-medium hidden lg:table-cell">{t("dash_date")}</th>
+                      <th className="text-end py-2 px-3 font-medium">{t("bill_ht")}</th>
+                      <th className="text-end py-2 px-3 font-medium hidden sm:table-cell">{t("bill_tva")}</th>
+                      <th className="text-end py-2 px-3 font-medium">{t("bill_ttc")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {etat104.rows.flatMap((row, rIdx) => row.invoices.map((inv, iIdx) => (
+                      <tr key={`${rIdx}-${iIdx}`} className="border-t border-border/50 hover:bg-muted/30">
+                        <td className="py-2 px-3 text-xs font-semibold">{iIdx === 0 ? row.supplier : ""}</td>
+                        <td className="py-2 px-3 text-xs font-mono text-muted-foreground">{iIdx === 0 ? row.nif : ""}</td>
+                        <td className="py-2 px-3 text-xs font-mono hidden md:table-cell">{inv.number}</td>
+                        <td className="py-2 px-3 text-xs text-muted-foreground hidden lg:table-cell">{inv.date}</td>
+                        <td className="py-2 px-3 text-end font-mono text-xs">{fmtDZD(inv.ht)}</td>
+                        <td className="py-2 px-3 text-end font-mono text-xs hidden sm:table-cell">{fmtDZD(inv.tva)}</td>
+                        <td className="py-2 px-3 text-end font-mono text-xs font-semibold text-gold-deep">{fmtDZD(inv.ttc)}</td>
+                      </tr>
+                    )))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-border bg-muted/30 font-bold">
+                      <td colSpan={4} className="py-2 px-3 text-end uppercase text-xs">{t("tax_g50_total")}</td>
+                      <td className="py-2 px-3 text-end font-mono text-xs">{fmtDZD(etat104.grandHt)}</td>
+                      <td className="py-2 px-3 text-end font-mono text-xs hidden sm:table-cell">{fmtDZD(etat104.grandTva)}</td>
+                      <td className="py-2 px-3 text-end font-mono text-primary">{fmtDZD(etat104.grandTtc)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+
+            <p className="text-[11px] text-muted-foreground mt-3">{t("tax_etat104_hint")}</p>
+          </Card>
+        </TabsContent>
+
+        {/* ===== G50 Official-style Preview — Sectioned Layout ===== */}
         <TabsContent value="g50" className="mt-4">
           <Card className="p-0 shadow-card overflow-hidden">
             {/* Official-form heading */}
@@ -331,37 +450,42 @@ export const TaxIntelView = ({ t, journal, clients }: Props) => {
               </div>
             </div>
 
-            <div className="p-5">
-              <div className="overflow-x-auto rounded-md border border-border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-xs uppercase text-muted-foreground bg-muted/50">
-                      <th className="text-start py-2 px-3 font-medium w-24">{t("tax_g50_code")}</th>
-                      <th className="text-start py-2 px-3 font-medium">{t("tax_g50_designation")}</th>
-                      <th className="text-end py-2 px-3 font-medium hidden md:table-cell">{t("tax_g50_base")}</th>
-                      <th className="text-end py-2 px-3 font-medium hidden sm:table-cell">{t("tax_g50_rate")}</th>
-                      <th className="text-end py-2 px-3 font-medium">{t("tax_g50_amount")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {g50.lines.map((l) => <G50Row key={l.code} l={l} />)}
-                  </tbody>
-                  <tfoot>
-                    <tr className="border-t-2 border-border bg-gradient-to-r from-gold/10 to-gold/5 font-bold">
-                      <td colSpan={4} className="py-3 px-3 text-end uppercase text-sm text-primary">{t("tax_g50_total")}</td>
-                      <td className="py-3 px-3 text-end font-mono text-lg text-gold-deep">{fmtDZD(g50.total)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
+            <div className="p-5 space-y-4">
+              {/* Précompte alert */}
+              {g50.tva.precompteFromPrev > 0 && (
+                <div className="rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-xs text-primary flex items-center gap-2">
+                  <ArrowDownToLine className="h-3.5 w-3.5" />
+                  {t("tax_g50_precompte_in")}: <span className="font-mono font-bold">{fmtDZD(g50.tva.precompteFromPrev)}</span>
+                  <span className="opacity-70">({prevPeriod(period)})</span>
+                </div>
+              )}
+              {g50.tva.precompteToNext > 0 && (
+                <div className="rounded-md border border-gold/50 bg-gold/10 px-3 py-2 text-xs text-gold-deep flex items-center gap-2">
+                  <ArrowUpFromLine className="h-3.5 w-3.5" />
+                  {t("tax_g50_precompte_out")}: <span className="font-mono font-bold">{fmtDZD(g50.tva.precompteToNext)}</span>
+                  <span className="opacity-70">→ {nextPeriod(period)}</span>
+                </div>
+              )}
+
+              <G50SectionCard section={g50.sections.A} icon={<Receipt className="h-4 w-4" />} />
+              <G50SectionCard section={g50.sections.B} icon={<Calculator className="h-4 w-4" />} />
+              <G50SectionCard section={g50.sections.C} icon={<Briefcase className="h-4 w-4" />} />
+              <G50SectionCard section={g50.sections.D} icon={<Wallet className="h-4 w-4" />} />
+
+              {/* Grand total */}
+              <div className="rounded-lg bg-gradient-to-r from-gold/15 to-gold/5 border-2 border-gold/40 p-4 flex items-center justify-between">
+                <span className="font-bold text-primary uppercase tracking-wide">{t("tax_g50_total")}</span>
+                <span className="text-3xl font-bold text-gold-deep font-mono">{fmtDZD(g50.total)}</span>
               </div>
 
-              <div className="mt-4 grid sm:grid-cols-2 gap-3 text-xs">
+              <div className="grid sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-md border border-border bg-muted/30">
                   <div className="font-semibold text-primary mb-1 flex items-center gap-1.5">
                     <Calculator className="h-3.5 w-3.5" /> {t("tax_g50_sources")}
                   </div>
                   <ul className="text-muted-foreground space-y-1">
                     <li>• TVA / TAP / IRG: {t("sync_from_modules")}</li>
+                    <li>• Précompte: {t("tax_g50_precompte_auto")}</li>
                     <li>• IBS Acompte: {t("tax_ibs_per_acompte")} ÷ 3</li>
                     <li>• TFP / TAPP: {t("tax_tfp_subtitle")}</li>
                     <li>• TRWI: {t("tax_trwi_annual")} ÷ 12</li>
@@ -389,16 +513,44 @@ const KpiBox = ({ label, value, highlight }: { label: string; value: string; hig
   </Card>
 );
 
-const G50Row = ({ l }: { l: G50Line }) => {
+const G50LineRow = ({ l }: { l: G50Line }) => {
   const fmt = (n?: number) =>
     n == null ? "—" : new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(n));
   return (
-    <tr className="border-t border-border/50 hover:bg-muted/30">
+    <tr className={`border-t border-border/50 hover:bg-muted/30 ${l.informational ? "text-muted-foreground" : ""}`}>
       <td className="py-2 px-3 font-mono text-xs font-bold text-primary">{l.code}</td>
       <td className="py-2 px-3 text-xs">{l.label}</td>
       <td className="py-2 px-3 text-end font-mono text-xs hidden md:table-cell">{fmt(l.base)}</td>
       <td className="py-2 px-3 text-end font-mono text-xs hidden sm:table-cell">{l.rate != null ? `${l.rate} %` : "—"}</td>
-      <td className="py-2 px-3 text-end font-mono text-xs font-bold text-gold-deep">{fmt(l.amount)} DA</td>
+      <td className={`py-2 px-3 text-end font-mono text-xs font-bold ${l.informational ? "text-muted-foreground italic" : "text-gold-deep"}`}>
+        {l.informational ? fmt(l.amount) : `${fmt(l.amount)} DA`}
+      </td>
     </tr>
+  );
+};
+
+const G50SectionCard = ({
+  section, icon,
+}: {
+  section: { title: string; lines: G50Line[]; subtotal: number };
+  icon: React.ReactNode;
+}) => {
+  if (section.lines.length === 0) return null;
+  return (
+    <Card className="p-0 overflow-hidden border-border/70">
+      <div className="bg-muted/40 px-4 py-2 border-b border-border flex items-center justify-between">
+        <div className="font-bold text-primary text-sm flex items-center gap-2">{icon}{section.title}</div>
+        <Badge variant="outline" className="border-gold-deep/40 text-gold-deep bg-gold/5 font-mono text-xs">
+          {new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(section.subtotal))} DA
+        </Badge>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <tbody>
+            {section.lines.map((l) => <G50LineRow key={l.code} l={l} />)}
+          </tbody>
+        </table>
+      </div>
+    </Card>
   );
 };
