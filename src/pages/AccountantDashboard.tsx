@@ -315,9 +315,9 @@ const AccountantDashboard = () => {
             )}
 
             {view === "payroll" && (
-              <PayrollView t={t} employees={employees} setEmployees={setEmployees}
+              <PayrollAdvanced t={t} employees={employees} setEmployees={setEmployees}
                 clients={clients.map((c) => ({ id: c.id, name: c.name, hasCacobatph: c.hasCacobatph }))}
-                journal={journal} setJournal={setJournal} locks={locks} />
+                setJournal={setJournal} locks={locks} />
             )}
             {view === "billing" && (
               <BillingView t={t} bills={bills} setBills={setBills}
