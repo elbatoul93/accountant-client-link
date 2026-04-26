@@ -91,7 +91,14 @@ const ClientDashboard = () => {
       <SiteHeader />
       <main className="container py-8 space-y-6">
         <div>
-          <Badge className="bg-gold/20 text-gold-deep border-gold/40 hover:bg-gold/30 mb-2">{t("dash_cli_title")}</Badge>
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            <Badge className="bg-gold/20 text-gold-deep border-gold/40 hover:bg-gold/30">{t("dash_cli_title")}</Badge>
+            {myRegime && (
+              <Badge variant="outline" className="border-primary/40 text-primary bg-primary/5 font-mono text-[10px]">
+                {t("client_tax_regime")}: {regimeShort(myRegime)}
+              </Badge>
+            )}
+          </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-primary">
             {t("dash_cli_welcome")}, {user.name.split(" ")[0]} 👋
           </h1>
