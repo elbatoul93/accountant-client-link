@@ -1328,6 +1328,12 @@ const G50GeneratorDialog = ({
             );
           })()}
 
+          {synced && (
+            <div className="rounded-md border border-gold-deep/40 bg-gold-deep/5 px-3 py-2 text-[11px] text-gold-deep flex items-center gap-2">
+              <Calculator className="h-3.5 w-3.5" /> {t("sync_from_modules")}
+            </div>
+          )}
+
           <div className="space-y-2">
             <div className="text-xs font-semibold text-primary uppercase">Bases imposables</div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
