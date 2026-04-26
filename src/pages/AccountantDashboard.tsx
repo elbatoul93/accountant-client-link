@@ -18,10 +18,11 @@ import {
 import {
   Users, FileText, TrendingUp, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2, Inbox, FileDown,
   Wrench, BookOpen, Calculator, Send, Download, LayoutDashboard, FolderOpen, ChevronRight, ArrowLeft, Search,
-  Building2, IdCard, Phone, Mail, MapPin, Upload, FileCheck2,
+  Building2, IdCard, Phone, Mail, MapPin, Upload, FileCheck2, Wallet,
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
+import { PayrollView, BillingView, JournalView, useSuiteData, aggregateForG50 } from "./accountant/SuiteModules";
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
