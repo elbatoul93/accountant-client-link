@@ -332,6 +332,7 @@ const AccountantDashboard = () => {
       <G50GeneratorDialog
         open={openTool === "g50"} onOpenChange={(o) => !o && setOpenTool(null)}
         clients={clients} t={t}
+        getAggregates={(cid) => aggregateForG50(cid, bills, employees)}
         onGenerate={(d, shared) => {
           setDecls((p) => [d, ...p]);
           if (shared) setSharedDocs((p) => [shared, ...p]);
