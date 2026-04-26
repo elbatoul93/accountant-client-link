@@ -8,7 +8,7 @@
  *  4. TRWI (fixed annual fee PP/PM)
  *  5. G50 Preview — official-form layout aggregating the above
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,15 +19,18 @@ import {
 } from "@/components/ui/select";
 import {
   Calculator, Building2, Briefcase, Wallet, Tv, FileText, Landmark, Users,
+  Receipt, ArrowDownToLine, ArrowUpFromLine, AlertTriangle, FileSpreadsheet,
 } from "lucide-react";
 import {
   IBS_RATES, type IbsSector, computeIbs, computeIbsAcompte,
   IRG_PRO_BRACKETS_2024, computeIrgProfessionsLiberales,
   computeTfpTapp, TFP_TAPP_THRESHOLD,
   TRWI_FEES, type LegalEntityKind, computeTrwi,
-  buildG50Preview, type G50Line,
+  buildG50Preview, type G50Line, type G50Section,
+  TAP_RATE, buildEtat104,
 } from "@/lib/accounting/algerianTax";
 import { computeG50FromJournal, type JournalLine } from "@/lib/accounting/engine";
+import { type BillInvoice, type PrecompteMap, precompteKey } from "./SuiteModules";
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(n))} DA`;
@@ -38,9 +41,19 @@ interface Props {
   t: (k: string) => string;
   journal: JournalLine[];
   clients: ClientLite[];
+  bills: BillInvoice[];
+  precompte: PrecompteMap;
+  setPrecompte: React.Dispatch<React.SetStateAction<PrecompteMap>>;
 }
 
-export const TaxIntelView = ({ t, journal, clients }: Props) => {
+/** Compute the previous YYYY-MM string. */
+const prevPeriod = (period: string): string => {
+  const [y, m] = period.split("-").map(Number);
+  const d = new Date(y, m - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+};
+
+export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecompte }: Props) => {
   const [clientId, setClientId] = useState<string>("ALL");
   const [period, setPeriod] = useState<string>(new Date().toISOString().slice(0, 7));
 
@@ -70,14 +83,15 @@ export const TaxIntelView = ({ t, journal, clients }: Props) => {
   const [trwiKind, setTrwiKind] = useState<LegalEntityKind>("PM");
   const trwi = computeTrwi(trwiKind);
 
-  /* G50 preview — pulls live amounts from journal then layers our calculators on top */
+  /* G50 — pulls live amounts from journal then layers our calculators on top.
+   * TAP forced to 1% (LF 2024). Précompte is auto-loaded from previous month. */
+  const cid = clientId === "ALL" ? undefined : clientId;
   const liveG50 = useMemo(
-    () => computeG50FromJournal(journal, {
-      clientId: clientId === "ALL" ? undefined : clientId,
-      period,
-    }),
-    [journal, clientId, period],
+    () => computeG50FromJournal(journal, { clientId: cid, period, tapRate: TAP_RATE }),
+    [journal, cid, period],
   );
+
+  const precompteFromPrev = precompte[precompteKey(cid, prevPeriod(period))] ?? 0;
 
   const g50 = useMemo(
     () => buildG50Preview({
@@ -85,13 +99,48 @@ export const TaxIntelView = ({ t, journal, clients }: Props) => {
       caHt: liveG50.caHt,
       tvaCollected: liveG50.tvaCollected,
       tvaDeductible: liveG50.tvaDeductible,
-      tapRate: liveG50.tapRate,
+      precompteFromPrev,
+      tapRate: TAP_RATE,
       irgSalaries: liveG50.irgSalaries,
       ibsAcompte: monthlyIbsShare,
       tfpTapp,
       trwi: Math.round(trwi / 12),
     }),
-    [period, liveG50, monthlyIbsShare, tfpTapp, trwi],
+    [period, liveG50, precompteFromPrev, monthlyIbsShare, tfpTapp, trwi],
+  );
+
+  /* Auto-persist the carry-forward Précompte for this period whenever it changes,
+   * so next month's G50 picks it up automatically. */
+  useEffect(() => {
+    const k = precompteKey(cid, period);
+    setPrecompte((p) => {
+      if (g50.tva.precompteToNext > 0) {
+        if (p[k] === g50.tva.precompteToNext) return p;
+        return { ...p, [k]: g50.tva.precompteToNext };
+      }
+      if (k in p) {
+        const { [k]: _, ...rest } = p;
+        return rest;
+      }
+      return p;
+    });
+  }, [cid, period, g50.tva.precompteToNext, setPrecompte]);
+
+  /* État 104 — supplier list (purchase invoices). */
+  const filteredBills = useMemo(
+    () => bills.filter((b) => (cid ? b.clientId === cid : true)),
+    [bills, cid],
+  );
+  const etat104 = useMemo(
+    () => buildEtat104(
+      filteredBills.map((b) => ({
+        number: b.number, date: b.date, party: b.party,
+        partyTaxId: b.partyTaxId,
+        ht: b.ht, tva: b.tva, ttc: b.ttc, kind: b.kind,
+      })),
+      { from: `${period}-01`, to: `${period}-31` },
+    ),
+    [filteredBills, period],
   );
 
   return (
