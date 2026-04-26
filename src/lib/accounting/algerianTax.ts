@@ -135,7 +135,119 @@ export const TRWI_FEES: Record<LegalEntityKind, number> = {
 
 export const computeTrwi = (kind: LegalEntityKind): number => TRWI_FEES[kind];
 
-/* ===================== G50 Summary Builder ===================== */
+/* ===================== TAP / TVA constants ===================== */
+
+/** Official Algerian TAP rate — 1% of monthly turnover (LF 2024). */
+export const TAP_RATE = 1;
+
+/** Standard Algerian VAT rates. */
+export const TVA_RATES = [0, 9, 19] as const;
+export type TvaRate = typeof TVA_RATES[number];
+
+/* ===================== TVA / Précompte engine ===================== */
+
+export interface TvaPeriodInput {
+  period: string;            // YYYY-MM
+  tvaCollected: number;      // 44551 credits (sales)
+  tvaDeductible: number;     // 44562 debits (purchases)
+  /** Précompte carried forward from the prior month (credit balance). */
+  precompteFromPrev?: number;
+}
+
+export interface TvaPeriodResult {
+  period: string;
+  tvaCollected: number;
+  tvaDeductible: number;
+  precompteFromPrev: number;
+  /** Total TVA available to deduct = deductible + précompte N-1 */
+  totalDeductible: number;
+  /** Net TVA payable this month (zero if a credit remains). */
+  tvaDue: number;
+  /** Précompte (credit) carried forward to next month. */
+  precompteToNext: number;
+  hasPrecompte: boolean;
+}
+
+/**
+ * Compute the monthly VAT settlement, automatically rolling a Précompte
+ * (credit balance) into the next month when input VAT > output VAT.
+ */
+export const computeTvaSettlement = (input: TvaPeriodInput): TvaPeriodResult => {
+  const prev = Math.max(0, Math.round(input.precompteFromPrev ?? 0));
+  const totalDeductible = Math.round(input.tvaDeductible + prev);
+  const balance = Math.round(input.tvaCollected - totalDeductible);
+  const tvaDue = balance > 0 ? balance : 0;
+  const precompteToNext = balance < 0 ? -balance : 0;
+  return {
+    period: input.period,
+    tvaCollected: Math.round(input.tvaCollected),
+    tvaDeductible: Math.round(input.tvaDeductible),
+    precompteFromPrev: prev,
+    totalDeductible,
+    tvaDue,
+    precompteToNext,
+    hasPrecompte: precompteToNext > 0,
+  };
+};
+
+/* ===================== État 104 — Liste des Fournisseurs ===================== */
+
+export interface Etat104InvoiceLike {
+  number: string;
+  date: string;
+  party: string;       // supplier name
+  partyTaxId?: string; // NIF
+  ht: number;
+  tva: number;
+  ttc: number;
+  kind: "purchase" | "sales";
+}
+
+export interface Etat104Row {
+  supplier: string;
+  nif: string;
+  invoices: Array<{ number: string; date: string; ht: number; tva: number; ttc: number }>;
+  totalHt: number;
+  totalTva: number;
+  totalTtc: number;
+}
+
+export interface Etat104 {
+  rows: Etat104Row[];
+  grandHt: number;
+  grandTva: number;
+  grandTtc: number;
+}
+
+/** Build an "État 104 — كشف الموردين" from purchase invoices. */
+export const buildEtat104 = (
+  invoices: Etat104InvoiceLike[],
+  filter?: { from?: string; to?: string },
+): Etat104 => {
+  const groups = new Map<string, Etat104Row>();
+  for (const inv of invoices) {
+    if (inv.kind !== "purchase") continue;
+    if (filter?.from && inv.date < filter.from) continue;
+    if (filter?.to && inv.date > filter.to) continue;
+    const key = `${(inv.partyTaxId || "").trim()}__${inv.party.trim().toLowerCase()}`;
+    const cur = groups.get(key) ?? {
+      supplier: inv.party,
+      nif: inv.partyTaxId || "—",
+      invoices: [],
+      totalHt: 0, totalTva: 0, totalTtc: 0,
+    };
+    cur.invoices.push({ number: inv.number, date: inv.date, ht: inv.ht, tva: inv.tva, ttc: inv.ttc });
+    cur.totalHt += inv.ht;
+    cur.totalTva += inv.tva;
+    cur.totalTtc += inv.ttc;
+    groups.set(key, cur);
+  }
+  const rows = Array.from(groups.values()).sort((a, b) => b.totalTtc - a.totalTtc);
+  const grandHt = rows.reduce((s, r) => s + r.totalHt, 0);
+  const grandTva = rows.reduce((s, r) => s + r.totalTva, 0);
+  const grandTtc = rows.reduce((s, r) => s + r.totalTtc, 0);
+  return { rows, grandHt, grandTva, grandTtc };
+};
 
 export interface G50Line {
   /** Official article / section ref shown on the form */
