@@ -204,6 +204,7 @@ const AccountantDashboard = () => {
                 search={search} setSearch={setSearch}
                 onOpen={openProfile}
                 onAdd={() => setOpenAdd(true)}
+                onEdit={(c) => setPendingEditClient(c)}
                 onDelete={(id) => {
                   setClients((p) => p.filter((x) => x.id !== id));
                   setInvoices((p) => p.filter((x) => x.clientId !== id));
