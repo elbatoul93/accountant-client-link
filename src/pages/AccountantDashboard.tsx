@@ -738,6 +738,7 @@ const AddClientDialog = ({
   const [cnasNo, setCnasNo] = useState("");
   const [casnosNo, setCasnosNo] = useState("");
   const [hasCacobatph, setHasCacobatph] = useState(false);
+  const [taxRegime, setTaxRegime] = useState<TaxRegime | "">("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
