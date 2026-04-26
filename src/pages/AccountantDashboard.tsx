@@ -354,6 +354,16 @@ const AccountantDashboard = () => {
                 precompte={precompte} setPrecompte={setPrecompte}
                 clients={clients.map((c) => ({ id: c.id, name: c.name, legalForm: c.legalForm }))} />
             )}
+            {view === "liasse" && (
+              <LiasseFiscaleView t={t} journal={journal} employees={employees}
+                clients={clients.map((c) => ({
+                  id: c.id, name: c.name, taxId: c.taxId, nis: c.nis, rc: c.rc, bp: c.bp,
+                  taxRegime: c.taxRegime,
+                }))} />
+            )}
+            {view === "assets" && (
+              <AssetsView t={t} clients={clients.map((c) => ({ id: c.id, name: c.name }))} />
+            )}
           </main>
         </div>
       </div>
