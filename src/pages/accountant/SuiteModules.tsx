@@ -26,6 +26,12 @@ const fmtDZD = (n: number) =>
 export interface Employee {
   id: string; clientId?: string; name: string; position?: string;
   basic: number; iew: number; prc: number;
+  /** Extended fields used by the advanced Payroll module */
+  nss?: string;
+  hireDate?: string;
+  endDate?: string;
+  other?: number;
+  dependents?: number;
 }
 export interface BillInvoice {
   id: string; kind: "purchase" | "sales"; clientId?: string; clientName?: string;
