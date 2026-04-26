@@ -303,7 +303,19 @@ const AccountantDashboard = () => {
                 )}
               </Card>
             )}
-          </main>
+
+            {view === "payroll" && (
+              <PayrollView t={t} employees={employees} setEmployees={setEmployees}
+                clients={clients.map((c) => ({ id: c.id, name: c.name }))} />
+            )}
+            {view === "billing" && (
+              <BillingView t={t} bills={bills} setBills={setBills}
+                clients={clients.map((c) => ({ id: c.id, name: c.name }))} />
+            )}
+            {view === "journal" && (
+              <JournalView t={t} journal={journal} setJournal={setJournal}
+                clients={clients.map((c) => ({ id: c.id, name: c.name }))} />
+            )}
         </div>
       </div>
 
