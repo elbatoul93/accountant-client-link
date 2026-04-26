@@ -1236,8 +1236,10 @@ const FinancialStatementsDialog = ({
 };
 
 const G50GeneratorDialog = ({
-  open, onOpenChange, clients, t, onGenerate,
-}: { open: boolean; onOpenChange: (o: boolean) => void; clients: Client[]; t: (k: string) => string; onGenerate: (d: Decl, shared: SharedDoc | null) => void }) => {
+  open, onOpenChange, clients, t, onGenerate, getAggregates,
+}: { open: boolean; onOpenChange: (o: boolean) => void; clients: Client[]; t: (k: string) => string;
+     onGenerate: (d: Decl, shared: SharedDoc | null) => void;
+     getAggregates?: (clientId: string) => { caHt: number; tvaCollected: number; tvaDeductible: number; tvaDue: number; salaries: number } }) => {
   const [clientId, setClientId] = useState("");
   const [period, setPeriod] = useState(new Date().toISOString().slice(0, 7));
   const [caHt, setCaHt] = useState("");
@@ -1247,6 +1249,20 @@ const G50GeneratorDialog = ({
   const [rTva, setRTva] = useState("19");
   const [rIrg, setRIrg] = useState("10");
   const [rIbs, setRIbs] = useState("23");
+  const [synced, setSynced] = useState(false);
+
+  // Auto-fill from billing & payroll when client changes
+  useEffect(() => {
+    if (!clientId || !getAggregates) { setSynced(false); return; }
+    const agg = getAggregates(clientId);
+    if (agg.caHt > 0 || agg.salaries > 0) {
+      if (agg.caHt > 0) setCaHt(String(agg.caHt));
+      if (agg.salaries > 0) setSalaries(String(agg.salaries));
+      setSynced(true);
+    } else {
+      setSynced(false);
+    }
+  }, [clientId, getAggregates]);
 
   const tap = (Number(caHt || 0) * Number(rTap || 0)) / 100;
   const tva = (Number(caHt || 0) * Number(rTva || 0)) / 100;
