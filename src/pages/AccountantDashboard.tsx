@@ -26,16 +26,40 @@ import { toast } from "sonner";
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
 
+type TaxRegime = "REEL" | "SIMPLIFIE" | "IFU";
+
 interface Client {
   id: string; name: string; company?: string;
   taxId: string; bp?: string; nis?: string; rc?: string;
   cnasNo?: string; casnosNo?: string; hasCacobatph?: boolean;
   email?: string; phone?: string; address?: string; legalForm?: string; activity?: string;
+  taxRegime?: TaxRegime;
   contact: string; // legacy email used by client portal matching
   status: "active" | "review";
 }
 interface Invoice { id: string; clientId: string; clientName: string; amount: number; date: string; status: "pending" | "processed" | "review" }
-interface Decl { id: string; clientId: string; clientName: string; type: "G50" | "CNAS" | "CASNOS" | "CACOBATPH"; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
+type DeclType = "G50" | "CNAS" | "CASNOS" | "CACOBATPH" | "TAP" | "IBS" | "FS" | "G12" | "CP";
+interface Decl { id: string; clientId: string; clientName: string; type: DeclType; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
+
+// Declarations required per tax regime
+const REGIME_DECLS: Record<TaxRegime, DeclType[]> = {
+  REEL:      ["G50", "TAP", "IBS", "FS"],
+  SIMPLIFIE: ["G50", "TAP", "IBS", "FS"],
+  IFU:       ["G12", "CP"],
+};
+
+const regimeLabelKey = (r?: TaxRegime) =>
+  r === "REEL" ? "client_tax_regime_reel"
+  : r === "SIMPLIFIE" ? "client_tax_regime_simplifie"
+  : r === "IFU" ? "client_tax_regime_ifu" : "";
+
+const declLabelKey = (type: DeclType): string => {
+  const map: Partial<Record<DeclType, string>> = {
+    G50: "decl_type_g50", TAP: "decl_type_tap", IBS: "decl_type_ibs",
+    FS: "decl_type_fs", G12: "decl_type_g12", CP: "decl_type_cp",
+  };
+  return map[type] || type;
+};
 
 interface FinStmt { id: string; clientId: string; clientName: string; year: string; assets: number; liabilities: number; equity: number; revenue: number; netResult: number; createdAt: string }
 interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string; fileName?: string; mimeType?: string; fileData?: string }
@@ -443,6 +467,7 @@ const ClientsListView = ({
                 <th className="text-start font-medium py-2.5">{t("client_nif")}</th>
                 <th className="text-start font-medium py-2.5">{t("client_bp")}</th>
                 <th className="text-start font-medium py-2.5 hidden md:table-cell">{t("client_rc")}</th>
+                <th className="text-start font-medium py-2.5 hidden md:table-cell">{t("client_tax_regime")}</th>
                 <th className="text-start font-medium py-2.5 hidden lg:table-cell">{t("client_phone")}</th>
                 <th className="text-start font-medium py-2.5">{t("dash_status")}</th>
                 <th></th>
@@ -459,6 +484,13 @@ const ClientsListView = ({
                   <td className="py-3 font-mono text-xs text-muted-foreground">{c.taxId}</td>
                   <td className="py-3 font-mono text-xs text-muted-foreground">{c.bp || "—"}</td>
                   <td className="py-3 font-mono text-xs text-muted-foreground hidden md:table-cell">{c.rc || "—"}</td>
+                  <td className="py-3 hidden md:table-cell">
+                    {c.taxRegime ? (
+                      <Badge variant="outline" className="text-[10px] border-primary/40 text-primary bg-primary/5 font-mono">
+                        {c.taxRegime === "IFU" ? "IFU" : c.taxRegime === "REEL" ? "Réel" : "Simplifié"}
+                      </Badge>
+                    ) : <span className="text-xs text-muted-foreground">—</span>}
+                  </td>
                   <td className="py-3 text-muted-foreground hidden lg:table-cell">{c.phone || c.email || c.contact}</td>
                   <td className="py-3"><Badge variant="secondary" className="text-[10px] capitalize">{c.status}</Badge></td>
                   <td className="py-3 text-end" onClick={(e) => e.stopPropagation()}>
@@ -494,8 +526,11 @@ const ClientProfileView = ({
   const totalDue = decls.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
   const filed = decls.filter((d) => d.status === "filed").length;
   const pending = decls.filter((d) => d.status !== "filed").length;
-  const g50 = decls.filter((d) => d.type === "G50");
-  const social = decls.filter((d) => d.type !== "G50");
+  const requiredTypes = client.taxRegime ? REGIME_DECLS[client.taxRegime] : [];
+  const requiredSet = new Set<DeclType>(requiredTypes);
+  // Obligations tab: only declarations relevant to the client's tax regime
+  const obligations = decls.filter((d) => requiredSet.has(d.type));
+  const social = decls.filter((d) => d.type === "CNAS" || d.type === "CASNOS" || d.type === "CACOBATPH");
 
   return (
     <>
@@ -510,7 +545,14 @@ const ClientProfileView = ({
             {client.name.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-primary">{client.name}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold text-primary">{client.name}</h1>
+              {client.taxRegime && (
+                <Badge variant="outline" className="border-primary/40 text-primary bg-primary/5 font-mono text-[10px]">
+                  {t(regimeLabelKey(client.taxRegime))}
+                </Badge>
+              )}
+            </div>
             {client.company && <p className="text-sm text-muted-foreground">{client.company}</p>}
             <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
               {client.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {client.email}</span>}
@@ -611,7 +653,36 @@ const ClientProfileView = ({
               </div>
               <AddDeclarationDialog clients={[client]} type="G50" onAdd={onAddDecl} t={t} />
             </div>
-            <DeclList items={g50} t={t} onDelete={() => {}} />
+
+            {client.taxRegime ? (
+              <div className="mb-4 rounded-md border border-primary/30 bg-primary/5 p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[11px] uppercase tracking-wide text-primary font-semibold">
+                    {t("client_required_decls")}
+                  </span>
+                  <Badge variant="outline" className="text-[10px] border-primary/40 text-primary bg-background font-mono">
+                    {t(regimeLabelKey(client.taxRegime))}
+                  </Badge>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {requiredTypes.map((type) => (
+                    <div key={type} className="flex items-center gap-2 rounded border border-border/60 bg-card p-2">
+                      <Badge variant="outline" className="font-mono text-[10px] border-gold-deep/40 text-gold-deep bg-gold/5">{type}</Badge>
+                      <span className="text-xs text-muted-foreground truncate">{t(declLabelKey(type))}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  {client.taxRegime === "IFU" ? t("client_tax_regime_hint_ifu") : t("client_tax_regime_hint_real")}
+                </p>
+              </div>
+            ) : (
+              <div className="mb-4 rounded-md border border-dashed border-border/60 p-3 text-xs text-muted-foreground">
+                {t("client_tax_regime_placeholder")}
+              </div>
+            )}
+
+            <DeclList items={obligations} t={t} onDelete={() => {}} showType />
           </Card>
         </TabsContent>
 
@@ -714,6 +785,7 @@ const AddClientDialog = ({
   const [cnasNo, setCnasNo] = useState("");
   const [casnosNo, setCasnosNo] = useState("");
   const [hasCacobatph, setHasCacobatph] = useState(false);
+  const [taxRegime, setTaxRegime] = useState<TaxRegime | "">("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -722,12 +794,13 @@ const AddClientDialog = ({
     setName(""); setCompany(""); setLegalForm(""); setActivity("");
     setTaxId(""); setBp(""); setNis(""); setRc("");
     setCnasNo(""); setCasnosNo(""); setHasCacobatph(false);
+    setTaxRegime("");
     setEmail(""); setPhone(""); setAddress("");
   };
 
   const submit = () => {
-    if (!name.trim() || !taxId.trim() || !legalForm) {
-      toast.error([t("acc_client_name"), t("client_nif"), t("client_legal_form")].join(" • "));
+    if (!name.trim() || !taxId.trim() || !legalForm || !taxRegime) {
+      toast.error([t("acc_client_name"), t("client_nif"), t("client_legal_form"), t("client_tax_regime")].join(" • "));
       return;
     }
     onAdd({
@@ -736,6 +809,7 @@ const AddClientDialog = ({
       legalForm: legalForm.trim() || undefined, activity: activity.trim() || undefined,
       taxId: taxId.trim(), bp: bp.trim() || undefined, nis: nis.trim() || undefined, rc: rc.trim() || undefined,
       cnasNo: cnasNo.trim() || undefined, casnosNo: casnosNo.trim() || undefined, hasCacobatph,
+      taxRegime: taxRegime as TaxRegime,
       email: email.trim() || undefined, phone: phone.trim() || undefined, address: address.trim() || undefined,
       contact: email.trim(), // for client portal email matching
       status: "active",
@@ -785,7 +859,32 @@ const AddClientDialog = ({
               <div className="grid sm:grid-cols-2 gap-3">
                 <Field label={t("client_nif") + " *"}><Input value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="000016001234567" className="font-mono" /></Field>
                 <Field label={t("client_bp")}><Input value={bp} onChange={(e) => setBp(e.target.value)} placeholder="16xxxxxxxx" className="font-mono" /></Field>
+                <Field label={t("client_tax_regime") + " *"} full>
+                  <Select value={taxRegime} onValueChange={(v) => setTaxRegime(v as TaxRegime)}>
+                    <SelectTrigger><SelectValue placeholder={t("client_tax_regime_placeholder")} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="REEL">{t("client_tax_regime_reel")}</SelectItem>
+                      <SelectItem value="SIMPLIFIE">{t("client_tax_regime_simplifie")}</SelectItem>
+                      <SelectItem value="IFU">{t("client_tax_regime_ifu")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
               </div>
+              {taxRegime && (
+                <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-2.5">
+                  <div className="text-[11px] uppercase tracking-wide text-primary font-semibold mb-1">
+                    {t("client_required_decls")}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {REGIME_DECLS[taxRegime as TaxRegime].map((d) => (
+                      <Badge key={d} variant="outline" className="font-mono text-[10px] border-gold-deep/40 text-gold-deep bg-gold/5">{d}</Badge>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                    {taxRegime === "IFU" ? t("client_tax_regime_hint_ifu") : t("client_tax_regime_hint_real")}
+                  </p>
+                </div>
+              )}
               <p className="text-[11px] text-muted-foreground mt-2">
                 NIF & BP — Carte d'Immatriculation Fiscale
               </p>

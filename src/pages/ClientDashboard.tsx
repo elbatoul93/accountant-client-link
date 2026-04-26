@@ -10,10 +10,20 @@ import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface Doc { name: string; size: string; date: string; status: "processed" | "pending" }
-interface Decl { id: string; clientId: string; clientName: string; type: "G50" | "CNAS" | "CASNOS" | "CACOBATPH"; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
+type DeclType = "G50" | "CNAS" | "CASNOS" | "CACOBATPH" | "TAP" | "IBS" | "FS" | "G12" | "CP";
+type TaxRegime = "REEL" | "SIMPLIFIE" | "IFU";
+interface Decl { id: string; clientId: string; clientName: string; type: DeclType; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
 interface Invoice { id: string; clientId: string; clientName: string; amount: number; date: string; status: string }
-interface ClientRow { id: string; name: string; taxId: string; contact: string }
+interface ClientRow { id: string; name: string; taxId: string; contact: string; taxRegime?: TaxRegime }
 interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string; fileName?: string; mimeType?: string; fileData?: string }
+
+const REGIME_DECLS: Record<TaxRegime, DeclType[]> = {
+  REEL:      ["G50", "TAP", "IBS", "FS"],
+  SIMPLIFIE: ["G50", "TAP", "IBS", "FS"],
+  IFU:       ["G12", "CP"],
+};
+const regimeShort = (r?: TaxRegime) =>
+  r === "REEL" ? "Réel" : r === "SIMPLIFIE" ? "Simplifié" : r === "IFU" ? "IFU" : "";
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
@@ -47,8 +57,8 @@ const ClientDashboard = () => {
     accept: { "image/*": [], "application/pdf": [] },
   });
 
-  const { myDecls, myInvoices, mySharedDocs, totalDue } = useMemo(() => {
-    if (!user) return { myDecls: [] as Decl[], myInvoices: [] as Invoice[], mySharedDocs: [] as SharedDoc[], totalDue: 0 };
+  const { myDecls, myInvoices, mySharedDocs, totalDue, myRegime, requiredTypes } = useMemo(() => {
+    if (!user) return { myDecls: [] as Decl[], myInvoices: [] as Invoice[], mySharedDocs: [] as SharedDoc[], totalDue: 0, myRegime: undefined as TaxRegime | undefined, requiredTypes: [] as DeclType[] };
     const allClients: ClientRow[] = JSON.parse(localStorage.getItem("mgmtk_acc_clients") || "[]");
     const allDecls: Decl[] = JSON.parse(localStorage.getItem("mgmtk_acc_declarations") || "[]");
     const allInvoices: Invoice[] = JSON.parse(localStorage.getItem("mgmtk_acc_invoices") || "[]");
@@ -57,11 +67,17 @@ const ClientDashboard = () => {
       (c) => c.contact?.toLowerCase() === user.email.toLowerCase()
     );
     const ids = new Set(mine.map((c) => c.id));
-    const myD = allDecls.filter((d) => ids.has(d.clientId));
+    // Pick regime from the first matching client record
+    const regime = mine.find((c) => c.taxRegime)?.taxRegime;
+    const required = regime ? REGIME_DECLS[regime] : [];
+    const requiredSet = new Set<DeclType>(required);
+    const ownDecls = allDecls.filter((d) => ids.has(d.clientId));
+    // Only show declarations relevant to the client's tax regime (when known)
+    const myD = regime ? ownDecls.filter((d) => requiredSet.has(d.type)) : ownDecls;
     const myI = allInvoices.filter((i) => ids.has(i.clientId));
     const myS = allShared.filter((s) => ids.has(s.clientId) || s.clientEmail?.toLowerCase() === user.email.toLowerCase());
     const due = myD.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
-    return { myDecls: myD, myInvoices: myI, mySharedDocs: myS, totalDue: due };
+    return { myDecls: myD, myInvoices: myI, mySharedDocs: myS, totalDue: due, myRegime: regime, requiredTypes: required };
   }, [user, docs]);
 
   if (!user) return <Navigate to="/login" replace />;
@@ -75,7 +91,14 @@ const ClientDashboard = () => {
       <SiteHeader />
       <main className="container py-8 space-y-6">
         <div>
-          <Badge className="bg-gold/20 text-gold-deep border-gold/40 hover:bg-gold/30 mb-2">{t("dash_cli_title")}</Badge>
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            <Badge className="bg-gold/20 text-gold-deep border-gold/40 hover:bg-gold/30">{t("dash_cli_title")}</Badge>
+            {myRegime && (
+              <Badge variant="outline" className="border-primary/40 text-primary bg-primary/5 font-mono text-[10px]">
+                {t("client_tax_regime")}: {regimeShort(myRegime)}
+              </Badge>
+            )}
+          </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-primary">
             {t("dash_cli_welcome")}, {user.name.split(" ")[0]} 👋
           </h1>
@@ -214,6 +237,20 @@ const ClientDashboard = () => {
               <h2 className="text-base font-bold text-primary mb-3 flex items-center gap-2">
                 <Receipt className="h-4 w-4" /> {t("cli_my_obligations")}
               </h2>
+              {myRegime && requiredTypes.length > 0 && (
+                <div className="mb-3 rounded-md border border-primary/30 bg-primary/5 p-2.5">
+                  <div className="text-[10px] uppercase tracking-wide text-primary font-semibold mb-1.5">
+                    {t("client_required_decls")}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {requiredTypes.map((type) => (
+                      <Badge key={type} variant="outline" className="font-mono text-[10px] border-gold-deep/40 text-gold-deep bg-gold/5">
+                        {type}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
               {myDecls.length === 0 ? (
                 <div className="text-center py-6 border border-dashed border-border rounded-lg">
                   <div className="text-xs text-muted-foreground">{t("cli_no_obligations")}</div>
