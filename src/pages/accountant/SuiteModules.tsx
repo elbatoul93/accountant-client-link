@@ -488,11 +488,12 @@ const AddBillDialog = ({
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [ht, setHt] = useState("");
   const [rate, setRate] = useState("19");
-  const [account, setAccount] = useState<string>(kind === "sales" ? "70" : "60");
+  const [account, setAccount] = useState<string>(kind === "sales" ? "701" : "601");
+  const [partyTaxId, setPartyTaxId] = useState("");
 
   // when kind changes, reset suggested account
   useEffect(() => {
-    setAccount(kind === "sales" ? "70" : "60");
+    setAccount(kind === "sales" ? "701" : "601");
   }, [kind]);
 
   const tva = (Number(ht || 0) * Number(rate || 0)) / 100;
