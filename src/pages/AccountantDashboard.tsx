@@ -526,8 +526,11 @@ const ClientProfileView = ({
   const totalDue = decls.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
   const filed = decls.filter((d) => d.status === "filed").length;
   const pending = decls.filter((d) => d.status !== "filed").length;
-  const g50 = decls.filter((d) => d.type === "G50");
-  const social = decls.filter((d) => d.type !== "G50");
+  const requiredTypes = client.taxRegime ? REGIME_DECLS[client.taxRegime] : [];
+  const requiredSet = new Set<DeclType>(requiredTypes);
+  // Obligations tab: only declarations relevant to the client's tax regime
+  const obligations = decls.filter((d) => requiredSet.has(d.type));
+  const social = decls.filter((d) => d.type === "CNAS" || d.type === "CASNOS" || d.type === "CACOBATPH");
 
   return (
     <>
