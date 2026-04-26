@@ -646,7 +646,36 @@ const ClientProfileView = ({
               </div>
               <AddDeclarationDialog clients={[client]} type="G50" onAdd={onAddDecl} t={t} />
             </div>
-            <DeclList items={g50} t={t} onDelete={() => {}} />
+
+            {client.taxRegime ? (
+              <div className="mb-4 rounded-md border border-primary/30 bg-primary/5 p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[11px] uppercase tracking-wide text-primary font-semibold">
+                    {t("client_required_decls")}
+                  </span>
+                  <Badge variant="outline" className="text-[10px] border-primary/40 text-primary bg-background font-mono">
+                    {t(regimeLabelKey(client.taxRegime))}
+                  </Badge>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {requiredTypes.map((type) => (
+                    <div key={type} className="flex items-center gap-2 rounded border border-border/60 bg-card p-2">
+                      <Badge variant="outline" className="font-mono text-[10px] border-gold-deep/40 text-gold-deep bg-gold/5">{type}</Badge>
+                      <span className="text-xs text-muted-foreground truncate">{t(declLabelKey(type))}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  {client.taxRegime === "IFU" ? t("client_tax_regime_hint_ifu") : t("client_tax_regime_hint_real")}
+                </p>
+              </div>
+            ) : (
+              <div className="mb-4 rounded-md border border-dashed border-border/60 p-3 text-xs text-muted-foreground">
+                {t("client_tax_regime_placeholder")}
+              </div>
+            )}
+
+            <DeclList items={obligations} t={t} onDelete={() => {}} showType />
           </Card>
         </TabsContent>
 
