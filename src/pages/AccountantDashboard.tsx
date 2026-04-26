@@ -91,7 +91,7 @@ const AccountantDashboard = () => {
   const [fsList, setFsList] = useState<FinStmt[]>(() => load<FinStmt>(KEY_FS));
   const [sharedDocs, setSharedDocs] = useState<SharedDoc[]>(() => load<SharedDoc>(KEY_SHARED));
   const [legalDocs, setLegalDocs] = useState<LegalDoc[]>(() => load<LegalDoc>(KEY_LEGAL));
-  const { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks } = useSuiteData();
+  const { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks, precompte, setPrecompte } = useSuiteData();
   const [obligationsClient, setObligationsClient] = useState<Client | null>(null);
   const [openTool, setOpenTool] = useState<null | "fs" | "g50" | "send">(null);
   const [view, setView] = useState<View>("dashboard");
@@ -332,7 +332,8 @@ const AccountantDashboard = () => {
                 clients={clients.map((c) => ({ id: c.id, name: c.name }))} />
             )}
             {view === "taxintel" && (
-              <TaxIntelView t={t} journal={journal}
+              <TaxIntelView t={t} journal={journal} bills={bills}
+                precompte={precompte} setPrecompte={setPrecompte}
                 clients={clients.map((c) => ({ id: c.id, name: c.name, legalForm: c.legalForm }))} />
             )}
           </main>
