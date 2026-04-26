@@ -299,6 +299,16 @@ const en = {
   jrn_no_entries: "No accounting entries yet.",
   jrn_unbalanced: "Debit and credit must be balanced",
   sync_from_modules: "Auto-filled from Billing & Payroll",
+  acc_edit: "Edit",
+  edit_lock_title: "Secure access required",
+  edit_lock_subtitle: "Enter your account password to modify this client's sensitive information.",
+  edit_lock_password: "Your password",
+  edit_lock_unlock: "Unlock",
+  edit_lock_cancel: "Cancel",
+  edit_lock_wrong: "Incorrect password.",
+  edit_lock_no_account: "Account not found — please sign in again.",
+  edit_client_title: "Edit client",
+  edit_client_saved: "Client information updated successfully.",
 };
 
 const fr: typeof en = {
