@@ -460,10 +460,10 @@ const DashboardView = ({
 );
 
 const ClientsListView = ({
-  t, clients, totalCount, search, setSearch, onOpen, onAdd, onDelete, onExtract,
+  t, clients, totalCount, search, setSearch, onOpen, onAdd, onEdit, onDelete, onExtract,
 }: {
   t: (k: string) => string; clients: Client[]; totalCount: number; search: string; setSearch: (v: string) => void;
-  onOpen: (c: Client) => void; onAdd: () => void; onDelete: (id: string) => void; onExtract: (c: Client) => void;
+  onOpen: (c: Client) => void; onAdd: () => void; onEdit: (c: Client) => void; onDelete: (id: string) => void; onExtract: (c: Client) => void;
 }) => (
   <>
     <div className="flex items-center justify-between flex-wrap gap-3">
