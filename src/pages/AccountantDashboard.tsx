@@ -26,16 +26,40 @@ import { toast } from "sonner";
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
 
+type TaxRegime = "REEL" | "SIMPLIFIE" | "IFU";
+
 interface Client {
   id: string; name: string; company?: string;
   taxId: string; bp?: string; nis?: string; rc?: string;
   cnasNo?: string; casnosNo?: string; hasCacobatph?: boolean;
   email?: string; phone?: string; address?: string; legalForm?: string; activity?: string;
+  taxRegime?: TaxRegime;
   contact: string; // legacy email used by client portal matching
   status: "active" | "review";
 }
 interface Invoice { id: string; clientId: string; clientName: string; amount: number; date: string; status: "pending" | "processed" | "review" }
-interface Decl { id: string; clientId: string; clientName: string; type: "G50" | "CNAS" | "CASNOS" | "CACOBATPH"; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
+type DeclType = "G50" | "CNAS" | "CASNOS" | "CACOBATPH" | "TAP" | "IBS" | "FS" | "G12" | "CP";
+interface Decl { id: string; clientId: string; clientName: string; type: DeclType; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
+
+// Declarations required per tax regime
+const REGIME_DECLS: Record<TaxRegime, DeclType[]> = {
+  REEL:      ["G50", "TAP", "IBS", "FS"],
+  SIMPLIFIE: ["G50", "TAP", "IBS", "FS"],
+  IFU:       ["G12", "CP"],
+};
+
+const regimeLabelKey = (r?: TaxRegime) =>
+  r === "REEL" ? "client_tax_regime_reel"
+  : r === "SIMPLIFIE" ? "client_tax_regime_simplifie"
+  : r === "IFU" ? "client_tax_regime_ifu" : "";
+
+const declLabelKey = (type: DeclType): string => {
+  const map: Partial<Record<DeclType, string>> = {
+    G50: "decl_type_g50", TAP: "decl_type_tap", IBS: "decl_type_ibs",
+    FS: "decl_type_fs", G12: "decl_type_g12", CP: "decl_type_cp",
+  };
+  return map[type] || type;
+};
 
 interface FinStmt { id: string; clientId: string; clientName: string; year: string; assets: number; liabilities: number; equity: number; revenue: number; netResult: number; createdAt: string }
 interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string; fileName?: string; mimeType?: string; fileData?: string }
