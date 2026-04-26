@@ -747,8 +747,15 @@ const AddClientDialog = ({
     setName(""); setCompany(""); setLegalForm(""); setActivity("");
     setTaxId(""); setBp(""); setNis(""); setRc("");
     setCnasNo(""); setCasnosNo(""); setHasCacobatph(false);
+    setTaxRegime("");
     setEmail(""); setPhone(""); setAddress("");
   };
+
+  const submit = () => {
+    if (!name.trim() || !taxId.trim() || !legalForm || !taxRegime) {
+      toast.error([t("acc_client_name"), t("client_nif"), t("client_legal_form"), t("client_tax_regime")].join(" • "));
+      return;
+    }
 
   const submit = () => {
     if (!name.trim() || !taxId.trim() || !legalForm) {
