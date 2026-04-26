@@ -57,8 +57,8 @@ const ClientDashboard = () => {
     accept: { "image/*": [], "application/pdf": [] },
   });
 
-  const { myDecls, myInvoices, mySharedDocs, totalDue } = useMemo(() => {
-    if (!user) return { myDecls: [] as Decl[], myInvoices: [] as Invoice[], mySharedDocs: [] as SharedDoc[], totalDue: 0 };
+  const { myDecls, myInvoices, mySharedDocs, totalDue, myRegime, requiredTypes } = useMemo(() => {
+    if (!user) return { myDecls: [] as Decl[], myInvoices: [] as Invoice[], mySharedDocs: [] as SharedDoc[], totalDue: 0, myRegime: undefined as TaxRegime | undefined, requiredTypes: [] as DeclType[] };
     const allClients: ClientRow[] = JSON.parse(localStorage.getItem("mgmtk_acc_clients") || "[]");
     const allDecls: Decl[] = JSON.parse(localStorage.getItem("mgmtk_acc_declarations") || "[]");
     const allInvoices: Invoice[] = JSON.parse(localStorage.getItem("mgmtk_acc_invoices") || "[]");
@@ -67,11 +67,17 @@ const ClientDashboard = () => {
       (c) => c.contact?.toLowerCase() === user.email.toLowerCase()
     );
     const ids = new Set(mine.map((c) => c.id));
-    const myD = allDecls.filter((d) => ids.has(d.clientId));
+    // Pick regime from the first matching client record
+    const regime = mine.find((c) => c.taxRegime)?.taxRegime;
+    const required = regime ? REGIME_DECLS[regime] : [];
+    const requiredSet = new Set<DeclType>(required);
+    const ownDecls = allDecls.filter((d) => ids.has(d.clientId));
+    // Only show declarations relevant to the client's tax regime (when known)
+    const myD = regime ? ownDecls.filter((d) => requiredSet.has(d.type)) : ownDecls;
     const myI = allInvoices.filter((i) => ids.has(i.clientId));
     const myS = allShared.filter((s) => ids.has(s.clientId) || s.clientEmail?.toLowerCase() === user.email.toLowerCase());
     const due = myD.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
-    return { myDecls: myD, myInvoices: myI, mySharedDocs: myS, totalDue: due };
+    return { myDecls: myD, myInvoices: myI, mySharedDocs: myS, totalDue: due, myRegime: regime, requiredTypes: required };
   }, [user, docs]);
 
   if (!user) return <Navigate to="/login" replace />;
