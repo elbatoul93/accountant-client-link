@@ -26,6 +26,9 @@ import { BillingView, JournalView, useSuiteData, aggregateForG50 } from "./accou
 import { PayrollAdvanced } from "./accountant/PayrollAdvanced";
 import { ReportsView } from "./accountant/ReportsView";
 import { TaxIntelView } from "./accountant/TaxIntelView";
+import { LiasseFiscaleView } from "./accountant/LiasseFiscale";
+import { AssetsView } from "./accountant/AssetsView";
+import { FiscalCalendar } from "@/components/FiscalCalendar";
 import { lockPeriod, computeG50FromJournal } from "@/lib/accounting/engine";
 
 const fmtDZD = (n: number) =>
@@ -82,7 +85,7 @@ const load = <T,>(k: string): T[] => {
   return raw ? JSON.parse(raw) : [];
 };
 
-type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports" | "taxintel";
+type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports" | "taxintel" | "liasse" | "assets" | "calendar";
 
 const AccountantDashboard = () => {
   const { t, user } = useApp();
@@ -134,11 +137,14 @@ const AccountantDashboard = () => {
 
   const sidebarItems: { key: View; label: string; icon: any; count?: number }[] = [
     { key: "dashboard", label: t("side_dashboard"), icon: LayoutDashboard },
+    { key: "calendar", label: t("side_calendar"), icon: Bell },
     { key: "clients", label: t("side_clients"), icon: Users, count: clients.length },
     { key: "billing", label: t("side_billing"), icon: Receipt, count: bills.length },
     { key: "payroll", label: t("side_payroll"), icon: Wallet, count: employees.length },
+    { key: "assets", label: t("side_assets"), icon: Building2 },
     { key: "journal", label: t("side_journal"), icon: BookOpen, count: journal.length },
     { key: "reports", label: t("side_reports"), icon: Calculator },
+    { key: "liasse", label: t("side_liasse"), icon: FileCheck2 },
     { key: "taxintel", label: t("side_taxintel"), icon: Landmark },
     { key: "invoices", label: t("side_invoices"), icon: FileText, count: invoices.length },
     { key: "obligations", label: t("side_obligations"), icon: Receipt, count: decls.length },
@@ -201,7 +207,18 @@ const AccountantDashboard = () => {
                 totalRevenue={totalRevenue} pendingInvoices={pendingInvoices} pendingTax={pendingTax}
                 onGoClients={() => setView("clients")}
                 onAddClient={() => setOpenAdd(true)}
+                onOpenCalendar={() => setView("calendar")}
               />
+            )}
+
+            {view === "calendar" && (
+              <div className="space-y-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-primary">{t("fcal_title")}</h1>
+                  <p className="text-xs text-muted-foreground">{t("fcal_subtitle")}</p>
+                </div>
+                <FiscalCalendar t={t} limit={30} />
+              </div>
             )}
 
             {view === "clients" && (
@@ -337,6 +354,16 @@ const AccountantDashboard = () => {
                 precompte={precompte} setPrecompte={setPrecompte}
                 clients={clients.map((c) => ({ id: c.id, name: c.name, legalForm: c.legalForm }))} />
             )}
+            {view === "liasse" && (
+              <LiasseFiscaleView t={t} journal={journal} employees={employees}
+                clients={clients.map((c) => ({
+                  id: c.id, name: c.name, taxId: c.taxId, nis: c.nis, rc: c.rc, bp: c.bp,
+                  taxRegime: c.taxRegime,
+                }))} />
+            )}
+            {view === "assets" && (
+              <AssetsView t={t} clients={clients.map((c) => ({ id: c.id, name: c.name }))} />
+            )}
           </main>
         </div>
       </div>
@@ -444,7 +471,7 @@ const AccountantDashboard = () => {
 /* ============== VIEWS ============== */
 
 const DashboardView = ({
-  t, user, clients, invoices, decls, totalRevenue, pendingInvoices, pendingTax, onGoClients, onAddClient,
+  t, user, clients, invoices, decls, totalRevenue, pendingInvoices, pendingTax, onGoClients, onAddClient, onOpenCalendar,
 }: any) => (
   <>
     <div className="flex items-center justify-between flex-wrap gap-3">
@@ -489,12 +516,12 @@ const DashboardView = ({
       )}
     </Card>
 
-    <Card className="p-5 shadow-card">
-      <h2 className="text-lg font-bold text-primary flex items-center gap-2 mb-3">
-        <Bell className="h-4 w-4" /> {t("dash_notif_title")}
-      </h2>
-      <EmptyState label={t("empty_no_notifs")} />
-    </Card>
+    <FiscalCalendar t={t} limit={6} />
+    {onOpenCalendar && (
+      <div className="text-end">
+        <Button variant="ghost" size="sm" onClick={onOpenCalendar}>{t("fcal_view_all")} <ChevronRight className="h-4 w-4" /></Button>
+      </div>
+    )}
   </>
 );
 
