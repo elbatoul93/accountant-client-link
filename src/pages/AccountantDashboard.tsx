@@ -726,8 +726,8 @@ const AddClientDialog = ({
   };
 
   const submit = () => {
-    if (!name.trim() || !taxId.trim()) {
-      toast.error(t("acc_client_name") + " & " + t("client_nif"));
+    if (!name.trim() || !taxId.trim() || !legalForm) {
+      toast.error([t("acc_client_name"), t("client_nif"), t("client_legal_form")].join(" • "));
       return;
     }
     onAdd({
