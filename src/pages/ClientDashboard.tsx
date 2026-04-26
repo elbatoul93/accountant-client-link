@@ -10,10 +10,20 @@ import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface Doc { name: string; size: string; date: string; status: "processed" | "pending" }
-interface Decl { id: string; clientId: string; clientName: string; type: "G50" | "CNAS" | "CASNOS" | "CACOBATPH"; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
+type DeclType = "G50" | "CNAS" | "CASNOS" | "CACOBATPH" | "TAP" | "IBS" | "FS" | "G12" | "CP";
+type TaxRegime = "REEL" | "SIMPLIFIE" | "IFU";
+interface Decl { id: string; clientId: string; clientName: string; type: DeclType; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
 interface Invoice { id: string; clientId: string; clientName: string; amount: number; date: string; status: string }
-interface ClientRow { id: string; name: string; taxId: string; contact: string }
+interface ClientRow { id: string; name: string; taxId: string; contact: string; taxRegime?: TaxRegime }
 interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string; fileName?: string; mimeType?: string; fileData?: string }
+
+const REGIME_DECLS: Record<TaxRegime, DeclType[]> = {
+  REEL:      ["G50", "TAP", "IBS", "FS"],
+  SIMPLIFIE: ["G50", "TAP", "IBS", "FS"],
+  IFU:       ["G12", "CP"],
+};
+const regimeShort = (r?: TaxRegime) =>
+  r === "REEL" ? "Réel" : r === "SIMPLIFIE" ? "Simplifié" : r === "IFU" ? "IFU" : "";
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
