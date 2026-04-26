@@ -756,18 +756,13 @@ const AddClientDialog = ({
       toast.error([t("acc_client_name"), t("client_nif"), t("client_legal_form"), t("client_tax_regime")].join(" • "));
       return;
     }
-
-  const submit = () => {
-    if (!name.trim() || !taxId.trim() || !legalForm) {
-      toast.error([t("acc_client_name"), t("client_nif"), t("client_legal_form")].join(" • "));
-      return;
-    }
     onAdd({
       id: crypto.randomUUID(),
       name: name.trim(), company: company.trim() || undefined,
       legalForm: legalForm.trim() || undefined, activity: activity.trim() || undefined,
       taxId: taxId.trim(), bp: bp.trim() || undefined, nis: nis.trim() || undefined, rc: rc.trim() || undefined,
       cnasNo: cnasNo.trim() || undefined, casnosNo: casnosNo.trim() || undefined, hasCacobatph,
+      taxRegime: taxRegime as TaxRegime,
       email: email.trim() || undefined, phone: phone.trim() || undefined, address: address.trim() || undefined,
       contact: email.trim(), // for client portal email matching
       status: "active",
