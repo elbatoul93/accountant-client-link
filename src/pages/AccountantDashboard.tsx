@@ -757,19 +757,39 @@ const AddClientDialog = ({
             <div className="grid sm:grid-cols-2 gap-3">
               <Field label={t("acc_client_name") + " *"}><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Mohamed Benali" /></Field>
               <Field label={t("client_company")}><Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Acme SARL" /></Field>
-              <Field label={t("client_legal_form")}><Input value={legalForm} onChange={(e) => setLegalForm(e.target.value)} placeholder="SARL / EURL / SPA / EI" /></Field>
+              <Field label={t("client_legal_form") + " *"}>
+                <Select value={legalForm} onValueChange={setLegalForm}>
+                  <SelectTrigger><SelectValue placeholder={t("client_legal_form_placeholder")} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PP">{t("client_legal_form_pp")}</SelectItem>
+                    <SelectItem value="SARL">{t("client_legal_form_sarl")}</SelectItem>
+                    <SelectItem value="EURL">{t("client_legal_form_eurl")}</SelectItem>
+                    <SelectItem value="SNC">{t("client_legal_form_snc")}</SelectItem>
+                    <SelectItem value="SPA">{t("client_legal_form_spa")}</SelectItem>
+                    <SelectItem value="SPA-AD">{t("client_legal_form_spa_ad")}</SelectItem>
+                    <SelectItem value="GROUPEMENT">{t("client_legal_form_groupement")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
               <Field label={t("client_activity")}><Input value={activity} onChange={(e) => setActivity(e.target.value)} placeholder="Commerce de gros" /></Field>
             </div>
           </Section>
 
           <Section title={t("client_section_tax")} icon={IdCard}>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <Field label={t("client_nif") + " *"}><Input value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="000016001234567" className="font-mono" /></Field>
-              <Field label={t("client_bp")}><Input value={bp} onChange={(e) => setBp(e.target.value)} placeholder="16xxxxxxxx" className="font-mono" /></Field>
+            <div className={legalForm === "PP" ? "rounded-md border border-gold-deep/40 bg-gold-deep/5 p-3" : ""}>
+              {legalForm === "PP" && (
+                <p className="text-[12px] text-gold-deep font-medium mb-2 flex items-center gap-1">
+                  <IdCard className="h-3.5 w-3.5" /> {t("client_pp_hint")}
+                </p>
+              )}
+              <div className="grid sm:grid-cols-2 gap-3">
+                <Field label={t("client_nif") + " *"}><Input value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="000016001234567" className="font-mono" /></Field>
+                <Field label={t("client_bp")}><Input value={bp} onChange={(e) => setBp(e.target.value)} placeholder="16xxxxxxxx" className="font-mono" /></Field>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-2">
+                NIF & BP — Carte d'Immatriculation Fiscale
+              </p>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2">
-              NIF & BP — Carte d'Immatriculation Fiscale
-            </p>
           </Section>
 
           <Section title={t("client_section_legal")} icon={FileText}>
