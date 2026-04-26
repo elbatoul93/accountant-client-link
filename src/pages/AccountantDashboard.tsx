@@ -85,7 +85,7 @@ const load = <T,>(k: string): T[] => {
   return raw ? JSON.parse(raw) : [];
 };
 
-type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports" | "taxintel";
+type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports" | "taxintel" | "liasse" | "assets" | "calendar";
 
 const AccountantDashboard = () => {
   const { t, user } = useApp();
