@@ -316,6 +316,7 @@ const AccountantDashboard = () => {
               <JournalView t={t} journal={journal} setJournal={setJournal}
                 clients={clients.map((c) => ({ id: c.id, name: c.name }))} />
             )}
+          </main>
         </div>
       </div>
 
