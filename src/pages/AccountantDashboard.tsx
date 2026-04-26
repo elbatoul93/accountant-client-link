@@ -366,9 +366,11 @@ const AccountantDashboard = () => {
         open={openTool === "g50"} onOpenChange={(o) => !o && setOpenTool(null)}
         clients={clients} t={t}
         getAggregates={(cid) => aggregateForG50(cid, bills, employees)}
-        onGenerate={(d, shared) => {
+        getLiveG50={(cid, period) => computeG50FromJournal(journal, { clientId: cid, period })}
+        onGenerate={(d, shared, lockOpts) => {
           setDecls((p) => [d, ...p]);
           if (shared) setSharedDocs((p) => [shared, ...p]);
+          if (lockOpts) setLocks((p) => lockPeriod(p, lockOpts));
           setOpenTool(null);
         }}
       />
