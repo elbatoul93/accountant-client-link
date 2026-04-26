@@ -516,12 +516,12 @@ const DashboardView = ({
       )}
     </Card>
 
-    <Card className="p-5 shadow-card">
-      <h2 className="text-lg font-bold text-primary flex items-center gap-2 mb-3">
-        <Bell className="h-4 w-4" /> {t("dash_notif_title")}
-      </h2>
-      <EmptyState label={t("empty_no_notifs")} />
-    </Card>
+    <FiscalCalendar t={t} limit={6} />
+    {onOpenCalendar && (
+      <div className="text-end">
+        <Button variant="ghost" size="sm" onClick={onOpenCalendar}>{t("fcal_view_all")} <ChevronRight className="h-4 w-4" /></Button>
+      </div>
+    )}
   </>
 );
 
