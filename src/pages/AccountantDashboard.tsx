@@ -471,7 +471,7 @@ const AccountantDashboard = () => {
 /* ============== VIEWS ============== */
 
 const DashboardView = ({
-  t, user, clients, invoices, decls, totalRevenue, pendingInvoices, pendingTax, onGoClients, onAddClient,
+  t, user, clients, invoices, decls, totalRevenue, pendingInvoices, pendingTax, onGoClients, onAddClient, onOpenCalendar,
 }: any) => (
   <>
     <div className="flex items-center justify-between flex-wrap gap-3">
