@@ -53,6 +53,13 @@ const prevPeriod = (period: string): string => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 };
 
+/** Compute the next YYYY-MM string. */
+const nextPeriod = (period: string): string => {
+  const [y, m] = period.split("-").map(Number);
+  const d = new Date(y, m, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+};
+
 export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecompte }: Props) => {
   const [clientId, setClientId] = useState<string>("ALL");
   const [period, setPeriod] = useState<string>(new Date().toISOString().slice(0, 7));
@@ -460,10 +467,10 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
                 </div>
               )}
 
-              <G50Section section={g50.sections.A} icon={<Receipt className="h-4 w-4" />} t={t} />
-              <G50Section section={g50.sections.B} icon={<Calculator className="h-4 w-4" />} t={t} />
-              <G50Section section={g50.sections.C} icon={<Briefcase className="h-4 w-4" />} t={t} />
-              <G50Section section={g50.sections.D} icon={<Wallet className="h-4 w-4" />} t={t} />
+              <G50SectionCard section={g50.sections.A} icon={<Receipt className="h-4 w-4" />} />
+              <G50SectionCard section={g50.sections.B} icon={<Calculator className="h-4 w-4" />} />
+              <G50SectionCard section={g50.sections.C} icon={<Briefcase className="h-4 w-4" />} />
+              <G50SectionCard section={g50.sections.D} icon={<Wallet className="h-4 w-4" />} />
 
               {/* Grand total */}
               <div className="rounded-lg bg-gradient-to-r from-gold/15 to-gold/5 border-2 border-gold/40 p-4 flex items-center justify-between">
@@ -506,16 +513,44 @@ const KpiBox = ({ label, value, highlight }: { label: string; value: string; hig
   </Card>
 );
 
-const G50Row = ({ l }: { l: G50Line }) => {
+const G50LineRow = ({ l }: { l: G50Line }) => {
   const fmt = (n?: number) =>
     n == null ? "—" : new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(n));
   return (
-    <tr className="border-t border-border/50 hover:bg-muted/30">
+    <tr className={`border-t border-border/50 hover:bg-muted/30 ${l.informational ? "text-muted-foreground" : ""}`}>
       <td className="py-2 px-3 font-mono text-xs font-bold text-primary">{l.code}</td>
       <td className="py-2 px-3 text-xs">{l.label}</td>
       <td className="py-2 px-3 text-end font-mono text-xs hidden md:table-cell">{fmt(l.base)}</td>
       <td className="py-2 px-3 text-end font-mono text-xs hidden sm:table-cell">{l.rate != null ? `${l.rate} %` : "—"}</td>
-      <td className="py-2 px-3 text-end font-mono text-xs font-bold text-gold-deep">{fmt(l.amount)} DA</td>
+      <td className={`py-2 px-3 text-end font-mono text-xs font-bold ${l.informational ? "text-muted-foreground italic" : "text-gold-deep"}`}>
+        {l.informational ? fmt(l.amount) : `${fmt(l.amount)} DA`}
+      </td>
     </tr>
+  );
+};
+
+const G50SectionCard = ({
+  section, icon,
+}: {
+  section: { title: string; lines: G50Line[]; subtotal: number };
+  icon: React.ReactNode;
+}) => {
+  if (section.lines.length === 0) return null;
+  return (
+    <Card className="p-0 overflow-hidden border-border/70">
+      <div className="bg-muted/40 px-4 py-2 border-b border-border flex items-center justify-between">
+        <div className="font-bold text-primary text-sm flex items-center gap-2">{icon}{section.title}</div>
+        <Badge variant="outline" className="border-gold-deep/40 text-gold-deep bg-gold/5 font-mono text-xs">
+          {new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(section.subtotal))} DA
+        </Badge>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <tbody>
+            {section.lines.map((l) => <G50LineRow key={l.code} l={l} />)}
+          </tbody>
+        </table>
+      </div>
+    </Card>
   );
 };
