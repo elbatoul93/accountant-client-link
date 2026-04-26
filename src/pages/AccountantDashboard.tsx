@@ -521,6 +521,10 @@ const ClientsListView = ({
                       <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => onExtract(c)}>
                         <FileDown className="h-3.5 w-3.5" /> {t("acc_extract")}
                       </Button>
+                      <Button size="sm" variant="outlineGold" className="h-7 gap-1.5 text-xs" onClick={() => onEdit(c)}>
+                        <Lock className="h-3 w-3" />
+                        <Pencil className="h-3.5 w-3.5" /> {t("acc_edit")}
+                      </Button>
                       <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => onOpen(c)}>
                         {t("client_open_profile")} <ChevronRight className="h-3.5 w-3.5" />
                       </Button>
