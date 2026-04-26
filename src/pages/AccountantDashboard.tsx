@@ -207,7 +207,18 @@ const AccountantDashboard = () => {
                 totalRevenue={totalRevenue} pendingInvoices={pendingInvoices} pendingTax={pendingTax}
                 onGoClients={() => setView("clients")}
                 onAddClient={() => setOpenAdd(true)}
+                onOpenCalendar={() => setView("calendar")}
               />
+            )}
+
+            {view === "calendar" && (
+              <div className="space-y-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-primary">{t("fcal_title")}</h1>
+                  <p className="text-xs text-muted-foreground">{t("fcal_subtitle")}</p>
+                </div>
+                <FiscalCalendar t={t} limit={30} />
+              </div>
             )}
 
             {view === "clients" && (
