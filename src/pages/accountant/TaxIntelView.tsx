@@ -174,11 +174,10 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
       </Card>
 
       <Tabs defaultValue="g50">
-        <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full max-w-4xl">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-5 w-full max-w-4xl">
           <TabsTrigger value="ibs">{t("tax_tab_ibs")}</TabsTrigger>
           <TabsTrigger value="irg">{t("tax_tab_irg")}</TabsTrigger>
           <TabsTrigger value="tfp">{t("tax_tab_tfp")}</TabsTrigger>
-          <TabsTrigger value="trwi">{t("tax_tab_trwi")}</TabsTrigger>
           <TabsTrigger value="etat104">{t("tax_tab_etat104")}</TabsTrigger>
           <TabsTrigger value="g50">{t("tax_tab_g50")}</TabsTrigger>
         </TabsList>
