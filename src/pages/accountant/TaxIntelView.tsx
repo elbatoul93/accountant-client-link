@@ -18,14 +18,13 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Calculator, Building2, Briefcase, Wallet, Tv, FileText, Landmark, Users,
+  Calculator, Building2, Briefcase, Wallet, FileText, Landmark, Users,
   Receipt, ArrowDownToLine, ArrowUpFromLine, AlertTriangle, FileSpreadsheet,
 } from "lucide-react";
 import {
   IBS_RATES, type IbsSector, computeIbs, computeIbsAcompte,
   IRG_PRO_BRACKETS_2024, computeIrgProfessionsLiberales,
   computeTfpTapp, TFP_TAPP_THRESHOLD,
-  TRWI_FEES, type LegalEntityKind, computeTrwi,
   buildG50Preview, type G50Line, type G50Section,
   TAP_RATE, buildEtat104,
 } from "@/lib/accounting/algerianTax";
