@@ -1352,7 +1352,7 @@ const AddDeclarationDialog = ({
   );
 };
 
-const DeclList = ({ items, onDelete, t, showType }: { items: Decl[]; onDelete: (id: string) => void; t: (k: string) => string; showType?: boolean }) => {
+const DeclList = ({ items, onDelete, t, showType, onSend }: { items: Decl[]; onDelete: (id: string) => void; t: (k: string) => string; showType?: boolean; onSend?: (d: Decl) => void }) => {
   if (items.length === 0) return <EmptyState label={t("empty_no_decls")} />;
   return (
     <div className="space-y-2">
@@ -1369,6 +1369,11 @@ const DeclList = ({ items, onDelete, t, showType }: { items: Decl[]; onDelete: (
             <div className="font-bold text-sm text-gold-deep">{fmtDZD(d.amount)}</div>
             <Badge variant="outline" className="text-[10px]">{t(`dash_${d.status}`)}</Badge>
           </div>
+          {onSend && (
+            <Button size="sm" variant="outlineGold" onClick={() => onSend(d)} title={t("tools_send_to_client")}>
+              <Send className="h-3.5 w-3.5" />
+            </Button>
+          )}
           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(d.id)}>
             <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
           </Button>
