@@ -455,7 +455,7 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
                     <li>• Précompte: {t("tax_g50_precompte_auto")}</li>
                     <li>• IBS Acompte: {t("tax_ibs_per_acompte")} ÷ 3</li>
                     <li>• TFP / TAPP: {t("tax_tfp_subtitle")}</li>
-                    <li>• TRWI: {t("tax_trwi_annual")} ÷ 12</li>
+                    
                   </ul>
                 </div>
                 <div className="p-3 rounded-md border border-gold/40 bg-gold/5">
