@@ -579,6 +579,50 @@ const en = {
   sig_required: "Please draw a signature first.",
   sig_success: "Document signed successfully",
   toast_invoice_sent: "Invoice sent to your accountant",
+
+  // Chat
+  chat_title: "Conversation",
+  chat_open: "Open chat",
+  chat_placeholder: "Write a message…",
+  chat_empty: "No messages yet. Start the conversation.",
+  chat_no_threads: "No conversations yet.",
+  chat_select_contact: "Select a contact to start chatting.",
+  side_chat: "Messages",
+
+  // Document checklist (monthly)
+  chk_title: "Document Tracking — Suivi mensuel",
+  chk_status_missing: "Missing — manquant",
+  chk_status_received: "Received — reçu",
+  chk_status_validated: "Validated — validé",
+  chk_mark_received: "Mark received",
+  chk_validate: "Validate",
+  chk_reset: "Reset",
+  chk_client_hint: "Send these documents to your accountant before the 10th of the month.",
+  chk_all_validated: "All required documents validated for this month.",
+  side_tracking: "Document Tracking",
+  acc_tracking_title: "Document Tracking — Status by Client",
+  acc_tracking_subtitle: "Live overview of monthly deliverables across your portfolio.",
+
+  // Workflow statuses
+  wf_draft: "Draft",
+  wf_review: "Under Review",
+  wf_sent: "Sent to Client",
+  wf_signed: "Signed",
+  wf_filed: "Filed",
+  wf_change: "Update status",
+  wf_review_edit: "Review & Edit",
+
+  // Document preview
+  preview_title: "Preview",
+  preview_open_new_tab: "Open in new tab",
+  preview_download: "Download",
+  preview_no_file: "No file attached for this document.",
+  preview_unsupported: "Preview unavailable. Use Download to open this file.",
+  preview_btn: "Preview",
+
+  // Client deadlines section title
+  cli_deadlines_title: "Upcoming Deadlines",
+  cli_deadlines_subtitle: "Tax & social deadlines for your tax regime.",
 };
 
 const fr: typeof en = {
