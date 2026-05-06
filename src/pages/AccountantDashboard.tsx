@@ -306,7 +306,27 @@ const AccountantDashboard = () => {
                       onAdd={(d) => setDecls((p) => [d, ...p])} t={t} />
                   </div>
                   <DeclList items={decls.filter((d) => d.type === "G50")} t={t}
-                    onDelete={(id) => setDecls((p) => p.filter((x) => x.id !== id))} />
+                    onDelete={(id) => setDecls((p) => p.filter((x) => x.id !== id))}
+                    onSend={(d) => {
+                      const c = clients.find((x) => x.id === d.clientId);
+                      if (!c) return;
+                      const shared: SharedDoc = {
+                        id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
+                        clientEmail: c.contact, type: "G50",
+                        label: `G50 ${d.due.slice(0, 7)} — ${fmtDZD(d.amount)}`,
+                        date: new Date().toLocaleDateString("fr-DZ"),
+                        payload: JSON.stringify({ nif: c.taxId, bp: c.bp, amount: d.amount, due: d.due }),
+                      };
+                      setSharedDocs((p) => [shared, ...p]);
+                      pushNotification({
+                        forRole: "client", forEmail: c.contact,
+                        title: t("notif_g50_ready_title"),
+                        message: t("notif_g50_ready_msg").replace("{label}", shared.label),
+                        type: "g50_ready", link: "/dashboard/client", refId: shared.id,
+                      });
+                      toast.success(t("tools_send_to_client"));
+                    }}
+                  />
                 </Card>
 
                 <Card className="p-5 shadow-card">
