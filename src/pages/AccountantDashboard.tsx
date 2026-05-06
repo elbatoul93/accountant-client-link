@@ -250,7 +250,16 @@ const AccountantDashboard = () => {
               <IncomingDocsView t={t} items={incoming}
                 onMarkProcessed={(id) => updateIncomingStatus(id, "processed")}
                 onDelete={(id) => deleteIncomingInvoice(id)}
+                onPreview={(it) => setPreviewIncoming(it)}
               />
+            )}
+
+            {view === "tracking" && (
+              <TrackingView t={t} clients={clients} activeId={trackingClientId} setActiveId={setTrackingClientId} />
+            )}
+
+            {view === "chat" && (
+              <ChatHubView t={t} clients={clients} />
             )}
 
             {view === "vault" && (
