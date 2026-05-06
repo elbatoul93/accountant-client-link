@@ -86,12 +86,9 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
     formationExpenses: Number(formation || 0),
   });
 
-  /* TRWI state */
-  const [trwiKind, setTrwiKind] = useState<LegalEntityKind>("PM");
-  const trwi = computeTrwi(trwiKind);
-
   /* G50 — pulls live amounts from journal then layers our calculators on top.
-   * TAP forced to 1% (LF 2024). Précompte is auto-loaded from previous month. */
+   * TAP forced to 1% (LF 2024). Précompte is auto-loaded from previous month.
+   * TRWI (Radio/TV) removed from G50 per regulatory update. */
   const cid = clientId === "ALL" ? undefined : clientId;
   const liveG50 = useMemo(
     () => computeG50FromJournal(journal, { clientId: cid, period, tapRate: TAP_RATE }),
@@ -111,9 +108,8 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
       irgSalaries: liveG50.irgSalaries,
       ibsAcompte: monthlyIbsShare,
       tfpTapp,
-      trwi: Math.round(trwi / 12),
     }),
-    [period, liveG50, precompteFromPrev, monthlyIbsShare, tfpTapp, trwi],
+    [period, liveG50, precompteFromPrev, monthlyIbsShare, tfpTapp],
   );
 
   /* Auto-persist the carry-forward Précompte for this period whenever it changes,
