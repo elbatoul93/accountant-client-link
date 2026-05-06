@@ -11,11 +11,16 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   UploadCloud, FileText, CheckCircle2, Clock, FileImage, Inbox, Trash2, Receipt, ShieldCheck,
-  FolderOpen, Download, PenTool, Archive, FileSignature,
+  FolderOpen, Download, PenTool, Archive, FileSignature, Eye, CalendarDays,
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/SignaturePad";
+import { ChatSidebar } from "@/components/ChatSidebar";
+import { DocChecklist } from "@/components/DocChecklist";
+import { DocPreviewDialog } from "@/components/DocPreviewDialog";
+import { WorkflowBadge } from "@/components/WorkflowStatus";
+import { FiscalCalendar } from "@/components/FiscalCalendar";
 import {
   addIncomingInvoice, pushNotification, signSharedDoc, getVault, onPortalChange, type VaultEntry,
 } from "@/lib/portal";
