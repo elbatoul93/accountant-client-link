@@ -152,6 +152,35 @@ const AccountantDashboard = () => {
     );
   }, [clients, search]);
 
+  // Per-client employee count (drives CNAS frequency: <10 quarterly, ≥10 monthly)
+  const empCountByClient = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const e of employees) {
+      const k = e.clientId || "_unassigned";
+      m[k] = (m[k] || 0) + 1;
+    }
+    return m;
+  }, [employees]);
+
+  // Automated chat reminder for clients who have not uploaded by the 10th of the month.
+  useEffect(() => {
+    if (!clients.length) return;
+    const sent = runUploadReminderSweep(
+      clients.map((c) => ({ email: c.contact, name: c.name })),
+      user?.name || "Cabinet Comptable",
+    );
+    if (sent > 0) toast.message(`${sent} rappel(s) envoyé(s) aux clients sans dépôt ce mois-ci.`);
+    // run again every hour while the dashboard stays open
+    const id = setInterval(() => {
+      runUploadReminderSweep(
+        clients.map((c) => ({ email: c.contact, name: c.name })),
+        user?.name || "Cabinet Comptable",
+      );
+    }, 60 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [clients, user?.name]);
+
+
   const activeClient = activeClientId ? clients.find((c) => c.id === activeClientId) || null : null;
 
   const openProfile = (c: Client) => {
