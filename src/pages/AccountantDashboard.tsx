@@ -235,6 +235,17 @@ const AccountantDashboard = () => {
               </div>
             )}
 
+            {view === "incoming" && (
+              <IncomingDocsView t={t} items={incoming}
+                onMarkProcessed={(id) => updateIncomingStatus(id, "processed")}
+                onDelete={(id) => deleteIncomingInvoice(id)}
+              />
+            )}
+
+            {view === "vault" && (
+              <AccountantVaultView t={t} entries={vault} />
+            )}
+
             {view === "clients" && (
               <ClientsListView
                 t={t} clients={filteredClients} totalCount={clients.length}
