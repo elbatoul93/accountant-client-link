@@ -341,6 +341,22 @@ const ClientDashboard = () => {
             </div>
           </TabsContent>
 
+          {/* === MONTHLY CHECKLIST === */}
+          <TabsContent value="checklist" className="mt-5">
+            <DocChecklist t={t} clientEmail={user.email} clientName={user.name} />
+          </TabsContent>
+
+          {/* === DEADLINES === */}
+          <TabsContent value="deadlines" className="mt-5 space-y-4">
+            <div>
+              <h2 className="text-lg font-bold text-primary flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-gold-deep" /> {t("cli_deadlines_title")}
+              </h2>
+              <p className="text-xs text-muted-foreground">{t("cli_deadlines_subtitle")}</p>
+            </div>
+            <FiscalCalendar t={t} regime={myRegime} limit={20} />
+          </TabsContent>
+
           {/* === DECLARATIONS FOR APPROVAL === */}
           <TabsContent value="approve" className="mt-5">
             <Card className="p-6 shadow-card">
@@ -427,8 +443,32 @@ const ClientDashboard = () => {
         }}
         t={t}
       />
+
+      {/* Document preview */}
+      <DocPreviewDialog
+        open={!!previewDoc}
+        onClose={() => setPreviewDoc(null)}
+        title={previewDoc?.label || ""}
+        fileName={previewDoc?.fileName}
+        mimeType={previewDoc?.mimeType}
+        fileData={previewDoc?.fileData}
+        meta={previewDoc?.payload ? safeParse(previewDoc.payload) : undefined}
+        t={t}
+      />
+
+      {/* Real-time chat with accountant */}
+      <ChatSidebar
+        t={t}
+        role="client"
+        selfName={user.name}
+        activeClientEmail={user.email}
+      />
     </div>
   );
+};
+
+const safeParse = (s: string): Record<string, string> | undefined => {
+  try { const o = JSON.parse(s); return typeof o === "object" && o ? o : undefined; } catch { return undefined; }
 };
 
 const SignDialog = ({
