@@ -297,3 +297,76 @@ export const updateSharedDocPayload = (id: string, payload: string, label?: stri
   const next = all.map((s) => (s.id === id ? { ...s, payload, label: label ?? s.label } : s));
   write(KEY_SHARED2, next); ping();
 };
+
+/* ============================================================
+   Automated reminders — send a chat nudge to clients who have
+   not uploaded any document yet by the 10th of the current month.
+   Idempotent: each (client, month) combination is only nudged once.
+   ============================================================ */
+const KEY_REMINDERS = "mgmtk_portal_reminders_sent";
+type ReminderLog = Record<string, boolean>; // key = `${monthKey}:${clientEmail}`
+
+const readReminders = (): ReminderLog => {
+  try { return JSON.parse(localStorage.getItem(KEY_REMINDERS) || "{}"); } catch { return {}; }
+};
+const writeReminders = (v: ReminderLog) => localStorage.setItem(KEY_REMINDERS, JSON.stringify(v));
+
+export interface ReminderClient {
+  email: string;
+  name: string;
+}
+
+/**
+ * Sweep all clients and send a chat reminder + notification when:
+ *  - today is the 10th of the month or later
+ *  - the client has not uploaded any incoming invoice this month
+ *  - we have not already nudged them this month
+ */
+export const runUploadReminderSweep = (
+  clients: ReminderClient[],
+  accountantName = "Cabinet Comptable",
+  now: Date = new Date(),
+): number => {
+  if (now.getDate() < 10) return 0;
+  const month = now.toISOString().slice(0, 7);
+  const log = readReminders();
+  const incoming = read<IncomingInvoice>(KEY_INCOMING);
+  let sent = 0;
+
+  for (const c of clients) {
+    if (!c.email) continue;
+    const k = `${month}:${chatThreadKey(c.email)}`;
+    if (log[k]) continue;
+
+    const hasUpload = incoming.some(
+      (i) => chatThreadKey(i.clientEmail) === chatThreadKey(c.email) && i.uploadedAt.slice(0, 7) === month
+    );
+    if (hasUpload) continue;
+
+    const text =
+      `📌 Rappel automatique — Aucun document reçu pour ${month}. ` +
+      `Merci de téléverser vos factures de ventes/achats avant le 20 du mois pour la déclaration G50. ` +
+      `(تذكير: لم نستلم وثائقك لهذا الشهر).`;
+
+    sendChatMessage({
+      threadKey: chatThreadKey(c.email),
+      fromRole: "accountant",
+      fromName: accountantName,
+      text,
+    });
+    pushNotification({
+      forRole: "client",
+      forEmail: c.email,
+      fromName: accountantName,
+      title: "Documents manquants — رسالة من المحاسب",
+      message: `Aucun document n'a encore été déposé pour ${month}.`,
+      type: "info",
+      link: "/dashboard/client",
+    });
+
+    log[k] = true;
+    sent += 1;
+  }
+  if (sent > 0) writeReminders(log);
+  return sent;
+};

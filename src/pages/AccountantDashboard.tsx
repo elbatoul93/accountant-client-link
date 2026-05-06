@@ -39,9 +39,10 @@ import { buildG50Preview, TAP_RATE } from "@/lib/accounting/algerianTax";
 import {
   getIncomingInvoices, updateIncomingStatus, deleteIncomingInvoice,
   pushNotification, getVault, onPortalChange,
-  setSharedDocWorkflow, updateSharedDocPayload,
+  setSharedDocWorkflow, updateSharedDocPayload, runUploadReminderSweep,
   type IncomingInvoice, type VaultEntry, type WorkflowStatus,
 } from "@/lib/portal";
+import { ClientStatusIcon } from "@/components/ClientStatusIcon";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
 
 const fmtDZD = (n: number) =>
@@ -150,6 +151,35 @@ const AccountantDashboard = () => {
       [c.name, c.company, c.taxId, c.bp, c.nis, c.rc, c.email, c.phone].some((v) => v?.toLowerCase().includes(q))
     );
   }, [clients, search]);
+
+  // Per-client employee count (drives CNAS frequency: <10 quarterly, ≥10 monthly)
+  const empCountByClient = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const e of employees) {
+      const k = e.clientId || "_unassigned";
+      m[k] = (m[k] || 0) + 1;
+    }
+    return m;
+  }, [employees]);
+
+  // Automated chat reminder for clients who have not uploaded by the 10th of the month.
+  useEffect(() => {
+    if (!clients.length) return;
+    const sent = runUploadReminderSweep(
+      clients.map((c) => ({ email: c.contact, name: c.name })),
+      user?.name || "Cabinet Comptable",
+    );
+    if (sent > 0) toast.message(`${sent} rappel(s) envoyé(s) aux clients sans dépôt ce mois-ci.`);
+    // run again every hour while the dashboard stays open
+    const id = setInterval(() => {
+      runUploadReminderSweep(
+        clients.map((c) => ({ email: c.contact, name: c.name })),
+        user?.name || "Cabinet Comptable",
+      );
+    }, 60 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [clients, user?.name]);
+
 
   const activeClient = activeClientId ? clients.find((c) => c.id === activeClientId) || null : null;
 
@@ -272,6 +302,7 @@ const AccountantDashboard = () => {
               <ClientsListView
                 t={t} clients={filteredClients} totalCount={clients.length}
                 search={search} setSearch={setSearch}
+                empCountByClient={empCountByClient}
                 onOpen={openProfile}
                 onAdd={() => setOpenAdd(true)}
                 onEdit={(c) => setPendingEditClient(c)}
@@ -671,9 +702,10 @@ const DashboardView = ({
 );
 
 const ClientsListView = ({
-  t, clients, totalCount, search, setSearch, onOpen, onAdd, onEdit, onDelete, onExtract, onViewG50,
+  t, clients, totalCount, search, setSearch, empCountByClient, onOpen, onAdd, onEdit, onDelete, onExtract, onViewG50,
 }: {
   t: (k: string) => string; clients: Client[]; totalCount: number; search: string; setSearch: (v: string) => void;
+  empCountByClient: Record<string, number>;
   onOpen: (c: Client) => void; onAdd: () => void; onEdit: (c: Client) => void; onDelete: (id: string) => void; onExtract: (c: Client) => void;
   onViewG50: (c: Client) => void;
 }) => (
@@ -705,6 +737,7 @@ const ClientsListView = ({
                 <th className="text-start font-medium py-2.5 hidden md:table-cell">{t("client_tax_regime")}</th>
                 <th className="text-start font-medium py-2.5 hidden lg:table-cell">{t("client_phone")}</th>
                 <th className="text-start font-medium py-2.5">{t("dash_status")}</th>
+                <th className="text-start font-medium py-2.5">{t("status_alert")}</th>
                 <th></th>
               </tr>
             </thead>
@@ -728,6 +761,9 @@ const ClientsListView = ({
                   </td>
                   <td className="py-3 text-muted-foreground hidden lg:table-cell">{c.phone || c.email || c.contact}</td>
                   <td className="py-3"><Badge variant="secondary" className="text-[10px] capitalize">{c.status}</Badge></td>
+                  <td className="py-3">
+                    <ClientStatusIcon t={t} regime={c.taxRegime} employeeCount={empCountByClient[c.id] || 0} hasCacobatph={c.hasCacobatph} />
+                  </td>
                   <td className="py-3 text-end" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
                       <Button size="sm" variant="gold" className="h-7 gap-1.5 text-xs" onClick={() => onViewG50(c)}>
