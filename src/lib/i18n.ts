@@ -1425,7 +1425,7 @@ const ar: typeof en = {
   acc_client_count: "زبون",
   client_company: "اسم الشركة / المؤسسة",
   client_nif: "رقم التعريف الضريبي (NIF)",
-  client_bp: "BP — رقم انخراط المادة",
+  client_bp: "شريك العمل (Business Partner — BP) — معرف نظام Jibayatic",
   client_section_tax: "المعلومات الجبائية",
   client_nis: "رقم التعريف الإحصائي (NIS)",
   client_rc: "رقم السجل التجاري (RC)",
