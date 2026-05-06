@@ -737,6 +737,7 @@ const ClientsListView = ({
                 <th className="text-start font-medium py-2.5 hidden md:table-cell">{t("client_tax_regime")}</th>
                 <th className="text-start font-medium py-2.5 hidden lg:table-cell">{t("client_phone")}</th>
                 <th className="text-start font-medium py-2.5">{t("dash_status")}</th>
+                <th className="text-start font-medium py-2.5">{t("status_alert")}</th>
                 <th></th>
               </tr>
             </thead>
