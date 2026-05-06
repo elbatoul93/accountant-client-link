@@ -283,6 +283,7 @@ const AccountantDashboard = () => {
                   toast.success("Supprimé");
                 }}
                 onExtract={setObligationsClient}
+                onViewG50={setViewG50Client}
               />
             )}
 
