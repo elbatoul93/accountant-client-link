@@ -36,6 +36,7 @@ interface SharedDoc {
   type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string;
   payload?: string; fileName?: string; mimeType?: string; fileData?: string;
   signatureDataUrl?: string; signedAt?: string; signedBy?: string;
+  workflow?: "draft" | "review" | "sent" | "signed" | "filed";
 }
 
 const REGIME_DECLS: Record<TaxRegime, DeclType[]> = {
@@ -59,6 +60,7 @@ const ClientDashboard = () => {
   });
   const [tick, setTick] = useState(0);
   const [signing, setSigning] = useState<SharedDoc | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<SharedDoc | null>(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
