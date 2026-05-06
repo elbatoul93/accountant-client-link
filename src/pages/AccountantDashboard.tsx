@@ -429,7 +429,18 @@ const AccountantDashboard = () => {
         getLiveG50={(cid, period) => computeG50FromJournal(journal, { clientId: cid, period })}
         onGenerate={(d, shared, lockOpts) => {
           setDecls((p) => [d, ...p]);
-          if (shared) setSharedDocs((p) => [shared, ...p]);
+          if (shared) {
+            setSharedDocs((p) => [shared, ...p]);
+            pushNotification({
+              forRole: "client",
+              forEmail: shared.clientEmail,
+              title: t("notif_g50_ready_title"),
+              message: t("notif_g50_ready_msg").replace("{label}", shared.label),
+              type: "g50_ready",
+              link: "/dashboard/client",
+              refId: shared.id,
+            });
+          }
           if (lockOpts) setLocks((p) => lockPeriod(p, lockOpts));
           setOpenTool(null);
         }}
