@@ -19,6 +19,7 @@ import {
   Users, FileText, TrendingUp, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2, Inbox, FileDown,
   Wrench, BookOpen, Calculator, Send, Download, LayoutDashboard, FolderOpen, ChevronRight, ArrowLeft, Search,
   Building2, IdCard, Phone, Mail, MapPin, Upload, FileCheck2, Wallet, Pencil, Lock, Landmark, Clock,
+  Eye, ListChecks, MessageCircle,
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -29,11 +30,16 @@ import { TaxIntelView } from "./accountant/TaxIntelView";
 import { LiasseFiscaleView } from "./accountant/LiasseFiscale";
 import { AssetsView } from "./accountant/AssetsView";
 import { FiscalCalendar } from "@/components/FiscalCalendar";
+import { ChatSidebar } from "@/components/ChatSidebar";
+import { DocChecklist } from "@/components/DocChecklist";
+import { DocPreviewDialog } from "@/components/DocPreviewDialog";
+import { WorkflowBadge, WorkflowStepper } from "@/components/WorkflowStatus";
 import { lockPeriod, computeG50FromJournal } from "@/lib/accounting/engine";
 import {
   getIncomingInvoices, updateIncomingStatus, deleteIncomingInvoice,
   pushNotification, getVault, onPortalChange,
-  type IncomingInvoice, type VaultEntry,
+  setSharedDocWorkflow, updateSharedDocPayload,
+  type IncomingInvoice, type VaultEntry, type WorkflowStatus,
 } from "@/lib/portal";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
 
@@ -76,7 +82,7 @@ const declLabelKey = (type: DeclType): string => {
 };
 
 interface FinStmt { id: string; clientId: string; clientName: string; year: string; assets: number; liabilities: number; equity: number; revenue: number; netResult: number; createdAt: string }
-interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string; fileName?: string; mimeType?: string; fileData?: string }
+interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string; fileName?: string; mimeType?: string; fileData?: string; signedAt?: string; signedBy?: string; signatureDataUrl?: string; workflow?: WorkflowStatus }
 interface LegalDoc { id: string; clientId: string; label: string; kind: "RC" | "NIF" | "NIS" | "STATUTS" | "OTHER"; fileName?: string; mimeType?: string; fileData?: string; date: string }
 
 const KEY_CLIENTS = "mgmtk_acc_clients";
@@ -91,7 +97,7 @@ const load = <T,>(k: string): T[] => {
   return raw ? JSON.parse(raw) : [];
 };
 
-type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports" | "taxintel" | "liasse" | "assets" | "calendar" | "incoming" | "vault";
+type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports" | "taxintel" | "liasse" | "assets" | "calendar" | "incoming" | "vault" | "tracking" | "chat";
 
 const AccountantDashboard = () => {
   const { t, user } = useApp();
@@ -117,6 +123,9 @@ const AccountantDashboard = () => {
   // Secure edit flow: clicking Edit triggers a password lock; on success the form opens.
   const [pendingEditClient, setPendingEditClient] = useState<Client | null>(null);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [previewIncoming, setPreviewIncoming] = useState<IncomingInvoice | null>(null);
+  const [editingShared, setEditingShared] = useState<SharedDoc | null>(null);
+  const [trackingClientId, setTrackingClientId] = useState<string>("");
 
   useEffect(() => { localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients)); }, [clients]);
   useEffect(() => { localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices)); }, [invoices]);
@@ -151,6 +160,8 @@ const AccountantDashboard = () => {
     { key: "dashboard", label: t("side_dashboard"), icon: LayoutDashboard },
     { key: "calendar", label: t("side_calendar"), icon: Bell },
     { key: "incoming", label: t("side_incoming"), icon: InboxIcon, count: incoming.filter((i) => i.status === "pending").length },
+    { key: "tracking", label: t("side_tracking"), icon: ListChecks },
+    { key: "chat", label: t("side_chat"), icon: MessageCircle },
     { key: "vault", label: t("side_vault"), icon: Archive, count: vault.length },
     { key: "clients", label: t("side_clients"), icon: Users, count: clients.length },
     { key: "billing", label: t("side_billing"), icon: Receipt, count: bills.length },
@@ -239,7 +250,16 @@ const AccountantDashboard = () => {
               <IncomingDocsView t={t} items={incoming}
                 onMarkProcessed={(id) => updateIncomingStatus(id, "processed")}
                 onDelete={(id) => deleteIncomingInvoice(id)}
+                onPreview={(it) => setPreviewIncoming(it)}
               />
+            )}
+
+            {view === "tracking" && (
+              <TrackingView t={t} clients={clients} activeId={trackingClientId} setActiveId={setTrackingClientId} />
+            )}
+
+            {view === "chat" && (
+              <ChatHubView t={t} clients={clients} />
             )}
 
             {view === "vault" && (
@@ -316,6 +336,7 @@ const AccountantDashboard = () => {
                         label: `G50 ${d.due.slice(0, 7)} — ${fmtDZD(d.amount)}`,
                         date: new Date().toLocaleDateString("fr-DZ"),
                         payload: JSON.stringify({ nif: c.taxId, bp: c.bp, amount: d.amount, due: d.due }),
+                        workflow: "sent",
                       };
                       setSharedDocs((p) => [shared, ...p]);
                       pushNotification({
@@ -326,6 +347,8 @@ const AccountantDashboard = () => {
                       });
                       toast.success(t("tools_send_to_client"));
                     }}
+                    sharedDocs={sharedDocs}
+                    onReview={(s) => setEditingShared(s)}
                   />
                 </Card>
 
@@ -532,6 +555,38 @@ const AccountantDashboard = () => {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Preview incoming invoice */}
+      <DocPreviewDialog
+        open={!!previewIncoming}
+        onClose={() => setPreviewIncoming(null)}
+        title={previewIncoming?.fileName || ""}
+        fileName={previewIncoming?.fileName}
+        mimeType={previewIncoming?.mimeType}
+        fileData={previewIncoming?.fileData}
+        meta={previewIncoming ? { client: previewIncoming.clientName, size: `${(previewIncoming.size/1024).toFixed(0)} KB`, status: previewIncoming.status } : undefined}
+        t={t}
+      />
+
+      {/* Review & Edit declaration */}
+      <EditDeclDialog
+        doc={editingShared}
+        onClose={() => setEditingShared(null)}
+        onSave={(id, payload, label, workflow) => {
+          updateSharedDocPayload(id, payload, label);
+          setSharedDocWorkflow(id, workflow);
+          setSharedDocs((p) => p.map((s) => (s.id === id ? { ...s, payload, label, workflow } : s)));
+        }}
+        t={t}
+      />
+
+      {/* Real-time chat with clients */}
+      <ChatSidebar
+        t={t}
+        role="accountant"
+        selfName={user.name}
+        contacts={clients.map((c) => ({ email: c.contact, name: c.name }))}
+      />
     </div>
   );
 };
@@ -1372,33 +1427,52 @@ const AddDeclarationDialog = ({
   );
 };
 
-const DeclList = ({ items, onDelete, t, showType, onSend }: { items: Decl[]; onDelete: (id: string) => void; t: (k: string) => string; showType?: boolean; onSend?: (d: Decl) => void }) => {
+const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview }: {
+  items: Decl[]; onDelete: (id: string) => void; t: (k: string) => string;
+  showType?: boolean; onSend?: (d: Decl) => void;
+  sharedDocs?: SharedDoc[]; onReview?: (s: SharedDoc) => void;
+}) => {
   if (items.length === 0) return <EmptyState label={t("empty_no_decls")} />;
+  const findShared = (d: Decl): SharedDoc | undefined => {
+    if (!sharedDocs) return undefined;
+    const period = d.due.slice(0, 7);
+    return sharedDocs.find((s) => s.clientId === d.clientId && s.type === d.type && s.label.includes(period))
+      || sharedDocs.find((s) => s.clientId === d.clientId && s.type === d.type);
+  };
   return (
     <div className="space-y-2">
-      {items.map((d) => (
-        <div key={d.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/60">
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-sm truncate">{d.clientName}</div>
-            <div className="text-[11px] text-muted-foreground">
-              {showType && <Badge variant="outline" className="text-[10px] me-1.5 font-mono">{d.type}</Badge>}
-              {t("dash_deadline")}: {d.due}
+      {items.map((d) => {
+        const shared = findShared(d);
+        return (
+          <div key={d.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/60 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-sm truncate">{d.clientName}</div>
+              <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                {showType && <Badge variant="outline" className="text-[10px] font-mono">{d.type}</Badge>}
+                <span>{t("dash_deadline")}: {d.due}</span>
+                {shared && <WorkflowBadge status={shared.workflow} t={t} />}
+              </div>
             </div>
-          </div>
-          <div className="text-end">
-            <div className="font-bold text-sm text-gold-deep">{fmtDZD(d.amount)}</div>
-            <Badge variant="outline" className="text-[10px]">{t(`dash_${d.status}`)}</Badge>
-          </div>
-          {onSend && (
-            <Button size="sm" variant="outlineGold" onClick={() => onSend(d)} title={t("tools_send_to_client")}>
-              <Send className="h-3.5 w-3.5" />
+            <div className="text-end">
+              <div className="font-bold text-sm text-gold-deep">{fmtDZD(d.amount)}</div>
+              <Badge variant="outline" className="text-[10px]">{t(`dash_${d.status}`)}</Badge>
+            </div>
+            {shared && onReview && (
+              <Button size="sm" variant="outline" onClick={() => onReview(shared)} title={t("wf_review_edit")}>
+                <Pencil className="h-3.5 w-3.5" /> {t("wf_review_edit")}
+              </Button>
+            )}
+            {onSend && (
+              <Button size="sm" variant="outlineGold" onClick={() => onSend(d)} title={t("tools_send_to_client")}>
+                <Send className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(d.id)}>
+              <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
-          )}
-          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(d.id)}>
-            <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-          </Button>
-        </div>
-      ))}
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -1546,6 +1620,7 @@ const G50GeneratorDialog = ({
       label: `G50 ${period} — ${fmtDZD(total)}`,
       date: new Date().toLocaleDateString("fr-DZ"),
       payload: JSON.stringify({ nif: c.taxId, bp: c.bp, caHt, salaries, benefice, rTap, rTva, rIrg, rIbs, tap, tva, irg, ibs, total, period }),
+      workflow: validateAndLock ? "filed" : "draft",
     };
     const lockOpts = validateAndLock
       ? { clientId: c.id, period, reference: declId }
@@ -1725,9 +1800,10 @@ const SendDocumentDialog = ({
 
 /* ============== INCOMING + VAULT VIEWS ============== */
 
-const IncomingDocsView = ({ t, items, onMarkProcessed, onDelete }: {
+const IncomingDocsView = ({ t, items, onMarkProcessed, onDelete, onPreview }: {
   t: (k: string) => string; items: IncomingInvoice[];
   onMarkProcessed: (id: string) => void; onDelete: (id: string) => void;
+  onPreview: (it: IncomingInvoice) => void;
 }) => {
   return (
     <Card className="p-5 shadow-card">
@@ -1759,6 +1835,9 @@ const IncomingDocsView = ({ t, items, onMarkProcessed, onDelete }: {
                   </div>
                 </div>
                 {statusBadge}
+                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onPreview(it)}>
+                  <Eye className="h-3.5 w-3.5" /> {t("preview_btn")}
+                </Button>
                 {it.fileData && (
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => {
                     const a = document.createElement("a");
@@ -1838,6 +1917,146 @@ const AccountantVaultView = ({ t, entries }: { t: (k: string) => string; entries
         </div>
       )}
     </Card>
+  );
+};
+
+/* ============== TRACKING + CHAT HUB VIEWS ============== */
+
+const TrackingView = ({ t, clients, activeId, setActiveId }: {
+  t: (k: string) => string; clients: Client[];
+  activeId: string; setActiveId: (id: string) => void;
+}) => {
+  const active = clients.find((c) => c.id === activeId);
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
+          <ListChecks className="h-5 w-5 text-gold-deep" /> {t("acc_tracking_title")}
+        </h1>
+        <p className="text-xs text-muted-foreground">{t("acc_tracking_subtitle")}</p>
+      </div>
+
+      <Card className="p-4 shadow-card">
+        <Label className="text-xs">{t("dash_client")}</Label>
+        <Select value={activeId} onValueChange={setActiveId}>
+          <SelectTrigger><SelectValue placeholder={t("acc_select_client")} /></SelectTrigger>
+          <SelectContent>
+            {clients.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
+          </SelectContent>
+        </Select>
+      </Card>
+
+      {active ? (
+        <DocChecklist t={t} clientEmail={active.contact} clientName={active.name} accountantMode />
+      ) : (
+        <Card className="p-8 shadow-card text-center text-sm text-muted-foreground">
+          {t("acc_select_client")}
+        </Card>
+      )}
+    </div>
+  );
+};
+
+const ChatHubView = ({ t, clients }: { t: (k: string) => string; clients: Client[] }) => {
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
+          <MessageCircle className="h-5 w-5 text-gold-deep" /> {t("chat_title")}
+        </h1>
+        <p className="text-xs text-muted-foreground">{t("chat_select_contact")}</p>
+      </div>
+      <Card className="p-5 shadow-card">
+        <p className="text-sm text-muted-foreground mb-3">
+          {t("chat_select_contact")}
+        </p>
+        <ul className="space-y-1.5">
+          {clients.map((c) => (
+            <li key={c.id} className="flex items-center justify-between gap-3 p-2.5 rounded border border-border/60">
+              <div className="min-w-0">
+                <div className="font-semibold text-sm truncate">{c.name}</div>
+                <div className="text-[11px] text-muted-foreground truncate">{c.contact}</div>
+              </div>
+              <Badge variant="outline" className="text-[10px]">{c.taxRegime || "—"}</Badge>
+            </li>
+          ))}
+          {clients.length === 0 && <li className="text-xs text-muted-foreground p-3">{t("empty_no_clients")}</li>}
+        </ul>
+        <p className="text-[11px] text-muted-foreground mt-3">
+          ↘ {t("chat_open")}
+        </p>
+      </Card>
+    </div>
+  );
+};
+
+/* ============== EDIT G50 PAYLOAD DIALOG ============== */
+
+const EditDeclDialog = ({ doc, onClose, onSave, t }: {
+  doc: SharedDoc | null; onClose: () => void;
+  onSave: (id: string, payload: string, label: string, workflow: WorkflowStatus) => void;
+  t: (k: string) => string;
+}) => {
+  const [fields, setFields] = useState<Record<string, string>>({});
+  const [label, setLabel] = useState("");
+  const [workflow, setWorkflow] = useState<WorkflowStatus>("draft");
+  useEffect(() => {
+    if (!doc) return;
+    setLabel(doc.label || "");
+    setWorkflow(doc.workflow || "draft");
+    try { setFields(doc.payload ? JSON.parse(doc.payload) : {}); } catch { setFields({}); }
+  }, [doc?.id]);
+  if (!doc) return null;
+
+  const numericKeys = ["caHt", "salaries", "benefice", "tap", "tva", "irg", "ibs", "total", "amount"];
+
+  return (
+    <Dialog open={!!doc} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Pencil className="h-4 w-4 text-gold-deep" /> {t("wf_review_edit")} — {doc.type}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Label</Label>
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} />
+          </div>
+
+          <div>
+            <div className="text-xs font-semibold text-primary uppercase mb-2">Payload</div>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.keys(fields).map((k) => (
+                <div key={k} className="space-y-1">
+                  <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">{k}</Label>
+                  <Input
+                    type={numericKeys.includes(k) ? "number" : "text"}
+                    value={String(fields[k] ?? "")}
+                    onChange={(e) => setFields((p) => ({ ...p, [k]: e.target.value }))}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs">{t("wf_change")}</Label>
+            <WorkflowStepper status={workflow} t={t} onChange={setWorkflow} />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="gold" onClick={() => {
+            onSave(doc.id, JSON.stringify(fields), label, workflow);
+            toast.success("Updated");
+            onClose();
+          }}>{t("sig_apply").includes("Sign") ? "Save" : "Enregistrer"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

@@ -11,11 +11,16 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   UploadCloud, FileText, CheckCircle2, Clock, FileImage, Inbox, Trash2, Receipt, ShieldCheck,
-  FolderOpen, Download, PenTool, Archive, FileSignature,
+  FolderOpen, Download, PenTool, Archive, FileSignature, Eye, CalendarDays,
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/SignaturePad";
+import { ChatSidebar } from "@/components/ChatSidebar";
+import { DocChecklist } from "@/components/DocChecklist";
+import { DocPreviewDialog } from "@/components/DocPreviewDialog";
+import { WorkflowBadge } from "@/components/WorkflowStatus";
+import { FiscalCalendar } from "@/components/FiscalCalendar";
 import {
   addIncomingInvoice, pushNotification, signSharedDoc, getVault, onPortalChange, type VaultEntry,
 } from "@/lib/portal";
@@ -31,6 +36,7 @@ interface SharedDoc {
   type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string;
   payload?: string; fileName?: string; mimeType?: string; fileData?: string;
   signatureDataUrl?: string; signedAt?: string; signedBy?: string;
+  workflow?: "draft" | "review" | "sent" | "signed" | "filed";
 }
 
 const REGIME_DECLS: Record<TaxRegime, DeclType[]> = {
@@ -54,6 +60,7 @@ const ClientDashboard = () => {
   });
   const [tick, setTick] = useState(0);
   const [signing, setSigning] = useState<SharedDoc | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<SharedDoc | null>(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
@@ -166,8 +173,10 @@ const ClientDashboard = () => {
         </div>
 
         <Tabs defaultValue="upload" className="w-full">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="upload"><UploadCloud className="h-4 w-4" /> {t("cli_upload_center")}</TabsTrigger>
+            <TabsTrigger value="checklist"><CheckCircle2 className="h-4 w-4" /> {t("chk_title")}</TabsTrigger>
+            <TabsTrigger value="deadlines"><CalendarDays className="h-4 w-4" /> {t("cli_deadlines_title")}</TabsTrigger>
             <TabsTrigger value="approve"><FileSignature className="h-4 w-4" /> {t("cli_decls_to_approve")} {declsForApproval.length > 0 && (
               <Badge className="ms-1 h-4 px-1 text-[10px] bg-gold text-gold-foreground border-0">{declsForApproval.length}</Badge>
             )}</TabsTrigger>
@@ -224,10 +233,16 @@ const ClientDashboard = () => {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <Badge variant="outline" className="font-mono text-[10px]">{s.type}</Badge>
+                                <WorkflowBadge status={s.workflow} t={t} />
                                 {s.signedAt && <Badge className="bg-success/15 text-success border-success/40 text-[10px]"><CheckCircle2 className="h-3 w-3 me-1" /> {t("vault_signed")}</Badge>}
                                 <span className="text-[10px] text-muted-foreground">{s.date}</span>
                               </div>
                               <div className="font-medium text-sm text-foreground truncate">{s.label}</div>
+                              <div className="mt-2 flex items-center gap-1">
+                                <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={() => setPreviewDoc(s)}>
+                                  <Eye className="h-3 w-3" /> {t("preview_btn")}
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -326,6 +341,22 @@ const ClientDashboard = () => {
             </div>
           </TabsContent>
 
+          {/* === MONTHLY CHECKLIST === */}
+          <TabsContent value="checklist" className="mt-5">
+            <DocChecklist t={t} clientEmail={user.email} clientName={user.name} />
+          </TabsContent>
+
+          {/* === DEADLINES === */}
+          <TabsContent value="deadlines" className="mt-5 space-y-4">
+            <div>
+              <h2 className="text-lg font-bold text-primary flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-gold-deep" /> {t("cli_deadlines_title")}
+              </h2>
+              <p className="text-xs text-muted-foreground">{t("cli_deadlines_subtitle")}</p>
+            </div>
+            <FiscalCalendar t={t} regime={myRegime} limit={20} />
+          </TabsContent>
+
           {/* === DECLARATIONS FOR APPROVAL === */}
           <TabsContent value="approve" className="mt-5">
             <Card className="p-6 shadow-card">
@@ -412,8 +443,32 @@ const ClientDashboard = () => {
         }}
         t={t}
       />
+
+      {/* Document preview */}
+      <DocPreviewDialog
+        open={!!previewDoc}
+        onClose={() => setPreviewDoc(null)}
+        title={previewDoc?.label || ""}
+        fileName={previewDoc?.fileName}
+        mimeType={previewDoc?.mimeType}
+        fileData={previewDoc?.fileData}
+        meta={previewDoc?.payload ? safeParse(previewDoc.payload) : undefined}
+        t={t}
+      />
+
+      {/* Real-time chat with accountant */}
+      <ChatSidebar
+        t={t}
+        role="client"
+        selfName={user.name}
+        activeClientEmail={user.email}
+      />
     </div>
   );
+};
+
+const safeParse = (s: string): Record<string, string> | undefined => {
+  try { const o = JSON.parse(s); return typeof o === "object" && o ? o : undefined; } catch { return undefined; }
 };
 
 const SignDialog = ({

@@ -579,6 +579,50 @@ const en = {
   sig_required: "Please draw a signature first.",
   sig_success: "Document signed successfully",
   toast_invoice_sent: "Invoice sent to your accountant",
+
+  // Chat
+  chat_title: "Conversation",
+  chat_open: "Open chat",
+  chat_placeholder: "Write a message…",
+  chat_empty: "No messages yet. Start the conversation.",
+  chat_no_threads: "No conversations yet.",
+  chat_select_contact: "Select a contact to start chatting.",
+  side_chat: "Messages",
+
+  // Document checklist (monthly)
+  chk_title: "Document Tracking — Suivi mensuel",
+  chk_status_missing: "Missing — manquant",
+  chk_status_received: "Received — reçu",
+  chk_status_validated: "Validated — validé",
+  chk_mark_received: "Mark received",
+  chk_validate: "Validate",
+  chk_reset: "Reset",
+  chk_client_hint: "Send these documents to your accountant before the 10th of the month.",
+  chk_all_validated: "All required documents validated for this month.",
+  side_tracking: "Document Tracking",
+  acc_tracking_title: "Document Tracking — Status by Client",
+  acc_tracking_subtitle: "Live overview of monthly deliverables across your portfolio.",
+
+  // Workflow statuses
+  wf_draft: "Draft",
+  wf_review: "Under Review",
+  wf_sent: "Sent to Client",
+  wf_signed: "Signed",
+  wf_filed: "Filed",
+  wf_change: "Update status",
+  wf_review_edit: "Review & Edit",
+
+  // Document preview
+  preview_title: "Preview",
+  preview_open_new_tab: "Open in new tab",
+  preview_download: "Download",
+  preview_no_file: "No file attached for this document.",
+  preview_unsupported: "Preview unavailable. Use Download to open this file.",
+  preview_btn: "Preview",
+
+  // Client deadlines section title
+  cli_deadlines_title: "Upcoming Deadlines",
+  cli_deadlines_subtitle: "Tax & social deadlines for your tax regime.",
 };
 
 const fr: typeof en = {
@@ -1149,6 +1193,45 @@ const fr: typeof en = {
   sig_required: "Veuillez d'abord dessiner une signature.",
   sig_success: "Document signé avec succès",
   toast_invoice_sent: "Facture envoyée à votre comptable",
+
+  chat_title: "Conversation",
+  chat_open: "Ouvrir le chat",
+  chat_placeholder: "Écrivez un message…",
+  chat_empty: "Aucun message. Démarrez la conversation.",
+  chat_no_threads: "Aucune conversation pour le moment.",
+  chat_select_contact: "Sélectionnez un contact pour discuter.",
+  side_chat: "Messages",
+
+  chk_title: "Suivi des documents — Document Tracking",
+  chk_status_missing: "Manquant",
+  chk_status_received: "Reçu",
+  chk_status_validated: "Validé",
+  chk_mark_received: "Marquer reçu",
+  chk_validate: "Valider",
+  chk_reset: "Réinitialiser",
+  chk_client_hint: "Envoyez ces documents à votre comptable avant le 10 du mois.",
+  chk_all_validated: "Tous les documents requis sont validés pour ce mois.",
+  side_tracking: "Suivi documents",
+  acc_tracking_title: "Suivi documentaire — Statut par client",
+  acc_tracking_subtitle: "Vue en temps réel des livrables mensuels du portefeuille.",
+
+  wf_draft: "Brouillon",
+  wf_review: "En révision",
+  wf_sent: "Envoyé au client",
+  wf_signed: "Signé",
+  wf_filed: "Déposé aux impôts",
+  wf_change: "Mettre à jour",
+  wf_review_edit: "Réviser & Modifier",
+
+  preview_title: "Aperçu",
+  preview_open_new_tab: "Ouvrir dans un onglet",
+  preview_download: "Télécharger",
+  preview_no_file: "Aucun fichier joint à ce document.",
+  preview_unsupported: "Aperçu indisponible. Utilisez Télécharger.",
+  preview_btn: "Aperçu",
+
+  cli_deadlines_title: "Échéances à venir",
+  cli_deadlines_subtitle: "Échéances fiscales & sociales selon votre régime.",
 };
 
 const ar: typeof en = {
@@ -1719,6 +1802,45 @@ const ar: typeof en = {
   sig_required: "الرجاء رسم التوقيع أولاً.",
   sig_success: "تم توقيع الوثيقة بنجاح",
   toast_invoice_sent: "تم إرسال الفاتورة إلى محاسبك",
+
+  chat_title: "المحادثة",
+  chat_open: "فتح المحادثة",
+  chat_placeholder: "اكتب رسالة…",
+  chat_empty: "لا توجد رسائل بعد. ابدأ المحادثة.",
+  chat_no_threads: "لا توجد محادثات بعد.",
+  chat_select_contact: "اختر جهة اتصال لبدء المحادثة.",
+  side_chat: "الرسائل",
+
+  chk_title: "متابعة الوثائق الشهرية",
+  chk_status_missing: "مفقود",
+  chk_status_received: "تم الاستلام",
+  chk_status_validated: "تم التحقق",
+  chk_mark_received: "تأكيد الاستلام",
+  chk_validate: "تحقق",
+  chk_reset: "إعادة",
+  chk_client_hint: "أرسل هذه الوثائق إلى محاسبك قبل العاشر من الشهر.",
+  chk_all_validated: "كل الوثائق المطلوبة تم التحقق منها لهذا الشهر.",
+  side_tracking: "متابعة الوثائق",
+  acc_tracking_title: "متابعة الوثائق — الحالة حسب الزبون",
+  acc_tracking_subtitle: "عرض حي للوثائق الشهرية المطلوبة من كل الزبائن.",
+
+  wf_draft: "مسودة",
+  wf_review: "قيد المراجعة",
+  wf_sent: "أُرسل للزبون",
+  wf_signed: "موقّع",
+  wf_filed: "مودع لدى الضرائب",
+  wf_change: "تحديث الحالة",
+  wf_review_edit: "مراجعة وتعديل",
+
+  preview_title: "معاينة",
+  preview_open_new_tab: "فتح في تبويب جديد",
+  preview_download: "تنزيل",
+  preview_no_file: "لا يوجد ملف مرفق بهذه الوثيقة.",
+  preview_unsupported: "المعاينة غير متاحة. استخدم تنزيل.",
+  preview_btn: "معاينة",
+
+  cli_deadlines_title: "المواعيد القادمة",
+  cli_deadlines_subtitle: "المواعيد الجبائية والاجتماعية حسب نظامك الضريبي.",
 };
 
 export const translations = { en, fr, ar };
