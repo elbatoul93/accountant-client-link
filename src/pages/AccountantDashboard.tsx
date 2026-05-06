@@ -448,7 +448,19 @@ const AccountantDashboard = () => {
       <SendDocumentDialog
         open={openTool === "send"} onOpenChange={(o) => !o && setOpenTool(null)}
         clients={clients} t={t}
-        onSend={(doc) => { setSharedDocs((p) => [doc, ...p]); setOpenTool(null); }}
+        onSend={(doc) => {
+          setSharedDocs((p) => [doc, ...p]);
+          pushNotification({
+            forRole: "client",
+            forEmail: doc.clientEmail,
+            title: t("notif_g50_ready_title"),
+            message: t("notif_g50_ready_msg").replace("{label}", doc.label),
+            type: "g50_ready",
+            link: "/dashboard/client",
+            refId: doc.id,
+          });
+          setOpenTool(null);
+        }}
       />
 
       <Dialog open={!!obligationsClient} onOpenChange={(o) => !o && setObligationsClient(null)}>
