@@ -19,6 +19,7 @@ import {
   Users, FileText, TrendingUp, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2, Inbox, FileDown,
   Wrench, BookOpen, Calculator, Send, Download, LayoutDashboard, FolderOpen, ChevronRight, ArrowLeft, Search,
   Building2, IdCard, Phone, Mail, MapPin, Upload, FileCheck2, Wallet, Pencil, Lock, Landmark, Clock,
+  Eye, ListChecks, MessageCircle,
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -29,11 +30,16 @@ import { TaxIntelView } from "./accountant/TaxIntelView";
 import { LiasseFiscaleView } from "./accountant/LiasseFiscale";
 import { AssetsView } from "./accountant/AssetsView";
 import { FiscalCalendar } from "@/components/FiscalCalendar";
+import { ChatSidebar } from "@/components/ChatSidebar";
+import { DocChecklist } from "@/components/DocChecklist";
+import { DocPreviewDialog } from "@/components/DocPreviewDialog";
+import { WorkflowBadge, WorkflowStepper } from "@/components/WorkflowStatus";
 import { lockPeriod, computeG50FromJournal } from "@/lib/accounting/engine";
 import {
   getIncomingInvoices, updateIncomingStatus, deleteIncomingInvoice,
   pushNotification, getVault, onPortalChange,
-  type IncomingInvoice, type VaultEntry,
+  setSharedDocWorkflow, updateSharedDocPayload,
+  type IncomingInvoice, type VaultEntry, type WorkflowStatus,
 } from "@/lib/portal";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
 
