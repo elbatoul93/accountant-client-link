@@ -583,7 +583,26 @@ const AccountantDashboard = () => {
         t={t}
       />
 
-      {/* Real-time chat with clients */}
+      {/* View / Edit a client's G50 (interactive preview) */}
+      <ViewG50Dialog
+        client={viewG50Client}
+        onClose={() => setViewG50Client(null)}
+        journal={journal}
+        t={t}
+        onFinalize={(decl, shared) => {
+          setDecls((p) => [decl, ...p]);
+          setSharedDocs((p) => [shared, ...p]);
+          pushNotification({
+            forRole: "client", forEmail: shared.clientEmail,
+            title: t("notif_g50_ready_title"),
+            message: t("notif_g50_ready_msg").replace("{label}", shared.label),
+            type: "g50_ready", link: "/dashboard/client", refId: shared.id,
+          });
+          toast.success(t("g50_finalized_sent"));
+          setViewG50Client(null);
+        }}
+      />
+
       <ChatSidebar
         t={t}
         role="accountant"
