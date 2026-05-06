@@ -1139,7 +1139,7 @@ const AddClientDialog = ({
                 </div>
               )}
               <p className="text-[11px] text-muted-foreground mt-2">
-                NIF & BP — Carte d'Immatriculation Fiscale
+                NIF & Business Partner (BP) — Identifiant Jibayatic / Carte d'Immatriculation Fiscale
               </p>
             </div>
           </Section>
