@@ -816,7 +816,7 @@ const fr: typeof en = {
   acc_client_count: "clients",
   client_company: "Société / Établissement",
   client_nif: "Numéro d'Identification Fiscale (NIF)",
-  client_bp: "BP (Numéro d'Article)",
+  client_bp: "Business Partner (BP) — Identifiant Jibayatic",
   client_section_tax: "Informations Fiscales",
   client_nis: "Numéro d'Identification Statistique (NIS)",
   client_rc: "Registre du Commerce (RC)",
