@@ -173,8 +173,10 @@ const ClientDashboard = () => {
         </div>
 
         <Tabs defaultValue="upload" className="w-full">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="upload"><UploadCloud className="h-4 w-4" /> {t("cli_upload_center")}</TabsTrigger>
+            <TabsTrigger value="checklist"><CheckCircle2 className="h-4 w-4" /> {t("chk_title")}</TabsTrigger>
+            <TabsTrigger value="deadlines"><CalendarDays className="h-4 w-4" /> {t("cli_deadlines_title")}</TabsTrigger>
             <TabsTrigger value="approve"><FileSignature className="h-4 w-4" /> {t("cli_decls_to_approve")} {declsForApproval.length > 0 && (
               <Badge className="ms-1 h-4 px-1 text-[10px] bg-gold text-gold-foreground border-0">{declsForApproval.length}</Badge>
             )}</TabsTrigger>
