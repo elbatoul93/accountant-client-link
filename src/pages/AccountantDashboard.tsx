@@ -273,6 +273,7 @@ const AccountantDashboard = () => {
               <ClientsListView
                 t={t} clients={filteredClients} totalCount={clients.length}
                 search={search} setSearch={setSearch}
+                empCountByClient={empCountByClient}
                 onOpen={openProfile}
                 onAdd={() => setOpenAdd(true)}
                 onEdit={(c) => setPendingEditClient(c)}
