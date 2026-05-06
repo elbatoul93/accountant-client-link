@@ -158,3 +158,142 @@ function parseDateLoose(d: string): string {
   if (m) return new Date(`${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`).toISOString();
   return new Date().toISOString();
 }
+
+/* ============================================================
+   Chat messages (Accountant ↔ Client)
+   ============================================================ */
+export interface ChatMessage {
+  id: string;
+  threadKey: string;        // normalized clientEmail (lowercase)
+  fromRole: NotifRole;
+  fromName: string;
+  text: string;
+  createdAt: string;        // ISO
+  readBy: NotifRole[];
+  refDocId?: string;        // optional link to a shared/incoming doc
+}
+const KEY_CHAT = "mgmtk_portal_chat";
+export const chatThreadKey = (clientEmail: string) => clientEmail.trim().toLowerCase();
+
+export const getChatThread = (clientEmail: string): ChatMessage[] => {
+  const all = read<ChatMessage>(KEY_CHAT);
+  const k = chatThreadKey(clientEmail);
+  return all.filter((m) => m.threadKey === k).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+};
+export const listChatThreads = (): { threadKey: string; lastMessage: ChatMessage; unreadForAccountant: number }[] => {
+  const all = read<ChatMessage>(KEY_CHAT);
+  const groups = new Map<string, ChatMessage[]>();
+  for (const m of all) {
+    const arr = groups.get(m.threadKey) || []; arr.push(m); groups.set(m.threadKey, arr);
+  }
+  return [...groups.entries()].map(([threadKey, msgs]) => {
+    msgs.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    const last = msgs[msgs.length - 1];
+    const unread = msgs.filter((m) => m.fromRole === "client" && !m.readBy.includes("accountant")).length;
+    return { threadKey, lastMessage: last, unreadForAccountant: unread };
+  }).sort((a, b) => b.lastMessage.createdAt.localeCompare(a.lastMessage.createdAt));
+};
+export const sendChatMessage = (msg: Omit<ChatMessage, "id" | "createdAt" | "readBy">) => {
+  const all = read<ChatMessage>(KEY_CHAT);
+  const created: ChatMessage = {
+    ...msg, id: crypto.randomUUID(), createdAt: new Date().toISOString(),
+    readBy: [msg.fromRole],
+  };
+  all.push(created);
+  write(KEY_CHAT, all.slice(-1000));
+  ping();
+  return created;
+};
+export const markChatRead = (clientEmail: string, role: NotifRole) => {
+  const k = chatThreadKey(clientEmail);
+  const all = read<ChatMessage>(KEY_CHAT).map((m) => {
+    if (m.threadKey !== k) return m;
+    if (m.readBy.includes(role)) return m;
+    return { ...m, readBy: [...m.readBy, role] };
+  });
+  write(KEY_CHAT, all); ping();
+};
+export const unreadChatCount = (role: NotifRole, clientEmail?: string): number => {
+  const all = read<ChatMessage>(KEY_CHAT);
+  return all.filter((m) =>
+    m.fromRole !== role &&
+    !m.readBy.includes(role) &&
+    (!clientEmail || m.threadKey === chatThreadKey(clientEmail))
+  ).length;
+};
+
+/* ============================================================
+   Monthly Document Checklist (required deliverables per client)
+   ============================================================ */
+export type DocChecklistKind = "SALES" | "PURCHASES" | "BANK" | "PAYROLL" | "EXPENSES" | "OTHER";
+export interface DocChecklistDef {
+  kind: DocChecklistKind;
+  labelFr: string;
+  labelAr: string;
+}
+export const DEFAULT_CHECKLIST: DocChecklistDef[] = [
+  { kind: "SALES",     labelFr: "Factures de Ventes",     labelAr: "فواتير المبيعات" },
+  { kind: "PURCHASES", labelFr: "Factures d'Achats",      labelAr: "فواتير المشتريات" },
+  { kind: "BANK",      labelFr: "Relevés Bancaires",      labelAr: "كشوف البنك" },
+  { kind: "PAYROLL",   labelFr: "États de Salaires",      labelAr: "كشوف الأجور" },
+  { kind: "EXPENSES",  labelFr: "Notes de Frais",         labelAr: "مصاريف عامة" },
+];
+
+export interface ChecklistEntry {
+  id: string;
+  clientEmail: string;
+  clientName: string;
+  monthKey: string;       // YYYY-MM
+  kind: DocChecklistKind;
+  status: "missing" | "received" | "validated";
+  receivedAt?: string;    // ISO
+  refIncomingId?: string;
+  note?: string;
+}
+const KEY_CHECKLIST = "mgmtk_portal_checklist";
+const currentMonth = () => new Date().toISOString().slice(0, 7);
+
+export const getChecklistFor = (clientEmail: string, monthKey = currentMonth()): ChecklistEntry[] => {
+  const all = read<ChecklistEntry>(KEY_CHECKLIST);
+  const k = chatThreadKey(clientEmail);
+  return all.filter((e) => chatThreadKey(e.clientEmail) === k && e.monthKey === monthKey);
+};
+export const ensureChecklist = (clientEmail: string, clientName: string, monthKey = currentMonth()) => {
+  const existing = getChecklistFor(clientEmail, monthKey);
+  if (existing.length) return existing;
+  const all = read<ChecklistEntry>(KEY_CHECKLIST);
+  const created = DEFAULT_CHECKLIST.map<ChecklistEntry>((d) => ({
+    id: crypto.randomUUID(), clientEmail, clientName, monthKey,
+    kind: d.kind, status: "missing",
+  }));
+  write(KEY_CHECKLIST, [...all, ...created]); ping();
+  return created;
+};
+export const setChecklistStatus = (id: string, status: ChecklistEntry["status"], refIncomingId?: string) => {
+  const all = read<ChecklistEntry>(KEY_CHECKLIST).map((e) =>
+    e.id === id ? { ...e, status, receivedAt: status !== "missing" ? new Date().toISOString() : undefined, refIncomingId } : e
+  );
+  write(KEY_CHECKLIST, all); ping();
+};
+export const allChecklistEntries = (monthKey = currentMonth()): ChecklistEntry[] => {
+  const all = read<ChecklistEntry>(KEY_CHECKLIST);
+  return all.filter((e) => e.monthKey === monthKey);
+};
+
+/* ============================================================
+   Declaration Workflow Status (Draft → Filed)
+   ============================================================ */
+export type WorkflowStatus = "draft" | "review" | "sent" | "signed" | "filed";
+export const WORKFLOW_ORDER: WorkflowStatus[] = ["draft", "review", "sent", "signed", "filed"];
+
+const KEY_SHARED2 = "mgmtk_acc_shared_docs";
+export const setSharedDocWorkflow = (id: string, workflow: WorkflowStatus) => {
+  const all: any[] = read<any>(KEY_SHARED2);
+  const next = all.map((s) => (s.id === id ? { ...s, workflow } : s));
+  write(KEY_SHARED2, next); ping();
+};
+export const updateSharedDocPayload = (id: string, payload: string, label?: string) => {
+  const all: any[] = read<any>(KEY_SHARED2);
+  const next = all.map((s) => (s.id === id ? { ...s, payload, label: label ?? s.label } : s));
+  write(KEY_SHARED2, next); ping();
+};
