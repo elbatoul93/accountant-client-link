@@ -336,6 +336,7 @@ const AccountantDashboard = () => {
                         label: `G50 ${d.due.slice(0, 7)} — ${fmtDZD(d.amount)}`,
                         date: new Date().toLocaleDateString("fr-DZ"),
                         payload: JSON.stringify({ nif: c.taxId, bp: c.bp, amount: d.amount, due: d.due }),
+                        workflow: "sent",
                       };
                       setSharedDocs((p) => [shared, ...p]);
                       pushNotification({
@@ -346,6 +347,8 @@ const AccountantDashboard = () => {
                       });
                       toast.success(t("tools_send_to_client"));
                     }}
+                    sharedDocs={sharedDocs}
+                    onReview={(s) => setEditingShared(s)}
                   />
                 </Card>
 
