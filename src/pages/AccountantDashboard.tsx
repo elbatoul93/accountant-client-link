@@ -783,7 +783,7 @@ const ClientProfileView = ({
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-5 pt-5 border-t border-border/60">
           <InfoCell label="NIF" value={client.taxId} />
-          <InfoCell label="BP" value={client.bp} />
+          <InfoCell label={t("client_bp")} value={client.bp} />
           <InfoCell label="NIS" value={client.nis} />
           <InfoCell label="RC" value={client.rc} />
           <InfoCell label={t("client_cnas_no")} value={client.cnasNo} sub={client.hasCacobatph ? "BTPH" : undefined} />
