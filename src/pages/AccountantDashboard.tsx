@@ -30,6 +30,12 @@ import { LiasseFiscaleView } from "./accountant/LiasseFiscale";
 import { AssetsView } from "./accountant/AssetsView";
 import { FiscalCalendar } from "@/components/FiscalCalendar";
 import { lockPeriod, computeG50FromJournal } from "@/lib/accounting/engine";
+import {
+  getIncomingInvoices, updateIncomingStatus, deleteIncomingInvoice,
+  pushNotification, getVault, onPortalChange,
+  type IncomingInvoice, type VaultEntry,
+} from "@/lib/portal";
+import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
