@@ -358,7 +358,7 @@ const ClientDashboard = () => {
               </h2>
               <p className="text-xs text-muted-foreground">{t("cli_deadlines_subtitle")}</p>
             </div>
-            <FiscalCalendar t={t} regime={myRegime} limit={20} />
+            <FiscalCalendar t={t} regime={myRegime} limit={20} employeeCount={myEmpCount} hasCacobatph={myHasCacobatph} />
           </TabsContent>
 
           {/* === DECLARATIONS FOR APPROVAL === */}
