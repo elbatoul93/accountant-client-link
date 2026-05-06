@@ -233,10 +233,16 @@ const ClientDashboard = () => {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <Badge variant="outline" className="font-mono text-[10px]">{s.type}</Badge>
+                                <WorkflowBadge status={s.workflow} t={t} />
                                 {s.signedAt && <Badge className="bg-success/15 text-success border-success/40 text-[10px]"><CheckCircle2 className="h-3 w-3 me-1" /> {t("vault_signed")}</Badge>}
                                 <span className="text-[10px] text-muted-foreground">{s.date}</span>
                               </div>
                               <div className="font-medium text-sm text-foreground truncate">{s.label}</div>
+                              <div className="mt-2 flex items-center gap-1">
+                                <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={() => setPreviewDoc(s)}>
+                                  <Eye className="h-3 w-3" /> {t("preview_btn")}
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
