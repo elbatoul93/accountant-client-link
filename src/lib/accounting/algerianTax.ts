@@ -413,15 +413,7 @@ export const buildG50Preview = (input: G50PreviewInput): G50Preview => {
       section: "D",
     });
   }
-  if (input.trwi && input.trwi > 0) {
-    lines.push({
-      code: "D-TRWI",
-      label: "TRWI — Redevance Radio / Télévision",
-      amount: Math.round(input.trwi),
-      group: "AUTRES",
-      section: "D",
-    });
-  }
+  // TRWI removed from G50 per regulatory update.
 
   const total = lines
     .filter((l) => !l.informational)

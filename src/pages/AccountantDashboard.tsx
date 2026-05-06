@@ -34,7 +34,8 @@ import { ChatSidebar } from "@/components/ChatSidebar";
 import { DocChecklist } from "@/components/DocChecklist";
 import { DocPreviewDialog } from "@/components/DocPreviewDialog";
 import { WorkflowBadge, WorkflowStepper } from "@/components/WorkflowStatus";
-import { lockPeriod, computeG50FromJournal } from "@/lib/accounting/engine";
+import { lockPeriod, computeG50FromJournal, type JournalLine } from "@/lib/accounting/engine";
+import { buildG50Preview, TAP_RATE } from "@/lib/accounting/algerianTax";
 import {
   getIncomingInvoices, updateIncomingStatus, deleteIncomingInvoice,
   pushNotification, getVault, onPortalChange,
@@ -126,6 +127,7 @@ const AccountantDashboard = () => {
   const [previewIncoming, setPreviewIncoming] = useState<IncomingInvoice | null>(null);
   const [editingShared, setEditingShared] = useState<SharedDoc | null>(null);
   const [trackingClientId, setTrackingClientId] = useState<string>("");
+  const [viewG50Client, setViewG50Client] = useState<Client | null>(null);
 
   useEffect(() => { localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients)); }, [clients]);
   useEffect(() => { localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices)); }, [invoices]);
@@ -281,6 +283,7 @@ const AccountantDashboard = () => {
                   toast.success("Supprimé");
                 }}
                 onExtract={setObligationsClient}
+                onViewG50={setViewG50Client}
               />
             )}
 
@@ -580,7 +583,26 @@ const AccountantDashboard = () => {
         t={t}
       />
 
-      {/* Real-time chat with clients */}
+      {/* View / Edit a client's G50 (interactive preview) */}
+      <ViewG50Dialog
+        client={viewG50Client}
+        onClose={() => setViewG50Client(null)}
+        journal={journal}
+        t={t}
+        onFinalize={(decl, shared) => {
+          setDecls((p) => [decl, ...p]);
+          setSharedDocs((p) => [shared, ...p]);
+          pushNotification({
+            forRole: "client", forEmail: shared.clientEmail,
+            title: t("notif_g50_ready_title"),
+            message: t("notif_g50_ready_msg").replace("{label}", shared.label),
+            type: "g50_ready", link: "/dashboard/client", refId: shared.id,
+          });
+          toast.success(t("g50_finalized_sent"));
+          setViewG50Client(null);
+        }}
+      />
+
       <ChatSidebar
         t={t}
         role="accountant"
@@ -649,10 +671,11 @@ const DashboardView = ({
 );
 
 const ClientsListView = ({
-  t, clients, totalCount, search, setSearch, onOpen, onAdd, onEdit, onDelete, onExtract,
+  t, clients, totalCount, search, setSearch, onOpen, onAdd, onEdit, onDelete, onExtract, onViewG50,
 }: {
   t: (k: string) => string; clients: Client[]; totalCount: number; search: string; setSearch: (v: string) => void;
   onOpen: (c: Client) => void; onAdd: () => void; onEdit: (c: Client) => void; onDelete: (id: string) => void; onExtract: (c: Client) => void;
+  onViewG50: (c: Client) => void;
 }) => (
   <>
     <div className="flex items-center justify-between flex-wrap gap-3">
@@ -707,6 +730,9 @@ const ClientsListView = ({
                   <td className="py-3"><Badge variant="secondary" className="text-[10px] capitalize">{c.status}</Badge></td>
                   <td className="py-3 text-end" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
+                      <Button size="sm" variant="gold" className="h-7 gap-1.5 text-xs" onClick={() => onViewG50(c)}>
+                        <Receipt className="h-3.5 w-3.5" /> {t("acc_view_g50")}
+                      </Button>
                       <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => onExtract(c)}>
                         <FileDown className="h-3.5 w-3.5" /> {t("acc_extract")}
                       </Button>
@@ -783,7 +809,7 @@ const ClientProfileView = ({
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-5 pt-5 border-t border-border/60">
           <InfoCell label="NIF" value={client.taxId} />
-          <InfoCell label="BP" value={client.bp} />
+          <InfoCell label={t("client_bp")} value={client.bp} />
           <InfoCell label="NIS" value={client.nis} />
           <InfoCell label="RC" value={client.rc} />
           <InfoCell label={t("client_cnas_no")} value={client.cnasNo} sub={client.hasCacobatph ? "BTPH" : undefined} />
@@ -1139,7 +1165,7 @@ const AddClientDialog = ({
                 </div>
               )}
               <p className="text-[11px] text-muted-foreground mt-2">
-                NIF & BP — Carte d'Immatriculation Fiscale
+                NIF & Business Partner (BP) — Identifiant Jibayatic / Carte d'Immatriculation Fiscale
               </p>
             </div>
           </Section>
@@ -2059,5 +2085,167 @@ const EditDeclDialog = ({ doc, onClose, onSave, t }: {
     </Dialog>
   );
 };
+
+/* ============== INTERACTIVE G50 PREVIEW (per client) ============== */
+
+interface ViewG50DialogProps {
+  client: Client | null;
+  onClose: () => void;
+  journal: JournalLine[];
+  t: (k: string) => string;
+  onFinalize: (decl: Decl, shared: SharedDoc) => void;
+}
+
+const ViewG50Dialog = ({ client, onClose, journal, t, onFinalize }: ViewG50DialogProps) => {
+  const [period, setPeriod] = useState(new Date().toISOString().slice(0, 7));
+  const [editing, setEditing] = useState(false);
+  const [overrides, setOverrides] = useState<{ caHt?: number; tvaCollected?: number; tvaDeductible?: number; irgSalaries?: number; ibsAcompte?: number }>({});
+
+  const live = useMemo(
+    () => client ? computeG50FromJournal(journal, { clientId: client.id, period, tapRate: TAP_RATE }) : null,
+    [client, journal, period],
+  );
+
+  // Reset overrides when client/period changes
+  useEffect(() => { setOverrides({}); setEditing(false); }, [client?.id, period]);
+
+  if (!client || !live) return null;
+
+  const caHt = overrides.caHt ?? live.caHt;
+  const tvaCollected = overrides.tvaCollected ?? live.tvaCollected;
+  const tvaDeductible = overrides.tvaDeductible ?? live.tvaDeductible;
+  const irgSalaries = overrides.irgSalaries ?? live.irgSalaries;
+  const ibsAcompte = overrides.ibsAcompte ?? 0;
+
+  const g50 = buildG50Preview({
+    period, caHt, tvaCollected, tvaDeductible,
+    tapRate: TAP_RATE, irgSalaries, ibsAcompte,
+  });
+
+  const finalize = () => {
+    const declId = crypto.randomUUID();
+    const decl: Decl = {
+      id: declId, clientId: client.id, clientName: client.name,
+      type: "G50", amount: Math.round(g50.total),
+      due: `${period}-20`, status: "filed",
+    };
+    const shared: SharedDoc = {
+      id: crypto.randomUUID(), clientId: client.id, clientName: client.name,
+      clientEmail: client.contact, type: "G50",
+      label: `G50 ${period} — ${fmtDZD(g50.total)}`,
+      date: new Date().toLocaleDateString("fr-DZ"),
+      payload: JSON.stringify({
+        nif: client.taxId, bp: client.bp, period,
+        caHt, tvaCollected, tvaDeductible, irgSalaries, ibsAcompte,
+        tap: g50.sections.A.subtotal, tvaDue: g50.tva.tvaDue,
+        total: g50.total,
+      }),
+      workflow: "sent",
+    };
+    onFinalize(decl, shared);
+  };
+
+  return (
+    <Dialog open={!!client} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0">
+        {/* Official-style header */}
+        <div className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground p-5 rounded-t-lg">
+          <DialogHeader>
+            <div className="text-[11px] opacity-80 uppercase tracking-wider">République Algérienne Démocratique et Populaire</div>
+            <div className="text-[11px] opacity-80">Direction Générale des Impôts — DGI</div>
+            <DialogTitle className="text-xl font-bold mt-1.5 flex items-center gap-2 text-primary-foreground">
+              <Receipt className="h-5 w-5" /> {t("acc_view_g50")} — Série G n° 50
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
+            <div>
+              <div className="opacity-70">{client.name}</div>
+              <div className="font-mono text-[11px] opacity-90">NIF: {client.taxId || "—"} · BP: {client.bp || "—"}</div>
+            </div>
+            <div className="text-end">
+              <Label className="text-[10px] opacity-80">{t("rep_period")}</Label>
+              <Input type="month" value={period} onChange={(e) => setPeriod(e.target.value)}
+                className="h-7 w-44 ms-auto bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground" />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <Badge variant="outline" className="border-gold-deep/40 text-gold-deep bg-gold/5">
+              {t("g50_status_draft")}
+            </Badge>
+            <Button size="sm" variant={editing ? "outline" : "outlineGold"} onClick={() => setEditing((v) => !v)}>
+              <Pencil className="h-3.5 w-3.5" /> {editing ? t("acc_done") : t("acc_edit")}
+            </Button>
+          </div>
+
+          {/* Editable bases */}
+          {editing && (
+            <Card className="p-4 bg-muted/40 border-dashed">
+              <div className="text-xs font-semibold text-primary uppercase mb-2">{t("g50_edit_figures")}</div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <EditField label={t("g50_field_ca_ht")} value={caHt} onChange={(v) => setOverrides((p) => ({ ...p, caHt: v }))} />
+                <EditField label={t("g50_field_tva_col")} value={tvaCollected} onChange={(v) => setOverrides((p) => ({ ...p, tvaCollected: v }))} />
+                <EditField label={t("g50_field_tva_ded")} value={tvaDeductible} onChange={(v) => setOverrides((p) => ({ ...p, tvaDeductible: v }))} />
+                <EditField label={t("g50_field_irg_sal")} value={irgSalaries} onChange={(v) => setOverrides((p) => ({ ...p, irgSalaries: v }))} />
+                <EditField label={t("g50_field_ibs_acpt")} value={ibsAcompte} onChange={(v) => setOverrides((p) => ({ ...p, ibsAcompte: v }))} />
+              </div>
+            </Card>
+          )}
+
+          {/* Sections A/B/C/D */}
+          {(["A","B","C","D"] as const).map((s) => {
+            const sec = g50.sections[s];
+            if (sec.lines.length === 0) return null;
+            return (
+              <Card key={s} className="p-0 overflow-hidden border-border/70">
+                <div className="bg-muted/40 px-4 py-2 border-b border-border flex items-center justify-between">
+                  <div className="font-bold text-primary text-sm">{sec.title}</div>
+                  <Badge variant="outline" className="border-gold-deep/40 text-gold-deep bg-gold/5 font-mono text-xs">
+                    {fmtDZD(sec.subtotal)}
+                  </Badge>
+                </div>
+                <table className="w-full text-sm">
+                  <tbody>
+                    {sec.lines.map((l) => (
+                      <tr key={l.code} className={`border-t border-border/50 ${l.informational ? "text-muted-foreground" : ""}`}>
+                        <td className="py-2 px-3 font-mono text-[10px] font-bold text-primary">{l.code}</td>
+                        <td className="py-2 px-3 text-xs">{l.label}</td>
+                        <td className={`py-2 px-3 text-end font-mono text-xs ${l.informational ? "italic" : "font-bold text-gold-deep"}`}>
+                          {fmtDZD(l.amount)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Card>
+            );
+          })}
+
+          {/* Total */}
+          <div className="rounded-lg bg-gradient-to-r from-gold/15 to-gold/5 border-2 border-gold/40 p-4 flex items-center justify-between">
+            <span className="font-bold text-primary uppercase tracking-wide">{t("tax_g50_total")}</span>
+            <span className="text-3xl font-bold text-gold-deep font-mono">{fmtDZD(g50.total)}</span>
+          </div>
+        </div>
+
+        <DialogFooter className="p-5 pt-0">
+          <Button variant="ghost" onClick={onClose}>{t("acc_close") || "Fermer"}</Button>
+          <Button variant="gold" onClick={finalize}>
+            <Send className="h-4 w-4" /> {t("g50_finalize_send")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const EditField = ({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) => (
+  <div className="space-y-1">
+    <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</Label>
+    <Input type="number" value={value} onChange={(e) => onChange(Number(e.target.value || 0))} className="h-8 text-sm font-mono" />
+  </div>
+);
 
 export default AccountantDashboard;

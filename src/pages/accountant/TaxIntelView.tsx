@@ -18,14 +18,13 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Calculator, Building2, Briefcase, Wallet, Tv, FileText, Landmark, Users,
+  Calculator, Building2, Briefcase, Wallet, FileText, Landmark, Users,
   Receipt, ArrowDownToLine, ArrowUpFromLine, AlertTriangle, FileSpreadsheet,
 } from "lucide-react";
 import {
   IBS_RATES, type IbsSector, computeIbs, computeIbsAcompte,
   IRG_PRO_BRACKETS_2024, computeIrgProfessionsLiberales,
   computeTfpTapp, TFP_TAPP_THRESHOLD,
-  TRWI_FEES, type LegalEntityKind, computeTrwi,
   buildG50Preview, type G50Line, type G50Section,
   TAP_RATE, buildEtat104,
 } from "@/lib/accounting/algerianTax";
@@ -86,12 +85,9 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
     formationExpenses: Number(formation || 0),
   });
 
-  /* TRWI state */
-  const [trwiKind, setTrwiKind] = useState<LegalEntityKind>("PM");
-  const trwi = computeTrwi(trwiKind);
-
   /* G50 — pulls live amounts from journal then layers our calculators on top.
-   * TAP forced to 1% (LF 2024). Précompte is auto-loaded from previous month. */
+   * TAP forced to 1% (LF 2024). Précompte is auto-loaded from previous month.
+   * TRWI (Radio/TV) removed from G50 per regulatory update. */
   const cid = clientId === "ALL" ? undefined : clientId;
   const liveG50 = useMemo(
     () => computeG50FromJournal(journal, { clientId: cid, period, tapRate: TAP_RATE }),
@@ -111,9 +107,8 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
       irgSalaries: liveG50.irgSalaries,
       ibsAcompte: monthlyIbsShare,
       tfpTapp,
-      trwi: Math.round(trwi / 12),
     }),
-    [period, liveG50, precompteFromPrev, monthlyIbsShare, tfpTapp, trwi],
+    [period, liveG50, precompteFromPrev, monthlyIbsShare, tfpTapp],
   );
 
   /* Auto-persist the carry-forward Précompte for this period whenever it changes,
@@ -178,11 +173,10 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
       </Card>
 
       <Tabs defaultValue="g50">
-        <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full max-w-4xl">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-5 w-full max-w-4xl">
           <TabsTrigger value="ibs">{t("tax_tab_ibs")}</TabsTrigger>
           <TabsTrigger value="irg">{t("tax_tab_irg")}</TabsTrigger>
           <TabsTrigger value="tfp">{t("tax_tab_tfp")}</TabsTrigger>
-          <TabsTrigger value="trwi">{t("tax_tab_trwi")}</TabsTrigger>
           <TabsTrigger value="etat104">{t("tax_tab_etat104")}</TabsTrigger>
           <TabsTrigger value="g50">{t("tax_tab_g50")}</TabsTrigger>
         </TabsList>
@@ -334,34 +328,7 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
           </Card>
         </TabsContent>
 
-        {/* ===== TRWI ===== */}
-        <TabsContent value="trwi" className="mt-4">
-          <Card className="p-5 shadow-card">
-            <h3 className="font-bold text-primary mb-1 flex items-center gap-2">
-              <Tv className="h-4 w-4 text-gold-deep" /> {t("tax_trwi_title")}
-            </h3>
-            <p className="text-xs text-muted-foreground mb-4">{t("tax_trwi_subtitle")}</p>
-
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">{t("tax_trwi_kind")}</Label>
-                <Select value={trwiKind} onValueChange={(v) => setTrwiKind(v as LegalEntityKind)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PP">{t("tax_trwi_pp")} — {fmtDZD(TRWI_FEES.PP)}</SelectItem>
-                    <SelectItem value="PM">{t("tax_trwi_pm")} — {fmtDZD(TRWI_FEES.PM)}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-end">
-                <div className="w-full p-4 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 flex items-center justify-between">
-                  <span className="font-bold text-primary">{t("tax_trwi_annual")}</span>
-                  <span className="text-2xl font-bold text-gold-deep">{fmtDZD(trwi)}</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </TabsContent>
+        {/* TRWI tab removed per regulatory update */}
 
         {/* ===== État 104 — Liste des Fournisseurs ===== */}
         <TabsContent value="etat104" className="mt-4">
@@ -488,7 +455,7 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
                     <li>• Précompte: {t("tax_g50_precompte_auto")}</li>
                     <li>• IBS Acompte: {t("tax_ibs_per_acompte")} ÷ 3</li>
                     <li>• TFP / TAPP: {t("tax_tfp_subtitle")}</li>
-                    <li>• TRWI: {t("tax_trwi_annual")} ÷ 12</li>
+                    
                   </ul>
                 </div>
                 <div className="p-3 rounded-md border border-gold/40 bg-gold/5">
