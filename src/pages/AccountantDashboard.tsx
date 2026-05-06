@@ -91,13 +91,19 @@ const load = <T,>(k: string): T[] => {
   return raw ? JSON.parse(raw) : [];
 };
 
-type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports" | "taxintel" | "liasse" | "assets" | "calendar";
+type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports" | "taxintel" | "liasse" | "assets" | "calendar" | "incoming" | "vault";
 
 const AccountantDashboard = () => {
   const { t, user } = useApp();
   const [clients, setClients] = useState<Client[]>(() => load<Client>(KEY_CLIENTS));
   const [invoices, setInvoices] = useState<Invoice[]>(() => load<Invoice>(KEY_INVOICES));
   const [decls, setDecls] = useState<Decl[]>(() => load<Decl>(KEY_DECLS));
+  const [incoming, setIncoming] = useState<IncomingInvoice[]>(() => getIncomingInvoices());
+  const [vault, setVault] = useState<VaultEntry[]>(() => getVault());
+  useEffect(() => onPortalChange(() => {
+    setIncoming(getIncomingInvoices());
+    setVault(getVault());
+  }), []);
   const [fsList, setFsList] = useState<FinStmt[]>(() => load<FinStmt>(KEY_FS));
   const [sharedDocs, setSharedDocs] = useState<SharedDoc[]>(() => load<SharedDoc>(KEY_SHARED));
   const [legalDocs, setLegalDocs] = useState<LegalDoc[]>(() => load<LegalDoc>(KEY_LEGAL));
