@@ -1865,4 +1865,144 @@ const AccountantVaultView = ({ t, entries }: { t: (k: string) => string; entries
   );
 };
 
+/* ============== TRACKING + CHAT HUB VIEWS ============== */
+
+const TrackingView = ({ t, clients, activeId, setActiveId }: {
+  t: (k: string) => string; clients: Client[];
+  activeId: string; setActiveId: (id: string) => void;
+}) => {
+  const active = clients.find((c) => c.id === activeId);
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
+          <ListChecks className="h-5 w-5 text-gold-deep" /> {t("acc_tracking_title")}
+        </h1>
+        <p className="text-xs text-muted-foreground">{t("acc_tracking_subtitle")}</p>
+      </div>
+
+      <Card className="p-4 shadow-card">
+        <Label className="text-xs">{t("dash_client")}</Label>
+        <Select value={activeId} onValueChange={setActiveId}>
+          <SelectTrigger><SelectValue placeholder={t("acc_select_client")} /></SelectTrigger>
+          <SelectContent>
+            {clients.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
+          </SelectContent>
+        </Select>
+      </Card>
+
+      {active ? (
+        <DocChecklist t={t} clientEmail={active.contact} clientName={active.name} accountantMode />
+      ) : (
+        <Card className="p-8 shadow-card text-center text-sm text-muted-foreground">
+          {t("acc_select_client")}
+        </Card>
+      )}
+    </div>
+  );
+};
+
+const ChatHubView = ({ t, clients }: { t: (k: string) => string; clients: Client[] }) => {
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
+          <MessageCircle className="h-5 w-5 text-gold-deep" /> {t("chat_title")}
+        </h1>
+        <p className="text-xs text-muted-foreground">{t("chat_select_contact")}</p>
+      </div>
+      <Card className="p-5 shadow-card">
+        <p className="text-sm text-muted-foreground mb-3">
+          {t("chat_select_contact")}
+        </p>
+        <ul className="space-y-1.5">
+          {clients.map((c) => (
+            <li key={c.id} className="flex items-center justify-between gap-3 p-2.5 rounded border border-border/60">
+              <div className="min-w-0">
+                <div className="font-semibold text-sm truncate">{c.name}</div>
+                <div className="text-[11px] text-muted-foreground truncate">{c.contact}</div>
+              </div>
+              <Badge variant="outline" className="text-[10px]">{c.taxRegime || "—"}</Badge>
+            </li>
+          ))}
+          {clients.length === 0 && <li className="text-xs text-muted-foreground p-3">{t("empty_no_clients")}</li>}
+        </ul>
+        <p className="text-[11px] text-muted-foreground mt-3">
+          ↘ {t("chat_open")}
+        </p>
+      </Card>
+    </div>
+  );
+};
+
+/* ============== EDIT G50 PAYLOAD DIALOG ============== */
+
+const EditDeclDialog = ({ doc, onClose, onSave, t }: {
+  doc: SharedDoc | null; onClose: () => void;
+  onSave: (id: string, payload: string, label: string, workflow: WorkflowStatus) => void;
+  t: (k: string) => string;
+}) => {
+  const [fields, setFields] = useState<Record<string, string>>({});
+  const [label, setLabel] = useState("");
+  const [workflow, setWorkflow] = useState<WorkflowStatus>("draft");
+  useEffect(() => {
+    if (!doc) return;
+    setLabel(doc.label || "");
+    setWorkflow(doc.workflow || "draft");
+    try { setFields(doc.payload ? JSON.parse(doc.payload) : {}); } catch { setFields({}); }
+  }, [doc?.id]);
+  if (!doc) return null;
+
+  const numericKeys = ["caHt", "salaries", "benefice", "tap", "tva", "irg", "ibs", "total", "amount"];
+
+  return (
+    <Dialog open={!!doc} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Pencil className="h-4 w-4 text-gold-deep" /> {t("wf_review_edit")} — {doc.type}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Label</Label>
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} />
+          </div>
+
+          <div>
+            <div className="text-xs font-semibold text-primary uppercase mb-2">Payload</div>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.keys(fields).map((k) => (
+                <div key={k} className="space-y-1">
+                  <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">{k}</Label>
+                  <Input
+                    type={numericKeys.includes(k) ? "number" : "text"}
+                    value={String(fields[k] ?? "")}
+                    onChange={(e) => setFields((p) => ({ ...p, [k]: e.target.value }))}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs">{t("wf_change")}</Label>
+            <WorkflowStepper status={workflow} t={t} onChange={setWorkflow} />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="gold" onClick={() => {
+            onSave(doc.id, JSON.stringify(fields), label, workflow);
+            toast.success("Updated");
+            onClose();
+          }}>{t("sig_apply").includes("Sign") ? "Save" : "Enregistrer"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default AccountantDashboard;
