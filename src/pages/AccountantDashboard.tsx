@@ -1424,33 +1424,52 @@ const AddDeclarationDialog = ({
   );
 };
 
-const DeclList = ({ items, onDelete, t, showType, onSend }: { items: Decl[]; onDelete: (id: string) => void; t: (k: string) => string; showType?: boolean; onSend?: (d: Decl) => void }) => {
+const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview }: {
+  items: Decl[]; onDelete: (id: string) => void; t: (k: string) => string;
+  showType?: boolean; onSend?: (d: Decl) => void;
+  sharedDocs?: SharedDoc[]; onReview?: (s: SharedDoc) => void;
+}) => {
   if (items.length === 0) return <EmptyState label={t("empty_no_decls")} />;
+  const findShared = (d: Decl): SharedDoc | undefined => {
+    if (!sharedDocs) return undefined;
+    const period = d.due.slice(0, 7);
+    return sharedDocs.find((s) => s.clientId === d.clientId && s.type === d.type && s.label.includes(period))
+      || sharedDocs.find((s) => s.clientId === d.clientId && s.type === d.type);
+  };
   return (
     <div className="space-y-2">
-      {items.map((d) => (
-        <div key={d.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/60">
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-sm truncate">{d.clientName}</div>
-            <div className="text-[11px] text-muted-foreground">
-              {showType && <Badge variant="outline" className="text-[10px] me-1.5 font-mono">{d.type}</Badge>}
-              {t("dash_deadline")}: {d.due}
+      {items.map((d) => {
+        const shared = findShared(d);
+        return (
+          <div key={d.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/60 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-sm truncate">{d.clientName}</div>
+              <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                {showType && <Badge variant="outline" className="text-[10px] font-mono">{d.type}</Badge>}
+                <span>{t("dash_deadline")}: {d.due}</span>
+                {shared && <WorkflowBadge status={shared.workflow} t={t} />}
+              </div>
             </div>
-          </div>
-          <div className="text-end">
-            <div className="font-bold text-sm text-gold-deep">{fmtDZD(d.amount)}</div>
-            <Badge variant="outline" className="text-[10px]">{t(`dash_${d.status}`)}</Badge>
-          </div>
-          {onSend && (
-            <Button size="sm" variant="outlineGold" onClick={() => onSend(d)} title={t("tools_send_to_client")}>
-              <Send className="h-3.5 w-3.5" />
+            <div className="text-end">
+              <div className="font-bold text-sm text-gold-deep">{fmtDZD(d.amount)}</div>
+              <Badge variant="outline" className="text-[10px]">{t(`dash_${d.status}`)}</Badge>
+            </div>
+            {shared && onReview && (
+              <Button size="sm" variant="outline" onClick={() => onReview(shared)} title={t("wf_review_edit")}>
+                <Pencil className="h-3.5 w-3.5" /> {t("wf_review_edit")}
+              </Button>
+            )}
+            {onSend && (
+              <Button size="sm" variant="outlineGold" onClick={() => onSend(d)} title={t("tools_send_to_client")}>
+                <Send className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(d.id)}>
+              <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
-          )}
-          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(d.id)}>
-            <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-          </Button>
-        </div>
-      ))}
+          </div>
+        );
+      })}
     </div>
   );
 };
