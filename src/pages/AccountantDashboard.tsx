@@ -150,6 +150,8 @@ const AccountantDashboard = () => {
   const sidebarItems: { key: View; label: string; icon: any; count?: number }[] = [
     { key: "dashboard", label: t("side_dashboard"), icon: LayoutDashboard },
     { key: "calendar", label: t("side_calendar"), icon: Bell },
+    { key: "incoming", label: t("side_incoming"), icon: InboxIcon, count: incoming.filter((i) => i.status === "pending").length },
+    { key: "vault", label: t("side_vault"), icon: Archive, count: vault.length },
     { key: "clients", label: t("side_clients"), icon: Users, count: clients.length },
     { key: "billing", label: t("side_billing"), icon: Receipt, count: bills.length },
     { key: "payroll", label: t("side_payroll"), icon: Wallet, count: employees.length },
