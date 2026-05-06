@@ -552,6 +552,38 @@ const AccountantDashboard = () => {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Preview incoming invoice */}
+      <DocPreviewDialog
+        open={!!previewIncoming}
+        onClose={() => setPreviewIncoming(null)}
+        title={previewIncoming?.fileName || ""}
+        fileName={previewIncoming?.fileName}
+        mimeType={previewIncoming?.mimeType}
+        fileData={previewIncoming?.fileData}
+        meta={previewIncoming ? { client: previewIncoming.clientName, size: `${(previewIncoming.size/1024).toFixed(0)} KB`, status: previewIncoming.status } : undefined}
+        t={t}
+      />
+
+      {/* Review & Edit declaration */}
+      <EditDeclDialog
+        doc={editingShared}
+        onClose={() => setEditingShared(null)}
+        onSave={(id, payload, label, workflow) => {
+          updateSharedDocPayload(id, payload, label);
+          setSharedDocWorkflow(id, workflow);
+          setSharedDocs((p) => p.map((s) => (s.id === id ? { ...s, payload, label, workflow } : s)));
+        }}
+        t={t}
+      />
+
+      {/* Real-time chat with clients */}
+      <ChatSidebar
+        t={t}
+        role="accountant"
+        selfName={user.name}
+        contacts={clients.map((c) => ({ email: c.contact, name: c.name }))}
+      />
     </div>
   );
 };
