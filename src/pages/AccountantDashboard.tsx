@@ -127,6 +127,7 @@ const AccountantDashboard = () => {
   const [previewIncoming, setPreviewIncoming] = useState<IncomingInvoice | null>(null);
   const [editingShared, setEditingShared] = useState<SharedDoc | null>(null);
   const [trackingClientId, setTrackingClientId] = useState<string>("");
+  const [viewG50Client, setViewG50Client] = useState<Client | null>(null);
 
   useEffect(() => { localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients)); }, [clients]);
   useEffect(() => { localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices)); }, [invoices]);
