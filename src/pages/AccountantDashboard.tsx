@@ -18,7 +18,7 @@ import {
 import {
   Users, FileText, TrendingUp, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2, Inbox, FileDown,
   Wrench, BookOpen, Calculator, Send, Download, LayoutDashboard, FolderOpen, ChevronRight, ArrowLeft, Search,
-  Building2, IdCard, Phone, Mail, MapPin, Upload, FileCheck2, Wallet, Pencil, Lock, Landmark,
+  Building2, IdCard, Phone, Mail, MapPin, Upload, FileCheck2, Wallet, Pencil, Lock, Landmark, Clock,
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -30,6 +30,12 @@ import { LiasseFiscaleView } from "./accountant/LiasseFiscale";
 import { AssetsView } from "./accountant/AssetsView";
 import { FiscalCalendar } from "@/components/FiscalCalendar";
 import { lockPeriod, computeG50FromJournal } from "@/lib/accounting/engine";
+import {
+  getIncomingInvoices, updateIncomingStatus, deleteIncomingInvoice,
+  pushNotification, getVault, onPortalChange,
+  type IncomingInvoice, type VaultEntry,
+} from "@/lib/portal";
+import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
@@ -85,13 +91,19 @@ const load = <T,>(k: string): T[] => {
   return raw ? JSON.parse(raw) : [];
 };
 
-type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports" | "taxintel" | "liasse" | "assets" | "calendar";
+type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports" | "taxintel" | "liasse" | "assets" | "calendar" | "incoming" | "vault";
 
 const AccountantDashboard = () => {
   const { t, user } = useApp();
   const [clients, setClients] = useState<Client[]>(() => load<Client>(KEY_CLIENTS));
   const [invoices, setInvoices] = useState<Invoice[]>(() => load<Invoice>(KEY_INVOICES));
   const [decls, setDecls] = useState<Decl[]>(() => load<Decl>(KEY_DECLS));
+  const [incoming, setIncoming] = useState<IncomingInvoice[]>(() => getIncomingInvoices());
+  const [vault, setVault] = useState<VaultEntry[]>(() => getVault());
+  useEffect(() => onPortalChange(() => {
+    setIncoming(getIncomingInvoices());
+    setVault(getVault());
+  }), []);
   const [fsList, setFsList] = useState<FinStmt[]>(() => load<FinStmt>(KEY_FS));
   const [sharedDocs, setSharedDocs] = useState<SharedDoc[]>(() => load<SharedDoc>(KEY_SHARED));
   const [legalDocs, setLegalDocs] = useState<LegalDoc[]>(() => load<LegalDoc>(KEY_LEGAL));
@@ -138,6 +150,8 @@ const AccountantDashboard = () => {
   const sidebarItems: { key: View; label: string; icon: any; count?: number }[] = [
     { key: "dashboard", label: t("side_dashboard"), icon: LayoutDashboard },
     { key: "calendar", label: t("side_calendar"), icon: Bell },
+    { key: "incoming", label: t("side_incoming"), icon: InboxIcon, count: incoming.filter((i) => i.status === "pending").length },
+    { key: "vault", label: t("side_vault"), icon: Archive, count: vault.length },
     { key: "clients", label: t("side_clients"), icon: Users, count: clients.length },
     { key: "billing", label: t("side_billing"), icon: Receipt, count: bills.length },
     { key: "payroll", label: t("side_payroll"), icon: Wallet, count: employees.length },
@@ -221,6 +235,17 @@ const AccountantDashboard = () => {
               </div>
             )}
 
+            {view === "incoming" && (
+              <IncomingDocsView t={t} items={incoming}
+                onMarkProcessed={(id) => updateIncomingStatus(id, "processed")}
+                onDelete={(id) => deleteIncomingInvoice(id)}
+              />
+            )}
+
+            {view === "vault" && (
+              <AccountantVaultView t={t} entries={vault} />
+            )}
+
             {view === "clients" && (
               <ClientsListView
                 t={t} clients={filteredClients} totalCount={clients.length}
@@ -281,7 +306,27 @@ const AccountantDashboard = () => {
                       onAdd={(d) => setDecls((p) => [d, ...p])} t={t} />
                   </div>
                   <DeclList items={decls.filter((d) => d.type === "G50")} t={t}
-                    onDelete={(id) => setDecls((p) => p.filter((x) => x.id !== id))} />
+                    onDelete={(id) => setDecls((p) => p.filter((x) => x.id !== id))}
+                    onSend={(d) => {
+                      const c = clients.find((x) => x.id === d.clientId);
+                      if (!c) return;
+                      const shared: SharedDoc = {
+                        id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
+                        clientEmail: c.contact, type: "G50",
+                        label: `G50 ${d.due.slice(0, 7)} — ${fmtDZD(d.amount)}`,
+                        date: new Date().toLocaleDateString("fr-DZ"),
+                        payload: JSON.stringify({ nif: c.taxId, bp: c.bp, amount: d.amount, due: d.due }),
+                      };
+                      setSharedDocs((p) => [shared, ...p]);
+                      pushNotification({
+                        forRole: "client", forEmail: c.contact,
+                        title: t("notif_g50_ready_title"),
+                        message: t("notif_g50_ready_msg").replace("{label}", shared.label),
+                        type: "g50_ready", link: "/dashboard/client", refId: shared.id,
+                      });
+                      toast.success(t("tools_send_to_client"));
+                    }}
+                  />
                 </Card>
 
                 <Card className="p-5 shadow-card">
@@ -404,7 +449,18 @@ const AccountantDashboard = () => {
         getLiveG50={(cid, period) => computeG50FromJournal(journal, { clientId: cid, period })}
         onGenerate={(d, shared, lockOpts) => {
           setDecls((p) => [d, ...p]);
-          if (shared) setSharedDocs((p) => [shared, ...p]);
+          if (shared) {
+            setSharedDocs((p) => [shared, ...p]);
+            pushNotification({
+              forRole: "client",
+              forEmail: shared.clientEmail,
+              title: t("notif_g50_ready_title"),
+              message: t("notif_g50_ready_msg").replace("{label}", shared.label),
+              type: "g50_ready",
+              link: "/dashboard/client",
+              refId: shared.id,
+            });
+          }
           if (lockOpts) setLocks((p) => lockPeriod(p, lockOpts));
           setOpenTool(null);
         }}
@@ -412,7 +468,19 @@ const AccountantDashboard = () => {
       <SendDocumentDialog
         open={openTool === "send"} onOpenChange={(o) => !o && setOpenTool(null)}
         clients={clients} t={t}
-        onSend={(doc) => { setSharedDocs((p) => [doc, ...p]); setOpenTool(null); }}
+        onSend={(doc) => {
+          setSharedDocs((p) => [doc, ...p]);
+          pushNotification({
+            forRole: "client",
+            forEmail: doc.clientEmail,
+            title: t("notif_g50_ready_title"),
+            message: t("notif_g50_ready_msg").replace("{label}", doc.label),
+            type: "g50_ready",
+            link: "/dashboard/client",
+            refId: doc.id,
+          });
+          setOpenTool(null);
+        }}
       />
 
       <Dialog open={!!obligationsClient} onOpenChange={(o) => !o && setObligationsClient(null)}>
@@ -1304,7 +1372,7 @@ const AddDeclarationDialog = ({
   );
 };
 
-const DeclList = ({ items, onDelete, t, showType }: { items: Decl[]; onDelete: (id: string) => void; t: (k: string) => string; showType?: boolean }) => {
+const DeclList = ({ items, onDelete, t, showType, onSend }: { items: Decl[]; onDelete: (id: string) => void; t: (k: string) => string; showType?: boolean; onSend?: (d: Decl) => void }) => {
   if (items.length === 0) return <EmptyState label={t("empty_no_decls")} />;
   return (
     <div className="space-y-2">
@@ -1321,6 +1389,11 @@ const DeclList = ({ items, onDelete, t, showType }: { items: Decl[]; onDelete: (
             <div className="font-bold text-sm text-gold-deep">{fmtDZD(d.amount)}</div>
             <Badge variant="outline" className="text-[10px]">{t(`dash_${d.status}`)}</Badge>
           </div>
+          {onSend && (
+            <Button size="sm" variant="outlineGold" onClick={() => onSend(d)} title={t("tools_send_to_client")}>
+              <Send className="h-3.5 w-3.5" />
+            </Button>
+          )}
           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(d.id)}>
             <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
           </Button>
@@ -1647,6 +1720,124 @@ const SendDocumentDialog = ({
         <DialogFooter><Button onClick={submit} variant="hero">{t("tools_send_to_client")}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+};
+
+/* ============== INCOMING + VAULT VIEWS ============== */
+
+const IncomingDocsView = ({ t, items, onMarkProcessed, onDelete }: {
+  t: (k: string) => string; items: IncomingInvoice[];
+  onMarkProcessed: (id: string) => void; onDelete: (id: string) => void;
+}) => {
+  return (
+    <Card className="p-5 shadow-card">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-lg font-bold text-primary flex items-center gap-2">
+          <InboxIcon className="h-4 w-4 text-gold-deep" /> {t("incoming_title")}
+        </h2>
+        <Badge variant="secondary" className="text-xs">{items.length}</Badge>
+      </div>
+      <p className="text-xs text-muted-foreground mb-4">{t("incoming_subtitle")}</p>
+      {items.length === 0 ? (
+        <EmptyState label={t("incoming_empty")} />
+      ) : (
+        <div className="space-y-2">
+          {items.map((it) => {
+            const statusBadge =
+              it.status === "pending" ? <Badge className="bg-warning/15 text-warning-foreground border-warning/40 text-[10px]"><Clock className="h-3 w-3 me-1" /> {t("incoming_pending")}</Badge>
+              : it.status === "processed" ? <Badge className="bg-success/15 text-success border-success/40 text-[10px]"><FileCheck2 className="h-3 w-3 me-1" /> {t("incoming_processed")}</Badge>
+              : <Badge variant="outline" className="text-[10px]">{t("incoming_review")}</Badge>;
+            return (
+              <div key={it.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/60 hover:border-primary/40 transition-smooth">
+                <div className="p-2 rounded-md bg-primary/10 text-primary flex-shrink-0">
+                  {it.mimeType.startsWith("image/") ? <FileText className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-sm truncate">{it.fileName}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {t("incoming_from")} <span className="font-medium">{it.clientName}</span> • {(it.size / 1024).toFixed(0)} KB • {new Date(it.uploadedAt).toLocaleString("fr-DZ")}
+                  </div>
+                </div>
+                {statusBadge}
+                {it.fileData && (
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => {
+                    const a = document.createElement("a");
+                    a.href = it.fileData!; a.download = it.fileName; a.target = "_blank"; a.click();
+                  }} title={t("incoming_open_file")}>
+                    <Download className="h-3.5 w-3.5 text-gold-deep" />
+                  </Button>
+                )}
+                {it.status !== "processed" && (
+                  <Button size="sm" variant="outlineGold" onClick={() => { onMarkProcessed(it.id); toast.success(t("incoming_processed")); }}>
+                    {t("incoming_mark_processed")}
+                  </Button>
+                )}
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(it.id)}>
+                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Card>
+  );
+};
+
+const AccountantVaultView = ({ t, entries }: { t: (k: string) => string; entries: VaultEntry[] }) => {
+  const groups = useMemo(() => {
+    const m = new Map<string, VaultEntry[]>();
+    for (const e of entries) {
+      const arr = m.get(e.monthKey) || [];
+      arr.push(e); m.set(e.monthKey, arr);
+    }
+    return [...m.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  }, [entries]);
+
+  return (
+    <Card className="p-5 shadow-card">
+      <h2 className="text-lg font-bold text-primary mb-1 flex items-center gap-2">
+        <Archive className="h-4 w-4 text-gold-deep" /> {t("vault_title")}
+      </h2>
+      <p className="text-xs text-muted-foreground mb-5">{t("vault_subtitle")}</p>
+      {entries.length === 0 ? (
+        <EmptyState label={t("vault_empty")} />
+      ) : (
+        <div className="space-y-5">
+          {groups.map(([month, items]) => (
+            <div key={month}>
+              <div className="text-xs uppercase tracking-wide font-bold text-primary mb-2 border-b border-border/60 pb-1">
+                {new Date(month + "-01").toLocaleDateString("fr-DZ", { month: "long", year: "numeric" })}
+                <Badge variant="secondary" className="ms-2 text-[10px]">{items.length}</Badge>
+              </div>
+              <div className="space-y-1.5">
+                {items.map((e) => (
+                  <div key={e.id} className="flex items-center justify-between p-2.5 rounded border border-border/60 text-xs hover:border-primary/40 transition-smooth">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <Badge variant="outline" className="font-mono text-[10px]">{e.type}</Badge>
+                      <span className="font-medium truncate">{e.label}</span>
+                      <span className="text-muted-foreground hidden sm:inline">— {e.clientName}</span>
+                      {e.kind === "shared_doc" && (
+                        e.signed ? (
+                          <Badge className="bg-success/15 text-success border-success/40 text-[10px]">
+                            <FileSignature className="h-3 w-3 me-0.5" /> {t("vault_signed")}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px]">{t("vault_unsigned")}</Badge>
+                        )
+                      )}
+                    </div>
+                    <span className="text-muted-foreground text-[11px] ms-2 flex-shrink-0">
+                      {new Date(e.date).toLocaleDateString("fr-DZ")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
   );
 };
 

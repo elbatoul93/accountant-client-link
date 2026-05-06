@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { LangSwitcher } from "./LangSwitcher";
 import { Logo } from "./Logo";
+import { NotificationBell } from "./NotificationBell";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/contexts/AppContext";
 import {
@@ -36,6 +37,9 @@ export const SiteHeader = () => {
 
         <div className="flex items-center gap-1 sm:gap-2">
           <LangSwitcher />
+          {user && (
+            <NotificationBell role={user.role} email={user.role === "client" ? user.email : undefined} t={t} />
+          )}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
