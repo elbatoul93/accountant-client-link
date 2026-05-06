@@ -1745,9 +1745,10 @@ const SendDocumentDialog = ({
 
 /* ============== INCOMING + VAULT VIEWS ============== */
 
-const IncomingDocsView = ({ t, items, onMarkProcessed, onDelete }: {
+const IncomingDocsView = ({ t, items, onMarkProcessed, onDelete, onPreview }: {
   t: (k: string) => string; items: IncomingInvoice[];
   onMarkProcessed: (id: string) => void; onDelete: (id: string) => void;
+  onPreview: (it: IncomingInvoice) => void;
 }) => {
   return (
     <Card className="p-5 shadow-card">
