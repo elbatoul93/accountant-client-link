@@ -1780,6 +1780,9 @@ const IncomingDocsView = ({ t, items, onMarkProcessed, onDelete, onPreview }: {
                   </div>
                 </div>
                 {statusBadge}
+                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onPreview(it)}>
+                  <Eye className="h-3.5 w-3.5" /> {t("preview_btn")}
+                </Button>
                 {it.fileData && (
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => {
                     const a = document.createElement("a");
