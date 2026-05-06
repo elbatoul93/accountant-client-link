@@ -329,34 +329,7 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
           </Card>
         </TabsContent>
 
-        {/* ===== TRWI ===== */}
-        <TabsContent value="trwi" className="mt-4">
-          <Card className="p-5 shadow-card">
-            <h3 className="font-bold text-primary mb-1 flex items-center gap-2">
-              <Tv className="h-4 w-4 text-gold-deep" /> {t("tax_trwi_title")}
-            </h3>
-            <p className="text-xs text-muted-foreground mb-4">{t("tax_trwi_subtitle")}</p>
-
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">{t("tax_trwi_kind")}</Label>
-                <Select value={trwiKind} onValueChange={(v) => setTrwiKind(v as LegalEntityKind)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PP">{t("tax_trwi_pp")} — {fmtDZD(TRWI_FEES.PP)}</SelectItem>
-                    <SelectItem value="PM">{t("tax_trwi_pm")} — {fmtDZD(TRWI_FEES.PM)}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-end">
-                <div className="w-full p-4 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 flex items-center justify-between">
-                  <span className="font-bold text-primary">{t("tax_trwi_annual")}</span>
-                  <span className="text-2xl font-bold text-gold-deep">{fmtDZD(trwi)}</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </TabsContent>
+        {/* TRWI tab removed per regulatory update */}
 
         {/* ===== État 104 — Liste des Fournisseurs ===== */}
         <TabsContent value="etat104" className="mt-4">
