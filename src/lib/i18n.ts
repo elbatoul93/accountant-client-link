@@ -200,7 +200,7 @@ const en = {
   acc_client_count: "clients",
   client_company: "Company / Establishment",
   client_nif: "Tax ID Number (NIF)",
-  client_bp: "BP (Article Number)",
+  client_bp: "Business Partner (BP) — Jibayatic ID",
   client_section_tax: "Tax Information",
   client_nis: "Statistical Number (NIS)",
   client_rc: "Trade Register (RC)",
