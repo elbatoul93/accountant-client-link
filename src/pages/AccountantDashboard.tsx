@@ -34,7 +34,8 @@ import { ChatSidebar } from "@/components/ChatSidebar";
 import { DocChecklist } from "@/components/DocChecklist";
 import { DocPreviewDialog } from "@/components/DocPreviewDialog";
 import { WorkflowBadge, WorkflowStepper } from "@/components/WorkflowStatus";
-import { lockPeriod, computeG50FromJournal } from "@/lib/accounting/engine";
+import { lockPeriod, computeG50FromJournal, type JournalLine, type PeriodLock } from "@/lib/accounting/engine";
+import { buildG50Preview, TAP_RATE } from "@/lib/accounting/algerianTax";
 import {
   getIncomingInvoices, updateIncomingStatus, deleteIncomingInvoice,
   pushNotification, getVault, onPortalChange,
