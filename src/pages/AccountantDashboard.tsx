@@ -39,9 +39,10 @@ import { buildG50Preview, TAP_RATE } from "@/lib/accounting/algerianTax";
 import {
   getIncomingInvoices, updateIncomingStatus, deleteIncomingInvoice,
   pushNotification, getVault, onPortalChange,
-  setSharedDocWorkflow, updateSharedDocPayload,
+  setSharedDocWorkflow, updateSharedDocPayload, runUploadReminderSweep,
   type IncomingInvoice, type VaultEntry, type WorkflowStatus,
 } from "@/lib/portal";
+import { ClientStatusIcon } from "@/components/ClientStatusIcon";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
 
 const fmtDZD = (n: number) =>
