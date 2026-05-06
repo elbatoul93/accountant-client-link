@@ -1620,6 +1620,7 @@ const G50GeneratorDialog = ({
       label: `G50 ${period} — ${fmtDZD(total)}`,
       date: new Date().toLocaleDateString("fr-DZ"),
       payload: JSON.stringify({ nif: c.taxId, bp: c.bp, caHt, salaries, benefice, rTap, rTva, rIrg, rIbs, tap, tva, irg, ibs, total, period }),
+      workflow: validateAndLock ? "filed" : "draft",
     };
     const lockOpts = validateAndLock
       ? { clientId: c.id, period, reference: declId }
