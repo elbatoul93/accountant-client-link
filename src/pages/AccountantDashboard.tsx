@@ -123,6 +123,9 @@ const AccountantDashboard = () => {
   // Secure edit flow: clicking Edit triggers a password lock; on success the form opens.
   const [pendingEditClient, setPendingEditClient] = useState<Client | null>(null);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [previewIncoming, setPreviewIncoming] = useState<IncomingInvoice | null>(null);
+  const [editingShared, setEditingShared] = useState<SharedDoc | null>(null);
+  const [trackingClientId, setTrackingClientId] = useState<string>("");
 
   useEffect(() => { localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients)); }, [clients]);
   useEffect(() => { localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices)); }, [invoices]);
@@ -157,6 +160,8 @@ const AccountantDashboard = () => {
     { key: "dashboard", label: t("side_dashboard"), icon: LayoutDashboard },
     { key: "calendar", label: t("side_calendar"), icon: Bell },
     { key: "incoming", label: t("side_incoming"), icon: InboxIcon, count: incoming.filter((i) => i.status === "pending").length },
+    { key: "tracking", label: t("side_tracking"), icon: ListChecks },
+    { key: "chat", label: t("side_chat"), icon: MessageCircle },
     { key: "vault", label: t("side_vault"), icon: Archive, count: vault.length },
     { key: "clients", label: t("side_clients"), icon: Users, count: clients.length },
     { key: "billing", label: t("side_billing"), icon: Receipt, count: bills.length },
