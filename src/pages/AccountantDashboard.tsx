@@ -82,7 +82,7 @@ const declLabelKey = (type: DeclType): string => {
 };
 
 interface FinStmt { id: string; clientId: string; clientName: string; year: string; assets: number; liabilities: number; equity: number; revenue: number; netResult: number; createdAt: string }
-interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string; fileName?: string; mimeType?: string; fileData?: string }
+interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string; fileName?: string; mimeType?: string; fileData?: string; signedAt?: string; signedBy?: string; signatureDataUrl?: string; workflow?: WorkflowStatus }
 interface LegalDoc { id: string; clientId: string; label: string; kind: "RC" | "NIF" | "NIS" | "STATUTS" | "OTHER"; fileName?: string; mimeType?: string; fileData?: string; date: string }
 
 const KEY_CLIENTS = "mgmtk_acc_clients";
@@ -97,7 +97,7 @@ const load = <T,>(k: string): T[] => {
   return raw ? JSON.parse(raw) : [];
 };
 
-type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports" | "taxintel" | "liasse" | "assets" | "calendar" | "incoming" | "vault";
+type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports" | "taxintel" | "liasse" | "assets" | "calendar" | "incoming" | "vault" | "tracking" | "chat";
 
 const AccountantDashboard = () => {
   const { t, user } = useApp();
