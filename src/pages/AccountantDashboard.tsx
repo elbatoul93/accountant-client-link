@@ -2275,10 +2275,17 @@ const ViewG50Dialog = ({ client, onClose, journal, t, onFinalize }: ViewG50Dialo
             </Card>
           )}
 
-          {/* Sections A/B/C/D */}
+          {/* Sections A/B/C/D — cells become inputs in edit mode */}
           {(["A","B","C","D"] as const).map((s) => {
             const sec = g50.sections[s];
             if (sec.lines.length === 0) return null;
+            const codeToField: Record<string, keyof typeof overrides> = {
+              "A-CA": "caHt",
+              "B-TVA-COL": "tvaCollected",
+              "B-TVA-DED": "tvaDeductible",
+              "C-IRG-SAL": "irgSalaries",
+              "D-IBS-ACPT": "ibsAcompte",
+            };
             return (
               <Card key={s} className="p-0 overflow-hidden border-border/70">
                 <div className="bg-muted/40 px-4 py-2 border-b border-border flex items-center justify-between">
@@ -2289,15 +2296,29 @@ const ViewG50Dialog = ({ client, onClose, journal, t, onFinalize }: ViewG50Dialo
                 </div>
                 <table className="w-full text-sm">
                   <tbody>
-                    {sec.lines.map((l) => (
-                      <tr key={l.code} className={`border-t border-border/50 ${l.informational ? "text-muted-foreground" : ""}`}>
-                        <td className="py-2 px-3 font-mono text-[10px] font-bold text-primary">{l.code}</td>
-                        <td className="py-2 px-3 text-xs">{l.label}</td>
-                        <td className={`py-2 px-3 text-end font-mono text-xs ${l.informational ? "italic" : "font-bold text-gold-deep"}`}>
-                          {fmtDZD(l.amount)}
-                        </td>
-                      </tr>
-                    ))}
+                    {sec.lines.map((l) => {
+                      const field = codeToField[l.code];
+                      const cellEditable = editing && !!field;
+                      return (
+                        <tr key={l.code} className={`border-t border-border/50 ${l.informational ? "text-muted-foreground" : ""}`}>
+                          <td className="py-2 px-3 font-mono text-[10px] font-bold text-primary">{l.code}</td>
+                          <td className="py-2 px-3 text-xs">{l.label}</td>
+                          <td className={`py-2 px-3 text-end font-mono text-xs ${l.informational ? "italic" : "font-bold text-gold-deep"}`}>
+                            {cellEditable ? (
+                              <Input
+                                type="number"
+                                value={Number(overrides[field!] ?? l.amount)}
+                                onChange={(e) => setOverrides((p) => ({ ...p, [field!]: Number(e.target.value || 0) }))}
+                                className="h-7 text-xs font-mono text-end ms-auto w-36 inline-block"
+                                title={t("g50_click_to_edit")}
+                              />
+                            ) : (
+                              fmtDZD(l.amount)
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </Card>
