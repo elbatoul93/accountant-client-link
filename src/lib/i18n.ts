@@ -611,6 +611,12 @@ const en = {
   chat_no_threads: "No conversations yet.",
   chat_select_contact: "Select a contact to start chatting.",
   side_chat: "Messages",
+  nav_group_dashboard: "Dashboard",
+  nav_group_documents: "Documents",
+  nav_group_payroll: "Payroll",
+  nav_group_taxdecl: "Tax Declarations",
+  nav_group_messages: "Messages",
+  g50_click_to_edit: "Click to override this value",
 
   // Document checklist (monthly)
   chk_title: "Document Tracking — Suivi mensuel",
@@ -1247,6 +1253,12 @@ const fr: typeof en = {
   chat_no_threads: "Aucune conversation pour le moment.",
   chat_select_contact: "Sélectionnez un contact pour discuter.",
   side_chat: "Messages",
+  nav_group_dashboard: "Tableau de bord",
+  nav_group_documents: "Documents",
+  nav_group_payroll: "Paie",
+  nav_group_taxdecl: "Déclarations Fiscales",
+  nav_group_messages: "Messagerie",
+  g50_click_to_edit: "Cliquer pour modifier la valeur",
 
   chk_title: "Suivi des documents — Document Tracking",
   chk_status_missing: "Manquant",
@@ -1879,6 +1891,12 @@ const ar: typeof en = {
   chat_no_threads: "لا توجد محادثات بعد.",
   chat_select_contact: "اختر جهة اتصال لبدء المحادثة.",
   side_chat: "الرسائل",
+  nav_group_dashboard: "لوحة التحكم",
+  nav_group_documents: "الوثائق",
+  nav_group_payroll: "الأجور",
+  nav_group_taxdecl: "التصريحات الجبائية",
+  nav_group_messages: "الرسائل",
+  g50_click_to_edit: "انقر لتعديل القيمة",
 
   chk_title: "متابعة الوثائق الشهرية",
   chk_status_missing: "مفقود",

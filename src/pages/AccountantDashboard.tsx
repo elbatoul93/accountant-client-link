@@ -40,6 +40,7 @@ import {
   getIncomingInvoices, updateIncomingStatus, deleteIncomingInvoice,
   pushNotification, getVault, onPortalChange,
   setSharedDocWorkflow, updateSharedDocPayload, runUploadReminderSweep,
+  unreadChatCount,
   type IncomingInvoice, type VaultEntry, type WorkflowStatus,
 } from "@/lib/portal";
 import { ClientStatusIcon } from "@/components/ClientStatusIcon";
@@ -188,24 +189,54 @@ const AccountantDashboard = () => {
     setView("profile");
   };
 
-  const sidebarItems: { key: View; label: string; icon: any; count?: number }[] = [
-    { key: "dashboard", label: t("side_dashboard"), icon: LayoutDashboard },
-    { key: "calendar", label: t("side_calendar"), icon: Bell },
-    { key: "incoming", label: t("side_incoming"), icon: InboxIcon, count: incoming.filter((i) => i.status === "pending").length },
-    { key: "tracking", label: t("side_tracking"), icon: ListChecks },
-    { key: "chat", label: t("side_chat"), icon: MessageCircle },
-    { key: "vault", label: t("side_vault"), icon: Archive, count: vault.length },
-    { key: "clients", label: t("side_clients"), icon: Users, count: clients.length },
-    { key: "billing", label: t("side_billing"), icon: Receipt, count: bills.length },
-    { key: "payroll", label: t("side_payroll"), icon: Wallet, count: employees.length },
-    { key: "assets", label: t("side_assets"), icon: Building2 },
-    { key: "journal", label: t("side_journal"), icon: BookOpen, count: journal.length },
-    { key: "reports", label: t("side_reports"), icon: Calculator },
-    { key: "liasse", label: t("side_liasse"), icon: FileCheck2 },
-    { key: "taxintel", label: t("side_taxintel"), icon: Landmark },
-    { key: "invoices", label: t("side_invoices"), icon: FileText, count: invoices.length },
-    { key: "obligations", label: t("side_obligations"), icon: Receipt, count: decls.length },
-    { key: "tools", label: t("side_tools"), icon: Wrench },
+  // Recompute unread badge whenever portal data changes
+  const [unreadMsgs, setUnreadMsgs] = useState<number>(() => unreadChatCount("accountant"));
+  useEffect(() => onPortalChange(() => setUnreadMsgs(unreadChatCount("accountant"))), []);
+
+  // 5 main sections — "Judge-friendly" simplified architecture
+  const sidebarGroups: { label: string; items: { key: View; label: string; icon: any; count?: number; badge?: number }[] }[] = [
+    {
+      label: t("nav_group_dashboard"),
+      items: [
+        { key: "dashboard", label: t("side_dashboard"), icon: LayoutDashboard },
+        { key: "calendar", label: t("side_calendar"), icon: Bell },
+      ],
+    },
+    {
+      label: t("nav_group_documents"),
+      items: [
+        { key: "incoming", label: t("side_incoming"), icon: InboxIcon, count: incoming.filter((i) => i.status === "pending").length },
+        { key: "tracking", label: t("side_tracking"), icon: ListChecks },
+        { key: "vault", label: t("side_vault"), icon: Archive, count: vault.length },
+        { key: "clients", label: t("side_clients"), icon: Users, count: clients.length },
+        { key: "invoices", label: t("side_invoices"), icon: FileText, count: invoices.length },
+      ],
+    },
+    {
+      label: t("nav_group_payroll"),
+      items: [
+        { key: "payroll", label: t("side_payroll"), icon: Wallet, count: employees.length },
+        { key: "assets", label: t("side_assets"), icon: Building2 },
+      ],
+    },
+    {
+      label: t("nav_group_taxdecl"),
+      items: [
+        { key: "obligations", label: t("side_obligations"), icon: Receipt, count: decls.length },
+        { key: "taxintel", label: t("side_taxintel"), icon: Landmark },
+        { key: "liasse", label: t("side_liasse"), icon: FileCheck2 },
+        { key: "journal", label: t("side_journal"), icon: BookOpen, count: journal.length },
+        { key: "reports", label: t("side_reports"), icon: Calculator },
+        { key: "billing", label: t("side_billing"), icon: Receipt, count: bills.length },
+        { key: "tools", label: t("side_tools"), icon: Wrench },
+      ],
+    },
+    {
+      label: t("nav_group_messages"),
+      items: [
+        { key: "chat", label: t("side_chat"), icon: MessageCircle, badge: unreadMsgs },
+      ],
+    },
   ];
 
   return (
@@ -223,30 +254,44 @@ const AccountantDashboard = () => {
               >
                 <Plus className="h-4 w-4" /> {t("acc_new_client")}
               </Button>
-              <nav className="space-y-1">
-                {sidebarItems.map((it) => {
-                  const active = view === it.key || (it.key === "clients" && view === "profile");
-                  const Icon = it.icon;
-                  return (
-                    <button
-                      key={it.key}
-                      onClick={() => { setView(it.key); if (it.key !== "clients") setActiveClientId(null); }}
-                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-smooth ${
-                        active
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span className="flex-1 text-start">{it.label}</span>
-                      {typeof it.count === "number" && (
-                        <Badge variant="secondary" className={`text-[10px] ${active ? "bg-primary-foreground/20 text-primary-foreground border-0" : ""}`}>
-                          {it.count}
-                        </Badge>
-                      )}
-                    </button>
-                  );
-                })}
+              <nav className="space-y-3">
+                {sidebarGroups.map((grp) => (
+                  <div key={grp.label}>
+                    <div className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-gold-deep/80">
+                      {grp.label}
+                    </div>
+                    <div className="space-y-1">
+                      {grp.items.map((it) => {
+                        const active = view === it.key || (it.key === "clients" && view === "profile");
+                        const Icon = it.icon;
+                        return (
+                          <button
+                            key={it.key}
+                            onClick={() => { setView(it.key); if (it.key !== "clients") setActiveClientId(null); }}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-smooth ${
+                              active
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            }`}
+                          >
+                            <Icon className="h-4 w-4" />
+                            <span className="flex-1 text-start">{it.label}</span>
+                            {typeof it.badge === "number" && it.badge > 0 && (
+                              <span className="h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                                {it.badge}
+                              </span>
+                            )}
+                            {typeof it.count === "number" && (
+                              <Badge variant="secondary" className={`text-[10px] ${active ? "bg-primary-foreground/20 text-primary-foreground border-0" : ""}`}>
+                                {it.count}
+                              </Badge>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </nav>
             </Card>
 
@@ -2230,10 +2275,17 @@ const ViewG50Dialog = ({ client, onClose, journal, t, onFinalize }: ViewG50Dialo
             </Card>
           )}
 
-          {/* Sections A/B/C/D */}
+          {/* Sections A/B/C/D — cells become inputs in edit mode */}
           {(["A","B","C","D"] as const).map((s) => {
             const sec = g50.sections[s];
             if (sec.lines.length === 0) return null;
+            const codeToField: Record<string, keyof typeof overrides> = {
+              "A-CA": "caHt",
+              "B-TVA-COL": "tvaCollected",
+              "B-TVA-DED": "tvaDeductible",
+              "C-IRG-SAL": "irgSalaries",
+              "D-IBS-ACPT": "ibsAcompte",
+            };
             return (
               <Card key={s} className="p-0 overflow-hidden border-border/70">
                 <div className="bg-muted/40 px-4 py-2 border-b border-border flex items-center justify-between">
@@ -2244,15 +2296,29 @@ const ViewG50Dialog = ({ client, onClose, journal, t, onFinalize }: ViewG50Dialo
                 </div>
                 <table className="w-full text-sm">
                   <tbody>
-                    {sec.lines.map((l) => (
-                      <tr key={l.code} className={`border-t border-border/50 ${l.informational ? "text-muted-foreground" : ""}`}>
-                        <td className="py-2 px-3 font-mono text-[10px] font-bold text-primary">{l.code}</td>
-                        <td className="py-2 px-3 text-xs">{l.label}</td>
-                        <td className={`py-2 px-3 text-end font-mono text-xs ${l.informational ? "italic" : "font-bold text-gold-deep"}`}>
-                          {fmtDZD(l.amount)}
-                        </td>
-                      </tr>
-                    ))}
+                    {sec.lines.map((l) => {
+                      const field = codeToField[l.code];
+                      const cellEditable = editing && !!field;
+                      return (
+                        <tr key={l.code} className={`border-t border-border/50 ${l.informational ? "text-muted-foreground" : ""}`}>
+                          <td className="py-2 px-3 font-mono text-[10px] font-bold text-primary">{l.code}</td>
+                          <td className="py-2 px-3 text-xs">{l.label}</td>
+                          <td className={`py-2 px-3 text-end font-mono text-xs ${l.informational ? "italic" : "font-bold text-gold-deep"}`}>
+                            {cellEditable ? (
+                              <Input
+                                type="number"
+                                value={Number(overrides[field!] ?? l.amount)}
+                                onChange={(e) => setOverrides((p) => ({ ...p, [field!]: Number(e.target.value || 0) }))}
+                                className="h-7 text-xs font-mono text-end ms-auto w-36 inline-block"
+                                title={t("g50_click_to_edit")}
+                              />
+                            ) : (
+                              fmtDZD(l.amount)
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </Card>
