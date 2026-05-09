@@ -611,6 +611,12 @@ const en = {
   chat_no_threads: "No conversations yet.",
   chat_select_contact: "Select a contact to start chatting.",
   side_chat: "Messages",
+  nav_group_dashboard: "Dashboard",
+  nav_group_documents: "Documents",
+  nav_group_payroll: "Payroll",
+  nav_group_taxdecl: "Tax Declarations",
+  nav_group_messages: "Messages",
+  g50_click_to_edit: "Click to override this value",
 
   // Document checklist (monthly)
   chk_title: "Document Tracking — Suivi mensuel",
