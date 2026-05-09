@@ -40,6 +40,7 @@ import {
   getIncomingInvoices, updateIncomingStatus, deleteIncomingInvoice,
   pushNotification, getVault, onPortalChange,
   setSharedDocWorkflow, updateSharedDocPayload, runUploadReminderSweep,
+  unreadChatCount,
   type IncomingInvoice, type VaultEntry, type WorkflowStatus,
 } from "@/lib/portal";
 import { ClientStatusIcon } from "@/components/ClientStatusIcon";
