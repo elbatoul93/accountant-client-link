@@ -1253,6 +1253,12 @@ const fr: typeof en = {
   chat_no_threads: "Aucune conversation pour le moment.",
   chat_select_contact: "Sélectionnez un contact pour discuter.",
   side_chat: "Messages",
+  nav_group_dashboard: "Tableau de bord",
+  nav_group_documents: "Documents",
+  nav_group_payroll: "Paie",
+  nav_group_taxdecl: "Déclarations Fiscales",
+  nav_group_messages: "Messagerie",
+  g50_click_to_edit: "Cliquer pour modifier la valeur",
 
   chk_title: "Suivi des documents — Document Tracking",
   chk_status_missing: "Manquant",
