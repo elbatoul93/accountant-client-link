@@ -101,6 +101,15 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
     };
   }, [selfId, role]);
 
+  // React to preselect changes after initial load
+  useEffect(() => {
+    if (role !== "accountant" || !preselectId) return;
+    if (contacts.some((c) => c.user_id === preselectId)) {
+      setActiveId(preselectId);
+      setShowThreadOnMobile(true);
+    }
+  }, [preselectId, contacts, role]);
+
   // Load history + subscribe to realtime for active conversation
   useEffect(() => {
     if (!activeId) {
