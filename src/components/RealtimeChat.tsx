@@ -62,7 +62,10 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
           if (cancelled) return;
           const list = (data || []) as Contact[];
           setContacts(list);
-          if (list.length > 0) setActiveId((prev) => prev ?? list[0].user_id);
+          if (list.length > 0) {
+            const target = preselectId && list.some((c) => c.user_id === preselectId) ? preselectId : list[0].user_id;
+            setActiveId((prev) => (prev && list.some((c) => c.user_id === prev) ? prev : target));
+          }
         } else {
           // client → find own profile.linked_accountant_id then load that profile
           const { data: me, error: meErr } = await supabase
