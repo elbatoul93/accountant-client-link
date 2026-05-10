@@ -364,6 +364,42 @@ const AccountantDashboard = () => {
                   }}
                   onExtract={setObligationsClient}
                   onViewG50={setViewG50Client}
+                  onCopyInvite={async (c) => {
+                    try {
+                      const { data: { user: au } } = await supabase.auth.getUser();
+                      if (!au) { toast.error("Non authentifié"); return; }
+                      const targetEmail = (c.email || c.contact || "").toLowerCase() || null;
+                      let token: string | null = null;
+                      if (targetEmail) {
+                        const { data: existing } = await supabase
+                          .from("invitations")
+                          .select("token, expires_at, is_used")
+                          .eq("accountant_id", au.id)
+                          .eq("email", targetEmail)
+                          .eq("is_used", false)
+                          .gt("expires_at", new Date().toISOString())
+                          .order("created_at", { ascending: false })
+                          .limit(1)
+                          .maybeSingle();
+                        if (existing?.token) token = existing.token;
+                      }
+                      if (!token) {
+                        const arr = new Uint8Array(18);
+                        crypto.getRandomValues(arr);
+                        const newToken = Array.from(arr, (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 24);
+                        const { error } = await supabase.from("invitations").insert({
+                          token: newToken, accountant_id: au.id, email: targetEmail,
+                        });
+                        if (error) { toast.error(error.message); return; }
+                        token = newToken;
+                      }
+                      const url = `${window.location.origin}/invite/${token}`;
+                      await navigator.clipboard.writeText(url).catch(() => {});
+                      toast.success(`Lien d'invitation copié pour ${c.name}`);
+                    } catch (e: any) {
+                      toast.error(e?.message || "Erreur");
+                    }
+                  }}
                 />
               </div>
             )}
