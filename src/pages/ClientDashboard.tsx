@@ -67,6 +67,13 @@ const ClientDashboard = () => {
   const [signing, setSigning] = useState<SharedDoc | null>(null);
   const [previewDoc, setPreviewDoc] = useState<SharedDoc | null>(null);
 
+  // ── Upload confirmation modal state ──
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [uploadTitle, setUploadTitle] = useState("");
+  const [uploadDescription, setUploadDescription] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
   }, [docs]);
@@ -82,48 +89,118 @@ const ClientDashboard = () => {
       r.readAsDataURL(f);
     });
 
-  const onDrop = useCallback(async (files: File[]) => {
-    if (!user) return;
-    const newDocs: Doc[] = files.map((f) => ({
-      name: f.name,
-      size: `${(f.size / 1024).toFixed(0)} KB`,
-      date: new Date().toLocaleDateString("fr-DZ"),
-      status: "pending",
-    }));
-    setDocs((prev) => [...newDocs, ...prev]);
+  // Intercept selection: open the confirmation modal instead of uploading
+  const onDrop = useCallback((files: File[]) => {
+    if (!user || files.length === 0) return;
+    const f = files[0];
+    setPendingFile(f);
+    setUploadTitle(f.name.replace(/\.[^.]+$/, ""));
+    setUploadDescription("");
+    setUploadProgress(0);
+  }, [user]);
 
-    // Push each file to the accountant's incoming folder + create notification
-    for (const f of files) {
+  const closeUploadModal = () => {
+    if (uploading) return;
+    setPendingFile(null);
+    setUploadTitle("");
+    setUploadDescription("");
+    setUploadProgress(0);
+  };
+
+  const confirmUpload = useCallback(async () => {
+    if (!user || !pendingFile) return;
+    if (!uploadTitle.trim()) {
+      toast.error("Le titre est requis");
+      return;
+    }
+    setUploading(true);
+    setUploadProgress(5);
+
+    try {
+      // 1) Resolve auth user id (storage path requires it)
+      const { data: au } = await supabase.auth.getUser();
+      const uid = au.user?.id;
+      if (!uid) throw new Error("Session expirée");
+
+      const safeName = pendingFile.name.replace(/[^\w.\-]+/g, "_");
+      const path = `${uid}/${Date.now()}_${safeName}`;
+      setUploadProgress(20);
+
+      // 2) Upload to Supabase Storage
+      const { error: upErr } = await supabase.storage
+        .from("client-uploads")
+        .upload(path, pendingFile, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: pendingFile.type || "application/octet-stream",
+        });
+      if (upErr) throw upErr;
+      setUploadProgress(70);
+
+      // 3) Insert document metadata row
+      const { error: dbErr } = await supabase.from("documents").insert({
+        user_id: uid,
+        title: uploadTitle.trim(),
+        description: uploadDescription.trim() || null,
+        file_name: pendingFile.name,
+        file_path: path,
+        mime_type: pendingFile.type || "application/octet-stream",
+        size: pendingFile.size,
+      });
+      if (dbErr) throw dbErr;
+      setUploadProgress(90);
+
+      // 4) Mirror into the legacy local-portal stream so the accountant view stays in sync
       try {
-        const dataUrl = f.size <= 5 * 1024 * 1024 ? await fileToDataUrl(f) : undefined;
+        const dataUrl = pendingFile.size <= 5 * 1024 * 1024 ? await fileToDataUrl(pendingFile) : undefined;
         addIncomingInvoice({
           clientEmail: user.email,
           clientName: user.name,
-          fileName: f.name,
-          mimeType: f.type || "application/octet-stream",
+          fileName: pendingFile.name,
+          mimeType: pendingFile.type || "application/octet-stream",
           fileData: dataUrl,
-          size: f.size,
-        });
+          size: pendingFile.size,
+          note: uploadDescription.trim() || undefined,
+        } as any);
         pushNotification({
           forRole: "accountant",
           fromName: user.name,
           title: t("notif_invoice_uploaded_title"),
           message: t("notif_invoice_uploaded_msg")
             .replace("{client}", user.name)
-            .replace("{file}", f.name),
+            .replace("{file}", pendingFile.name),
           type: "invoice_uploaded",
           link: "/dashboard/accountant",
         });
-      } catch {
-        /* ignore */
-      }
+      } catch { /* non-blocking */ }
+
+      setDocs((prev) => [{
+        name: pendingFile.name,
+        size: `${(pendingFile.size / 1024).toFixed(0)} KB`,
+        date: new Date().toLocaleDateString("fr-DZ"),
+        status: "pending",
+      }, ...prev]);
+
+      setUploadProgress(100);
+      toast.success(`"${uploadTitle.trim()}" téléversé avec succès`);
+
+      // Close modal
+      setPendingFile(null);
+      setUploadTitle("");
+      setUploadDescription("");
+    } catch (e: any) {
+      toast.error(e?.message || "Échec du téléversement");
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
     }
-    toast.success(t("toast_invoice_sent"));
-  }, [t, user]);
+  }, [user, pendingFile, uploadTitle, uploadDescription, t]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { "image/*": [], "application/pdf": [] },
+    multiple: false,
+    disabled: uploading || !!pendingFile,
   });
 
   const { myDecls, myInvoices, mySharedDocs, totalDue, myRegime, requiredTypes, vault, myEmpCount, myHasCacobatph } = useMemo(() => {
