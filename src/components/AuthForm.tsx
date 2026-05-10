@@ -1,71 +1,84 @@
 import { useState, FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/Logo";
 import { LangSwitcher } from "@/components/LangSwitcher";
-import { ArrowLeft, Briefcase, Building2 } from "lucide-react";
+import { ArrowLeft, Briefcase, Building2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Role } from "@/contexts/AppContext";
 
 interface AuthFormProps { mode: "login" | "signup" }
 
 export const AuthForm = ({ mode }: AuthFormProps) => {
-  const { t, login } = useApp();
+  const { t } = useApp();
   const navigate = useNavigate();
   const [role, setRole] = useState<Role>("client");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [company, setCompany] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       toast.error("Please fill in all fields");
       return;
     }
-
-    const accountsRaw = localStorage.getItem("mgmtk_accounts");
-    const accounts: Record<string, { name: string; email: string; role: Role; company?: string; password: string }> =
-      accountsRaw ? JSON.parse(accountsRaw) : {};
-
-    if (mode === "signup") {
-      if (accounts[email.toLowerCase()]) {
-        toast.error("An account with this email already exists. Please sign in.");
+    setBusy(true);
+    try {
+      if (mode === "signup") {
+        const redirectUrl = `${window.location.origin}/`;
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: redirectUrl,
+            data: {
+              name: name || email.split("@")[0],
+              company: company || (role === "accountant" ? "Managementik & Co." : "My Business"),
+              role,
+            },
+          },
+        });
+        if (error) {
+          if (error.message.toLowerCase().includes("already")) {
+            toast.error("An account with this email already exists. Please sign in.");
+          } else {
+            toast.error(error.message);
+          }
+          return;
+        }
+        if (!data.session) {
+          toast.success("Check your email to confirm your account, then sign in.");
+          navigate("/login");
+          return;
+        }
+        toast.success(t("toast_signup_success"));
+        navigate(role === "accountant" ? "/dashboard/accountant" : "/dashboard/client");
         return;
       }
-      const account = {
-        name: name || email.split("@")[0],
-        email,
-        role,
-        company: company || (role === "accountant" ? "Managementik & Co." : "My Business"),
-        password,
-      };
-      accounts[email.toLowerCase()] = account;
-      localStorage.setItem("mgmtk_accounts", JSON.stringify(accounts));
-      login({ name: account.name, email: account.email, role: account.role, company: account.company });
-      toast.success(t("toast_signup_success"));
-      navigate(role === "accountant" ? "/dashboard/accountant" : "/dashboard/client");
-      return;
-    }
 
-    // LOGIN: must match a stored account
-    const account = accounts[email.toLowerCase()];
-    if (!account) {
-      toast.error("No account found. Please sign up first.");
-      return;
+      // LOGIN
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        toast.error(error.message.includes("Invalid") ? "Invalid email or password." : error.message);
+        return;
+      }
+      // Look up role to choose redirect target
+      const uid = data.user!.id;
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
+      const userRole: Role = roles?.some((r) => r.role === "accountant") ? "accountant" : "client";
+      toast.success(t("toast_login_success"));
+      navigate(userRole === "accountant" ? "/dashboard/accountant" : "/dashboard/client");
+    } finally {
+      setBusy(false);
     }
-    if (account.password !== password) {
-      toast.error("Incorrect password.");
-      return;
-    }
-    login({ name: account.name, email: account.email, role: account.role, company: account.company });
-    toast.success(t("toast_login_success"));
-    navigate(account.role === "accountant" ? "/dashboard/accountant" : "/dashboard/client");
   };
 
   return (
@@ -129,10 +142,11 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="password">{t("auth_password")}</Label>
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
               </div>
 
-              <Button type="submit" variant="hero" size="lg" className="w-full">
+              <Button type="submit" variant="hero" size="lg" className="w-full" disabled={busy}>
+                {busy && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                 {t(mode === "login" ? "auth_signin_btn" : "auth_signup_btn")}
               </Button>
             </form>

@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { translations, Lang } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 
 export type Role = "accountant" | "client";
 export interface User {
@@ -15,8 +17,9 @@ interface AppContextValue {
   t: (key: string) => string;
   dir: "ltr" | "rtl";
   user: User | null;
-  login: (u: User) => void;
-  logout: () => void;
+  loading: boolean;
+  login: (u: User) => void; // legacy no-op shim (kept for compat)
+  logout: () => Promise<void>;
   switchRole: (r: Role) => void;
 }
 
@@ -27,10 +30,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const saved = localStorage.getItem("mgmtk_lang");
     return (saved as Lang) || "en";
   });
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem("mgmtk_user");
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const dir: "ltr" | "rtl" = lang === "ar" ? "rtl" : "ltr";
 
@@ -40,6 +41,42 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem("mgmtk_lang", lang);
   }, [lang, dir]);
 
+  // Hydrate user from a Supabase session
+  const hydrate = async (session: Session | null) => {
+    if (!session?.user) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+    // Defer DB calls outside the auth callback to avoid deadlocks
+    setTimeout(async () => {
+      const uid = session.user.id;
+      const [{ data: profile }, { data: roles }] = await Promise.all([
+        supabase.from("profiles").select("name,email,company").eq("user_id", uid).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", uid),
+      ]);
+      const role: Role =
+        roles?.some((r) => r.role === "accountant") ? "accountant" : "client";
+      setUser({
+        name: profile?.name || session.user.email?.split("@")[0] || "User",
+        email: profile?.email || session.user.email || "",
+        role,
+        company: profile?.company ?? undefined,
+      });
+      setLoading(false);
+    }, 0);
+  };
+
+  useEffect(() => {
+    // 1) Set listener FIRST
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      hydrate(session);
+    });
+    // 2) Then check existing session
+    supabase.auth.getSession().then(({ data }) => hydrate(data.session));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
   const setLang = (l: Lang) => setLangState(l);
 
   const t = (key: string) => {
@@ -47,23 +84,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return dict[key] ?? translations.en[key as keyof typeof translations.en] ?? key;
   };
 
-  const login = (u: User) => {
-    setUser(u);
-    localStorage.setItem("mgmtk_user", JSON.stringify(u));
+  const login = (_u: User) => {
+    // Legacy shim — actual auth is handled by Supabase in AuthForm.
   };
-  const logout = () => {
+
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem("mgmtk_user");
   };
+
   const switchRole = (r: Role) => {
     if (!user) return;
-    const next = { ...user, role: r };
-    setUser(next);
-    localStorage.setItem("mgmtk_user", JSON.stringify(next));
+    setUser({ ...user, role: r });
   };
 
   return (
-    <AppContext.Provider value={{ lang, setLang, t, dir, user, login, logout, switchRole }}>
+    <AppContext.Provider value={{ lang, setLang, t, dir, user, loading, login, logout, switchRole }}>
       {children}
     </AppContext.Provider>
   );
