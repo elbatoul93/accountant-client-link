@@ -141,6 +141,11 @@ const AccountantDashboard = () => {
   useEffect(() => { localStorage.setItem(KEY_SHARED, JSON.stringify(sharedDocs)); }, [sharedDocs]);
   useEffect(() => { localStorage.setItem(KEY_LEGAL, JSON.stringify(legalDocs)); }, [legalDocs]);
 
+  if (loading) return (
+    <div className="min-h-screen grid place-items-center bg-background">
+      <div className="h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+    </div>
+  );
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== "accountant") return <Navigate to="/dashboard/client" replace />;
 
