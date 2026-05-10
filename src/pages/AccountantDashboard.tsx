@@ -31,7 +31,6 @@ import { TaxIntelView } from "./accountant/TaxIntelView";
 import { LiasseFiscaleView } from "./accountant/LiasseFiscale";
 import { AssetsView } from "./accountant/AssetsView";
 import { FiscalCalendar } from "@/components/FiscalCalendar";
-import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatTab } from "@/components/ChatTab";
 import { DocChecklist } from "@/components/DocChecklist";
 import { DocPreviewDialog } from "@/components/DocPreviewDialog";
