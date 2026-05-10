@@ -32,6 +32,7 @@ import { LiasseFiscaleView } from "./accountant/LiasseFiscale";
 import { AssetsView } from "./accountant/AssetsView";
 import { FiscalCalendar } from "@/components/FiscalCalendar";
 import { ChatSidebar } from "@/components/ChatSidebar";
+import { ChatTab } from "@/components/ChatTab";
 import { DocChecklist } from "@/components/DocChecklist";
 import { DocPreviewDialog } from "@/components/DocPreviewDialog";
 import { WorkflowBadge, WorkflowStepper } from "@/components/WorkflowStatus";
@@ -344,7 +345,7 @@ const AccountantDashboard = () => {
             )}
 
             {view === "chat" && (
-              <ChatHubView t={t} clients={clients} />
+              <ChatHubView t={t} />
             )}
 
             {view === "vault" && (
@@ -2124,7 +2125,7 @@ const TrackingView = ({ t, clients, activeId, setActiveId }: {
   );
 };
 
-const ChatHubView = ({ t, clients }: { t: (k: string) => string; clients: Client[] }) => {
+const ChatHubView = ({ t }: { t: (k: string) => string }) => {
   return (
     <div className="space-y-4">
       <div>
@@ -2133,26 +2134,7 @@ const ChatHubView = ({ t, clients }: { t: (k: string) => string; clients: Client
         </h1>
         <p className="text-xs text-muted-foreground">{t("chat_select_contact")}</p>
       </div>
-      <Card className="p-5 shadow-card">
-        <p className="text-sm text-muted-foreground mb-3">
-          {t("chat_select_contact")}
-        </p>
-        <ul className="space-y-1.5">
-          {clients.map((c) => (
-            <li key={c.id} className="flex items-center justify-between gap-3 p-2.5 rounded border border-border/60">
-              <div className="min-w-0">
-                <div className="font-semibold text-sm truncate">{c.name}</div>
-                <div className="text-[11px] text-muted-foreground truncate">{c.contact}</div>
-              </div>
-              <Badge variant="outline" className="text-[10px]">{c.taxRegime || "—"}</Badge>
-            </li>
-          ))}
-          {clients.length === 0 && <li className="text-xs text-muted-foreground p-3">{t("empty_no_clients")}</li>}
-        </ul>
-        <p className="text-[11px] text-muted-foreground mt-3">
-          ↘ {t("chat_open")}
-        </p>
-      </Card>
+      <ChatTab role="accountant" />
     </div>
   );
 };
