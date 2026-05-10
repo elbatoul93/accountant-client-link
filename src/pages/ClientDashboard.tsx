@@ -53,7 +53,7 @@ const fmtDZD = (n: number) =>
 const STORAGE_KEY = "mgmtk_client_docs";
 
 const ClientDashboard = () => {
-  const { t, user } = useApp();
+  const { t, user, loading } = useApp();
   const [docs, setDocs] = useState<Doc[]>(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
