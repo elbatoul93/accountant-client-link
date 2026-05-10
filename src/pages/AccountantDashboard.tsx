@@ -424,11 +424,14 @@ const AccountantDashboard = () => {
                 onExtract={() => setObligationsClient(activeClient)}
                 onMessage={async () => {
                   try {
+                    const { data: auth } = await supabase.auth.getUser();
+                    const accId = auth.user?.id;
+                    if (!accId) return;
                     const { data, error } = await supabase
                       .from("profiles")
                       .select("user_id")
                       .eq("email", activeClient.contact)
-                      .eq("linked_accountant_id", user.id)
+                      .eq("linked_accountant_id", accId)
                       .maybeSingle();
                     if (error) throw error;
                     if (!data?.user_id) {
