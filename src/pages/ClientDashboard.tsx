@@ -8,6 +8,10 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   UploadCloud, FileText, CheckCircle2, Clock, FileImage, Inbox, Trash2, Receipt, ShieldCheck,
@@ -15,6 +19,7 @@ import {
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { SignaturePad } from "@/components/SignaturePad";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { DocChecklist } from "@/components/DocChecklist";
@@ -62,6 +67,13 @@ const ClientDashboard = () => {
   const [signing, setSigning] = useState<SharedDoc | null>(null);
   const [previewDoc, setPreviewDoc] = useState<SharedDoc | null>(null);
 
+  // ── Upload confirmation modal state ──
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [uploadTitle, setUploadTitle] = useState("");
+  const [uploadDescription, setUploadDescription] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
   }, [docs]);
@@ -77,48 +89,118 @@ const ClientDashboard = () => {
       r.readAsDataURL(f);
     });
 
-  const onDrop = useCallback(async (files: File[]) => {
-    if (!user) return;
-    const newDocs: Doc[] = files.map((f) => ({
-      name: f.name,
-      size: `${(f.size / 1024).toFixed(0)} KB`,
-      date: new Date().toLocaleDateString("fr-DZ"),
-      status: "pending",
-    }));
-    setDocs((prev) => [...newDocs, ...prev]);
+  // Intercept selection: open the confirmation modal instead of uploading
+  const onDrop = useCallback((files: File[]) => {
+    if (!user || files.length === 0) return;
+    const f = files[0];
+    setPendingFile(f);
+    setUploadTitle(f.name.replace(/\.[^.]+$/, ""));
+    setUploadDescription("");
+    setUploadProgress(0);
+  }, [user]);
 
-    // Push each file to the accountant's incoming folder + create notification
-    for (const f of files) {
+  const closeUploadModal = () => {
+    if (uploading) return;
+    setPendingFile(null);
+    setUploadTitle("");
+    setUploadDescription("");
+    setUploadProgress(0);
+  };
+
+  const confirmUpload = useCallback(async () => {
+    if (!user || !pendingFile) return;
+    if (!uploadTitle.trim()) {
+      toast.error("Le titre est requis");
+      return;
+    }
+    setUploading(true);
+    setUploadProgress(5);
+
+    try {
+      // 1) Resolve auth user id (storage path requires it)
+      const { data: au } = await supabase.auth.getUser();
+      const uid = au.user?.id;
+      if (!uid) throw new Error("Session expirée");
+
+      const safeName = pendingFile.name.replace(/[^\w.\-]+/g, "_");
+      const path = `${uid}/${Date.now()}_${safeName}`;
+      setUploadProgress(20);
+
+      // 2) Upload to Supabase Storage
+      const { error: upErr } = await supabase.storage
+        .from("client-uploads")
+        .upload(path, pendingFile, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: pendingFile.type || "application/octet-stream",
+        });
+      if (upErr) throw upErr;
+      setUploadProgress(70);
+
+      // 3) Insert document metadata row
+      const { error: dbErr } = await supabase.from("documents").insert({
+        user_id: uid,
+        title: uploadTitle.trim(),
+        description: uploadDescription.trim() || null,
+        file_name: pendingFile.name,
+        file_path: path,
+        mime_type: pendingFile.type || "application/octet-stream",
+        size: pendingFile.size,
+      });
+      if (dbErr) throw dbErr;
+      setUploadProgress(90);
+
+      // 4) Mirror into the legacy local-portal stream so the accountant view stays in sync
       try {
-        const dataUrl = f.size <= 5 * 1024 * 1024 ? await fileToDataUrl(f) : undefined;
+        const dataUrl = pendingFile.size <= 5 * 1024 * 1024 ? await fileToDataUrl(pendingFile) : undefined;
         addIncomingInvoice({
           clientEmail: user.email,
           clientName: user.name,
-          fileName: f.name,
-          mimeType: f.type || "application/octet-stream",
+          fileName: pendingFile.name,
+          mimeType: pendingFile.type || "application/octet-stream",
           fileData: dataUrl,
-          size: f.size,
-        });
+          size: pendingFile.size,
+          note: uploadDescription.trim() || undefined,
+        } as any);
         pushNotification({
           forRole: "accountant",
           fromName: user.name,
           title: t("notif_invoice_uploaded_title"),
           message: t("notif_invoice_uploaded_msg")
             .replace("{client}", user.name)
-            .replace("{file}", f.name),
+            .replace("{file}", pendingFile.name),
           type: "invoice_uploaded",
           link: "/dashboard/accountant",
         });
-      } catch {
-        /* ignore */
-      }
+      } catch { /* non-blocking */ }
+
+      setDocs((prev) => [{
+        name: pendingFile.name,
+        size: `${(pendingFile.size / 1024).toFixed(0)} KB`,
+        date: new Date().toLocaleDateString("fr-DZ"),
+        status: "pending",
+      }, ...prev]);
+
+      setUploadProgress(100);
+      toast.success(`"${uploadTitle.trim()}" téléversé avec succès`);
+
+      // Close modal
+      setPendingFile(null);
+      setUploadTitle("");
+      setUploadDescription("");
+    } catch (e: any) {
+      toast.error(e?.message || "Échec du téléversement");
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
     }
-    toast.success(t("toast_invoice_sent"));
-  }, [t, user]);
+  }, [user, pendingFile, uploadTitle, uploadDescription, t]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { "image/*": [], "application/pdf": [] },
+    multiple: false,
+    disabled: uploading || !!pendingFile,
   });
 
   const { myDecls, myInvoices, mySharedDocs, totalDue, myRegime, requiredTypes, vault, myEmpCount, myHasCacobatph } = useMemo(() => {
@@ -464,6 +546,72 @@ const ClientDashboard = () => {
         meta={previewDoc?.payload ? safeParse(previewDoc.payload) : undefined}
         t={t}
       />
+
+      {/* Upload confirmation modal */}
+      <Dialog open={!!pendingFile} onOpenChange={(o) => !o && closeUploadModal()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UploadCloud className="h-4 w-4" /> Confirmer le téléversement
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {pendingFile && (
+              <div className="p-3 rounded-lg border border-border/60 bg-muted/40 flex items-center gap-3">
+                <div className="p-2 rounded bg-gold/10 text-gold-deep">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-sm truncate">{pendingFile.name}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {(pendingFile.size / 1024).toFixed(1)} KB · {pendingFile.type || "fichier"}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="up-title">Titre *</Label>
+              <Input
+                id="up-title"
+                value={uploadTitle}
+                onChange={(e) => setUploadTitle(e.target.value)}
+                placeholder="Ex: Facture Mars 2026"
+                disabled={uploading}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="up-desc">Description</Label>
+              <Textarea
+                id="up-desc"
+                value={uploadDescription}
+                onChange={(e) => setUploadDescription(e.target.value)}
+                placeholder="Notes ou contexte (facultatif)"
+                rows={3}
+                disabled={uploading}
+              />
+            </div>
+
+            {uploading && (
+              <div className="space-y-1.5">
+                <Progress value={uploadProgress} className="h-2" />
+                <div className="text-[11px] text-muted-foreground text-center">
+                  Téléversement… {uploadProgress}%
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={closeUploadModal} disabled={uploading}>
+              Annuler
+            </Button>
+            <Button variant="hero" onClick={confirmUpload} disabled={uploading || !uploadTitle.trim()}>
+              {uploading ? "Téléversement…" : "Confirmer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Real-time chat with accountant */}
       <ChatSidebar
