@@ -31,9 +31,13 @@ interface Props {
   selfId: string;
   /** "accountant" → multi-contact pane; "client" → fixed counterpart */
   role: "accountant" | "client";
+  /** Optional: preselect a contact (accountant view) */
+  preselectId?: string | null;
 }
 
-export const RealtimeChat = ({ selfId, role }: Props) => {
+export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
+  const isMobile = useIsMobile();
+  const [showThreadOnMobile, setShowThreadOnMobile] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
