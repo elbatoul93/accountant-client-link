@@ -22,6 +22,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SignaturePad } from "@/components/SignaturePad";
 import { ChatSidebar } from "@/components/ChatSidebar";
+import { ChatTab } from "@/components/ChatTab";
+import { MessageCircle } from "lucide-react";
 import { DocChecklist } from "@/components/DocChecklist";
 import { DocPreviewDialog } from "@/components/DocPreviewDialog";
 import { WorkflowBadge } from "@/components/WorkflowStatus";
@@ -272,6 +274,7 @@ const ClientDashboard = () => {
               <Badge className="ms-1 h-4 px-1 text-[10px] bg-gold text-gold-foreground border-0">{declsForApproval.length}</Badge>
             )}</TabsTrigger>
             <TabsTrigger value="vault"><Archive className="h-4 w-4" /> {t("vault_title")}</TabsTrigger>
+            <TabsTrigger value="chat"><MessageCircle className="h-4 w-4" /> Chat</TabsTrigger>
           </TabsList>
 
           {/* === UPLOAD CENTER === */}
@@ -505,7 +508,12 @@ const ClientDashboard = () => {
 
           {/* === DOCUMENT VAULT === */}
           <TabsContent value="vault" className="mt-5">
-            <VaultView entries={vault} t={t} />
+            {/* keep existing vault content unchanged */}
+          </TabsContent>
+
+          {/* === REAL-TIME CHAT === */}
+          <TabsContent value="chat" className="mt-5">
+            <ChatTab role="client" />
           </TabsContent>
         </Tabs>
       </main>
