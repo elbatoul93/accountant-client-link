@@ -44,6 +44,7 @@ import {
   type IncomingInvoice, type VaultEntry, type WorkflowStatus,
 } from "@/lib/portal";
 import { ClientStatusIcon } from "@/components/ClientStatusIcon";
+import { ClientInviteManager } from "@/components/ClientInviteManager";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
 
 const fmtDZD = (n: number) =>
@@ -344,23 +345,26 @@ const AccountantDashboard = () => {
             )}
 
             {view === "clients" && (
-              <ClientsListView
-                t={t} clients={filteredClients} totalCount={clients.length}
-                search={search} setSearch={setSearch}
-                empCountByClient={empCountByClient}
-                onOpen={openProfile}
-                onAdd={() => setOpenAdd(true)}
-                onEdit={(c) => setPendingEditClient(c)}
-                onDelete={(id) => {
-                  setClients((p) => p.filter((x) => x.id !== id));
-                  setInvoices((p) => p.filter((x) => x.clientId !== id));
-                  setDecls((p) => p.filter((x) => x.clientId !== id));
-                  setLegalDocs((p) => p.filter((x) => x.clientId !== id));
-                  toast.success("Supprimé");
-                }}
-                onExtract={setObligationsClient}
-                onViewG50={setViewG50Client}
-              />
+              <div className="space-y-4">
+                <ClientInviteManager />
+                <ClientsListView
+                  t={t} clients={filteredClients} totalCount={clients.length}
+                  search={search} setSearch={setSearch}
+                  empCountByClient={empCountByClient}
+                  onOpen={openProfile}
+                  onAdd={() => setOpenAdd(true)}
+                  onEdit={(c) => setPendingEditClient(c)}
+                  onDelete={(id) => {
+                    setClients((p) => p.filter((x) => x.id !== id));
+                    setInvoices((p) => p.filter((x) => x.clientId !== id));
+                    setDecls((p) => p.filter((x) => x.clientId !== id));
+                    setLegalDocs((p) => p.filter((x) => x.clientId !== id));
+                    toast.success("Supprimé");
+                  }}
+                  onExtract={setObligationsClient}
+                  onViewG50={setViewG50Client}
+                />
+              </div>
             )}
 
             {view === "profile" && activeClient && (
