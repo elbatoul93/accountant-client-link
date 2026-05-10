@@ -2119,7 +2119,7 @@ const TrackingView = ({ t, clients, activeId, setActiveId }: {
   );
 };
 
-const ChatHubView = ({ t }: { t: (k: string) => string }) => {
+const ChatHubView = ({ t, preselectId }: { t: (k: string) => string; preselectId?: string | null }) => {
   return (
     <div className="space-y-4">
       <div>
@@ -2128,7 +2128,7 @@ const ChatHubView = ({ t }: { t: (k: string) => string }) => {
         </h1>
         <p className="text-xs text-muted-foreground">{t("chat_select_contact")}</p>
       </div>
-      <ChatTab role="accountant" />
+      <ChatTab role="accountant" preselectId={preselectId} />
     </div>
   );
 };
