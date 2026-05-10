@@ -38,10 +38,10 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
     (async () => {
       const { data, error } = await supabase
         .from("invitations")
-        .select("accountant_id, used, expires_at")
+        .select("accountant_id, is_used, expires_at")
         .eq("token", token)
         .maybeSingle();
-      if (error || !data || data.used || new Date(data.expires_at) < new Date()) {
+      if (error || !data || data.is_used || new Date(data.expires_at) < new Date()) {
         setInviteValid(false);
         return;
       }
@@ -82,8 +82,8 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
         if (error) {
           if (error.message.toLowerCase().includes("already")) {
             toast.error("An account with this email already exists. Please sign in.");
-          } else if (error.message.toLowerCase().includes("invitation")) {
-            toast.error("This invitation link is invalid or expired.");
+          } else if (error.message.toLowerCase().includes("invit") || error.message.toLowerCase().includes("expired")) {
+            toast.error("Invite Link Expired");
           } else {
             toast.error(error.message);
           }
@@ -120,9 +120,9 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
         <Card className="p-8 max-w-md text-center">
-          <h1 className="text-2xl font-bold text-primary mb-2">Invitation invalide</h1>
+          <h1 className="text-2xl font-bold text-primary mb-2">Invite Link Expired</h1>
           <p className="text-sm text-muted-foreground mb-4">
-            Ce lien d'invitation n'est pas valide ou a expiré. Veuillez demander un nouveau lien à votre comptable.
+            Ce lien d'invitation a déjà été utilisé ou a expiré. Veuillez demander un nouveau lien à votre comptable.
           </p>
           <Link to="/login" className="text-primary font-semibold hover:underline">Retour à la connexion</Link>
         </Card>

@@ -19,8 +19,9 @@ import {
   Users, FileText, TrendingUp, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2, Inbox, FileDown,
   Wrench, BookOpen, Calculator, Send, Download, LayoutDashboard, FolderOpen, ChevronRight, ArrowLeft, Search,
   Building2, IdCard, Phone, Mail, MapPin, Upload, FileCheck2, Wallet, Pencil, Lock, Landmark, Clock,
-  Eye, ListChecks, MessageCircle,
+  Eye, ListChecks, MessageCircle, Link2,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { BillingView, JournalView, useSuiteData, aggregateForG50 } from "./accountant/SuiteModules";
@@ -363,6 +364,42 @@ const AccountantDashboard = () => {
                   }}
                   onExtract={setObligationsClient}
                   onViewG50={setViewG50Client}
+                  onCopyInvite={async (c) => {
+                    try {
+                      const { data: { user: au } } = await supabase.auth.getUser();
+                      if (!au) { toast.error("Non authentifié"); return; }
+                      const targetEmail = (c.email || c.contact || "").toLowerCase() || null;
+                      let token: string | null = null;
+                      if (targetEmail) {
+                        const { data: existing } = await supabase
+                          .from("invitations")
+                          .select("token, expires_at, is_used")
+                          .eq("accountant_id", au.id)
+                          .eq("email", targetEmail)
+                          .eq("is_used", false)
+                          .gt("expires_at", new Date().toISOString())
+                          .order("created_at", { ascending: false })
+                          .limit(1)
+                          .maybeSingle();
+                        if (existing?.token) token = existing.token;
+                      }
+                      if (!token) {
+                        const arr = new Uint8Array(18);
+                        crypto.getRandomValues(arr);
+                        const newToken = Array.from(arr, (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 24);
+                        const { error } = await supabase.from("invitations").insert({
+                          token: newToken, accountant_id: au.id, email: targetEmail,
+                        });
+                        if (error) { toast.error(error.message); return; }
+                        token = newToken;
+                      }
+                      const url = `${window.location.origin}/invite/${token}`;
+                      await navigator.clipboard.writeText(url).catch(() => {});
+                      toast.success(`Lien d'invitation copié pour ${c.name}`);
+                    } catch (e: any) {
+                      toast.error(e?.message || "Erreur");
+                    }
+                  }}
                 />
               </div>
             )}
@@ -751,12 +788,13 @@ const DashboardView = ({
 );
 
 const ClientsListView = ({
-  t, clients, totalCount, search, setSearch, empCountByClient, onOpen, onAdd, onEdit, onDelete, onExtract, onViewG50,
+  t, clients, totalCount, search, setSearch, empCountByClient, onOpen, onAdd, onEdit, onDelete, onExtract, onViewG50, onCopyInvite,
 }: {
   t: (k: string) => string; clients: Client[]; totalCount: number; search: string; setSearch: (v: string) => void;
   empCountByClient: Record<string, number>;
   onOpen: (c: Client) => void; onAdd: () => void; onEdit: (c: Client) => void; onDelete: (id: string) => void; onExtract: (c: Client) => void;
   onViewG50: (c: Client) => void;
+  onCopyInvite: (c: Client) => void;
 }) => (
   <>
     <div className="flex items-center justify-between flex-wrap gap-3">
@@ -815,6 +853,9 @@ const ClientsListView = ({
                   </td>
                   <td className="py-3 text-end" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
+                      <Button size="sm" variant="secondary" className="h-7 gap-1.5 text-xs" onClick={() => onCopyInvite(c)} title="Copier le lien d'invitation">
+                        <Link2 className="h-3.5 w-3.5" /> Copier invitation
+                      </Button>
                       <Button size="sm" variant="gold" className="h-7 gap-1.5 text-xs" onClick={() => onViewG50(c)}>
                         <Receipt className="h-3.5 w-3.5" /> {t("acc_view_g50")}
                       </Button>

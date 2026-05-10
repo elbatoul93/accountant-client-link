@@ -21,6 +21,7 @@ export type Database = {
           email: string | null
           expires_at: string
           id: string
+          is_used: boolean
           token: string
           used: boolean
           used_at: string | null
@@ -32,6 +33,7 @@ export type Database = {
           email?: string | null
           expires_at?: string
           id?: string
+          is_used?: boolean
           token: string
           used?: boolean
           used_at?: string | null
@@ -43,6 +45,7 @@ export type Database = {
           email?: string | null
           expires_at?: string
           id?: string
+          is_used?: boolean
           token?: string
           used?: boolean
           used_at?: string | null
