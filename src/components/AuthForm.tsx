@@ -120,9 +120,9 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
         <Card className="p-8 max-w-md text-center">
-          <h1 className="text-2xl font-bold text-primary mb-2">Invitation invalide</h1>
+          <h1 className="text-2xl font-bold text-primary mb-2">Invite Link Expired</h1>
           <p className="text-sm text-muted-foreground mb-4">
-            Ce lien d'invitation n'est pas valide ou a expiré. Veuillez demander un nouveau lien à votre comptable.
+            Ce lien d'invitation a déjà été utilisé ou a expiré. Veuillez demander un nouveau lien à votre comptable.
           </p>
           <Link to="/login" className="text-primary font-semibold hover:underline">Retour à la connexion</Link>
         </Card>
