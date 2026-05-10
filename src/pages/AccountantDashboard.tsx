@@ -422,6 +422,25 @@ const AccountantDashboard = () => {
                 onDeleteLegal={(id) => setLegalDocs((p) => p.filter((x) => x.id !== id))}
                 onAddDecl={(d) => setDecls((p) => [d, ...p])}
                 onExtract={() => setObligationsClient(activeClient)}
+                onMessage={async () => {
+                  try {
+                    const { data, error } = await supabase
+                      .from("profiles")
+                      .select("user_id")
+                      .eq("email", activeClient.contact)
+                      .eq("linked_accountant_id", user.id)
+                      .maybeSingle();
+                    if (error) throw error;
+                    if (!data?.user_id) {
+                      toast.error("Ce client n'a pas encore activé son compte.");
+                      return;
+                    }
+                    setChatPreselectId(data.user_id);
+                    setView("chat");
+                  } catch (e: any) {
+                    toast.error(e.message || "Erreur");
+                  }
+                }}
               />
             )}
 
