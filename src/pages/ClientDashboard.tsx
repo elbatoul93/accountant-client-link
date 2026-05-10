@@ -21,7 +21,6 @@ import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SignaturePad } from "@/components/SignaturePad";
-import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatTab } from "@/components/ChatTab";
 import { MessageCircle } from "lucide-react";
 import { DocChecklist } from "@/components/DocChecklist";
