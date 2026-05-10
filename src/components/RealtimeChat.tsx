@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -301,16 +301,14 @@ const ChatHeader = ({ contact, loading }: { contact: Contact | null; loading: bo
   </div>
 );
 
-const ChatThread = (() => {
-  const Inner = (
-    {
-      loading,
-      messages,
-      selfId,
-      empty,
-    }: { loading: boolean; messages: Message[]; selfId: string; empty: string },
-    ref: React.Ref<HTMLDivElement>
-  ) => (
+interface ChatThreadProps {
+  loading: boolean;
+  messages: Message[];
+  selfId: string;
+  empty: string;
+}
+const ChatThread = forwardRef<HTMLDivElement, ChatThreadProps>(
+  ({ loading, messages, selfId, empty }, ref) => (
     <div ref={ref} className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/10">
       {loading ? (
         <div className="space-y-2">
@@ -324,15 +322,9 @@ const ChatThread = (() => {
         messages.map((m) => <Bubble key={m.id} m={m} mine={m.sender_id === selfId} />)
       )}
     </div>
-  );
-  return Object.assign(
-    // eslint-disable-next-line react/display-name
-    require("react").forwardRef(Inner),
-    {}
-  );
-})() as React.ForwardRefExoticComponent<
-  { loading: boolean; messages: Message[]; selfId: string; empty: string } & React.RefAttributes<HTMLDivElement>
->;
+  )
+);
+ChatThread.displayName = "ChatThread";
 
 const Bubble = ({ m, mine }: { m: Message; mine: boolean }) => (
   <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
