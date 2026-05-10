@@ -620,13 +620,6 @@ const ClientDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Real-time chat with accountant */}
-      <ChatSidebar
-        t={t}
-        role="client"
-        selfName={user.name}
-        activeClientEmail={user.email}
-      />
     </div>
   );
 };
