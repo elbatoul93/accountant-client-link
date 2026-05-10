@@ -46,6 +46,7 @@ import {
 } from "@/lib/portal";
 import { ClientStatusIcon } from "@/components/ClientStatusIcon";
 import { ClientInviteManager } from "@/components/ClientInviteManager";
+import { ClientFilesSection } from "@/components/ClientFilesSection";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
 
 const fmtDZD = (n: number) =>
@@ -949,8 +950,9 @@ const ClientProfileView = ({
       </Card>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid grid-cols-4 w-full">
+        <TabsList className="grid grid-cols-5 w-full">
           <TabsTrigger value="overview">{t("profile_tab_overview")}</TabsTrigger>
+          <TabsTrigger value="files">Fichiers</TabsTrigger>
           <TabsTrigger value="legal">{t("profile_tab_legal")}</TabsTrigger>
           <TabsTrigger value="obligations">{t("profile_tab_obligations")}</TabsTrigger>
           <TabsTrigger value="social">{t("profile_tab_social")}</TabsTrigger>
@@ -968,6 +970,14 @@ const ClientProfileView = ({
               <InvoiceTable invoices={invoices} t={t} compact />
             )}
           </Card>
+        </TabsContent>
+
+        <TabsContent value="files" className="mt-4">
+          <ClientFilesSection
+            clientEmail={client.email || client.contact}
+            clientName={client.name}
+            t={t}
+          />
         </TabsContent>
 
         <TabsContent value="legal" className="mt-4">
