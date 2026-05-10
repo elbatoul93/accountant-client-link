@@ -38,10 +38,10 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
     (async () => {
       const { data, error } = await supabase
         .from("invitations")
-        .select("accountant_id, used, expires_at")
+        .select("accountant_id, is_used, expires_at")
         .eq("token", token)
         .maybeSingle();
-      if (error || !data || data.used || new Date(data.expires_at) < new Date()) {
+      if (error || !data || data.is_used || new Date(data.expires_at) < new Date()) {
         setInviteValid(false);
         return;
       }
