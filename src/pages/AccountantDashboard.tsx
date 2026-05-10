@@ -853,6 +853,9 @@ const ClientsListView = ({
                   </td>
                   <td className="py-3 text-end" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
+                      <Button size="sm" variant="secondary" className="h-7 gap-1.5 text-xs" onClick={() => onCopyInvite(c)} title="Copier le lien d'invitation">
+                        <Link2 className="h-3.5 w-3.5" /> Copier invitation
+                      </Button>
                       <Button size="sm" variant="gold" className="h-7 gap-1.5 text-xs" onClick={() => onViewG50(c)}>
                         <Receipt className="h-3.5 w-3.5" /> {t("acc_view_g50")}
                       </Button>
