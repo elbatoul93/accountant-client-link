@@ -82,8 +82,8 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
         if (error) {
           if (error.message.toLowerCase().includes("already")) {
             toast.error("An account with this email already exists. Please sign in.");
-          } else if (error.message.toLowerCase().includes("invitation")) {
-            toast.error("This invitation link is invalid or expired.");
+          } else if (error.message.toLowerCase().includes("invit") || error.message.toLowerCase().includes("expired")) {
+            toast.error("Invite Link Expired");
           } else {
             toast.error(error.message);
           }
