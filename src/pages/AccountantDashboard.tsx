@@ -951,9 +951,14 @@ const ClientProfileView = ({
               {client.address && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {client.address}</span>}
             </div>
           </div>
-          <Button variant="gold" size="sm" onClick={onExtract}>
-            <FileDown className="h-4 w-4" /> {t("acc_extract")}
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button variant="outline" size="sm" onClick={onMessage}>
+              <MessageCircle className="h-4 w-4" /> Message
+            </Button>
+            <Button variant="gold" size="sm" onClick={onExtract}>
+              <FileDown className="h-4 w-4" /> {t("acc_extract")}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-5 pt-5 border-t border-border/60">
