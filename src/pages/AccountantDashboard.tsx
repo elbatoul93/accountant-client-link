@@ -44,6 +44,7 @@ import {
   type IncomingInvoice, type VaultEntry, type WorkflowStatus,
 } from "@/lib/portal";
 import { ClientStatusIcon } from "@/components/ClientStatusIcon";
+import { ClientInviteManager } from "@/components/ClientInviteManager";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
 
 const fmtDZD = (n: number) =>
