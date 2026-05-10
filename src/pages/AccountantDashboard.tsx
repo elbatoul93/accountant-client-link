@@ -972,6 +972,14 @@ const ClientProfileView = ({
           </Card>
         </TabsContent>
 
+        <TabsContent value="files" className="mt-4">
+          <ClientFilesSection
+            clientEmail={client.email || client.contact}
+            clientName={client.name}
+            t={t}
+          />
+        </TabsContent>
+
         <TabsContent value="legal" className="mt-4">
           <Card className="p-5 shadow-card">
             <div className="flex items-center justify-between mb-4">
