@@ -31,7 +31,6 @@ import { TaxIntelView } from "./accountant/TaxIntelView";
 import { LiasseFiscaleView } from "./accountant/LiasseFiscale";
 import { AssetsView } from "./accountant/AssetsView";
 import { FiscalCalendar } from "@/components/FiscalCalendar";
-import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatTab } from "@/components/ChatTab";
 import { DocChecklist } from "@/components/DocChecklist";
 import { DocPreviewDialog } from "@/components/DocPreviewDialog";
@@ -134,6 +133,7 @@ const AccountantDashboard = () => {
   const [editingShared, setEditingShared] = useState<SharedDoc | null>(null);
   const [trackingClientId, setTrackingClientId] = useState<string>("");
   const [viewG50Client, setViewG50Client] = useState<Client | null>(null);
+  const [chatPreselectId, setChatPreselectId] = useState<string | null>(null);
 
   useEffect(() => { localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients)); }, [clients]);
   useEffect(() => { localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices)); }, [invoices]);
@@ -345,7 +345,7 @@ const AccountantDashboard = () => {
             )}
 
             {view === "chat" && (
-              <ChatHubView t={t} />
+              <ChatHubView t={t} preselectId={chatPreselectId} />
             )}
 
             {view === "vault" && (
@@ -422,6 +422,28 @@ const AccountantDashboard = () => {
                 onDeleteLegal={(id) => setLegalDocs((p) => p.filter((x) => x.id !== id))}
                 onAddDecl={(d) => setDecls((p) => [d, ...p])}
                 onExtract={() => setObligationsClient(activeClient)}
+                onMessage={async () => {
+                  try {
+                    const { data: auth } = await supabase.auth.getUser();
+                    const accId = auth.user?.id;
+                    if (!accId) return;
+                    const { data, error } = await supabase
+                      .from("profiles")
+                      .select("user_id")
+                      .eq("email", activeClient.contact)
+                      .eq("linked_accountant_id", accId)
+                      .maybeSingle();
+                    if (error) throw error;
+                    if (!data?.user_id) {
+                      toast.error("Ce client n'a pas encore activé son compte.");
+                      return;
+                    }
+                    setChatPreselectId(data.user_id);
+                    setView("chat");
+                  } catch (e: any) {
+                    toast.error(e.message || "Erreur");
+                  }
+                }}
               />
             )}
 
@@ -727,12 +749,6 @@ const AccountantDashboard = () => {
         }}
       />
 
-      <ChatSidebar
-        t={t}
-        role="accountant"
-        selfName={user.name}
-        contacts={clients.map((c) => ({ email: c.contact, name: c.name }))}
-      />
     </div>
   );
 };
@@ -892,11 +908,11 @@ const ClientsListView = ({
 );
 
 const ClientProfileView = ({
-  t, client, decls, invoices, legalDocs, onBack, onAddLegal, onDeleteLegal, onAddDecl, onExtract,
+  t, client, decls, invoices, legalDocs, onBack, onAddLegal, onDeleteLegal, onAddDecl, onExtract, onMessage,
 }: {
   t: (k: string) => string; client: Client; decls: Decl[]; invoices: Invoice[]; legalDocs: LegalDoc[];
   onBack: () => void; onAddLegal: (d: LegalDoc) => void; onDeleteLegal: (id: string) => void;
-  onAddDecl: (d: Decl) => void; onExtract: () => void;
+  onAddDecl: (d: Decl) => void; onExtract: () => void; onMessage: () => void;
 }) => {
   const totalDue = decls.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
   const filed = decls.filter((d) => d.status === "filed").length;
@@ -935,9 +951,14 @@ const ClientProfileView = ({
               {client.address && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {client.address}</span>}
             </div>
           </div>
-          <Button variant="gold" size="sm" onClick={onExtract}>
-            <FileDown className="h-4 w-4" /> {t("acc_extract")}
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button variant="outline" size="sm" onClick={onMessage}>
+              <MessageCircle className="h-4 w-4" /> Message
+            </Button>
+            <Button variant="gold" size="sm" onClick={onExtract}>
+              <FileDown className="h-4 w-4" /> {t("acc_extract")}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-5 pt-5 border-t border-border/60">
@@ -2125,7 +2146,7 @@ const TrackingView = ({ t, clients, activeId, setActiveId }: {
   );
 };
 
-const ChatHubView = ({ t }: { t: (k: string) => string }) => {
+const ChatHubView = ({ t, preselectId }: { t: (k: string) => string; preselectId?: string | null }) => {
   return (
     <div className="space-y-4">
       <div>
@@ -2134,7 +2155,7 @@ const ChatHubView = ({ t }: { t: (k: string) => string }) => {
         </h1>
         <p className="text-xs text-muted-foreground">{t("chat_select_contact")}</p>
       </div>
-      <ChatTab role="accountant" />
+      <ChatTab role="accountant" preselectId={preselectId} />
     </div>
   );
 };

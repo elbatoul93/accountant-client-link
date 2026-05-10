@@ -1,12 +1,14 @@
 import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { MessageCircle, Send, Users } from "lucide-react";
+import { ArrowLeft, MessageCircle, Send, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Message {
   id: string;
@@ -29,9 +31,13 @@ interface Props {
   selfId: string;
   /** "accountant" → multi-contact pane; "client" → fixed counterpart */
   role: "accountant" | "client";
+  /** Optional: preselect a contact (accountant view) */
+  preselectId?: string | null;
 }
 
-export const RealtimeChat = ({ selfId, role }: Props) => {
+export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
+  const isMobile = useIsMobile();
+  const [showThreadOnMobile, setShowThreadOnMobile] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -56,7 +62,10 @@ export const RealtimeChat = ({ selfId, role }: Props) => {
           if (cancelled) return;
           const list = (data || []) as Contact[];
           setContacts(list);
-          if (list.length > 0) setActiveId((prev) => prev ?? list[0].user_id);
+          if (list.length > 0) {
+            const target = preselectId && list.some((c) => c.user_id === preselectId) ? preselectId : list[0].user_id;
+            setActiveId((prev) => (prev && list.some((c) => c.user_id === prev) ? prev : target));
+          }
         } else {
           // client → find own profile.linked_accountant_id then load that profile
           const { data: me, error: meErr } = await supabase
@@ -91,6 +100,15 @@ export const RealtimeChat = ({ selfId, role }: Props) => {
       cancelled = true;
     };
   }, [selfId, role]);
+
+  // React to preselect changes after initial load
+  useEffect(() => {
+    if (role !== "accountant" || !preselectId) return;
+    if (contacts.some((c) => c.user_id === preselectId)) {
+      setActiveId(preselectId);
+      setShowThreadOnMobile(true);
+    }
+  }, [preselectId, contacts, role]);
 
   // Load history + subscribe to realtime for active conversation
   useEffect(() => {
@@ -203,7 +221,7 @@ export const RealtimeChat = ({ selfId, role }: Props) => {
   if (role === "client") {
     return (
       <Card className="flex flex-col h-[70vh] shadow-card overflow-hidden">
-        <ChatHeader contact={activeContact} loading={loadingContacts} />
+        <ChatHeader contact={activeContact} loading={loadingContacts} showAccountantBadge />
         <ChatThread
           ref={scrollerRef}
           loading={loadingMessages}
@@ -221,78 +239,103 @@ export const RealtimeChat = ({ selfId, role }: Props) => {
     );
   }
 
-  // ── Two-pane (accountant) ──
+  // ── Two-pane (accountant) — mobile shows one pane at a time ──
+  const showSidebar = !isMobile || !showThreadOnMobile;
+  const showThread = !isMobile || showThreadOnMobile;
+
   return (
     <Card className="grid grid-cols-1 md:grid-cols-[260px_1fr] h-[70vh] shadow-card overflow-hidden">
-      <aside className="border-e border-border bg-muted/20 overflow-y-auto">
-        <div className="p-3 border-b text-xs font-semibold text-muted-foreground flex items-center gap-2">
-          <Users className="h-3.5 w-3.5" /> Clients
-        </div>
-        {loadingContacts ? (
-          <div className="p-3 space-y-2">
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
+      {showSidebar && (
+        <aside className="border-e border-border bg-muted/20 overflow-y-auto">
+          <div className="p-3 border-b text-xs font-semibold text-muted-foreground flex items-center gap-2">
+            <Users className="h-3.5 w-3.5" /> Clients
           </div>
-        ) : contacts.length === 0 ? (
-          <p className="p-4 text-xs text-muted-foreground">No linked clients yet.</p>
-        ) : (
-          <ul>
-            {contacts.map((c) => {
-              const active = c.user_id === activeId;
-              return (
-                <li key={c.user_id}>
-                  <button
-                    onClick={() => setActiveId(c.user_id)}
-                    className={`w-full text-start px-3 py-2.5 flex items-center gap-2.5 border-b border-border/40 transition-colors ${
-                      active ? "bg-primary/10 text-primary" : "hover:bg-muted/50"
-                    }`}
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="text-[11px]">{initials(c.name || c.email)}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium truncate">{c.name || c.email}</div>
-                      <div className="text-[10px] text-muted-foreground truncate">{c.email}</div>
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </aside>
+          {loadingContacts ? (
+            <div className="p-3 space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : contacts.length === 0 ? (
+            <p className="p-4 text-xs text-muted-foreground">No linked clients yet.</p>
+          ) : (
+            <ul>
+              {contacts.map((c) => {
+                const active = c.user_id === activeId;
+                return (
+                  <li key={c.user_id}>
+                    <button
+                      onClick={() => { setActiveId(c.user_id); setShowThreadOnMobile(true); }}
+                      className={`w-full text-start px-3 py-2.5 flex items-center gap-2.5 border-b border-border/40 transition-colors ${
+                        active ? "bg-primary/10 text-primary" : "hover:bg-muted/50"
+                      }`}
+                    >
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="text-[11px]">{initials(c.name || c.email)}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium truncate">{c.name || c.email}</div>
+                        <div className="text-[10px] text-muted-foreground truncate">{c.email}</div>
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </aside>
+      )}
 
-      <section className="flex flex-col min-w-0">
-        <ChatHeader contact={activeContact} loading={loadingContacts} />
-        <ChatThread
-          ref={scrollerRef}
-          loading={loadingMessages}
-          messages={messages}
-          selfId={selfId}
-          empty={!activeContact ? "Select a client to start chatting." : "No messages yet."}
-        />
-        <ChatComposer
-          draft={draft}
-          setDraft={setDraft}
-          send={send}
-          disabled={!activeContact || sending}
-        />
-      </section>
+      {showThread && (
+        <section className="flex flex-col min-w-0">
+          <ChatHeader
+            contact={activeContact}
+            loading={loadingContacts}
+            onBack={isMobile ? () => setShowThreadOnMobile(false) : undefined}
+          />
+          <ChatThread
+            ref={scrollerRef}
+            loading={loadingMessages}
+            messages={messages}
+            selfId={selfId}
+            empty={!activeContact ? "Select a client to start chatting." : "No messages yet."}
+          />
+          <ChatComposer
+            draft={draft}
+            setDraft={setDraft}
+            send={send}
+            disabled={!activeContact || sending}
+          />
+        </section>
+      )}
     </Card>
   );
 };
 
-const ChatHeader = ({ contact, loading }: { contact: Contact | null; loading: boolean }) => (
+const ChatHeader = ({
+  contact, loading, showAccountantBadge, onBack,
+}: {
+  contact: Contact | null; loading: boolean; showAccountantBadge?: boolean; onBack?: () => void;
+}) => (
   <div className="px-4 py-3 border-b flex items-center gap-3 bg-card">
+    {onBack && (
+      <Button variant="ghost" size="icon" className="h-8 w-8 -ms-1" onClick={onBack} aria-label="Back">
+        <ArrowLeft className="h-4 w-4" />
+      </Button>
+    )}
     <MessageCircle className="h-4 w-4 text-gold-deep" />
     {loading ? (
       <Skeleton className="h-4 w-32" />
     ) : contact ? (
-      <div className="min-w-0">
-        <div className="text-sm font-semibold truncate">{contact.name || contact.email}</div>
-        {contact.company && (
-          <div className="text-[10px] text-muted-foreground truncate">{contact.company}</div>
+      <div className="min-w-0 flex items-center gap-2 flex-wrap">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold truncate">{contact.name || contact.email}</div>
+          {contact.company && (
+            <div className="text-[10px] text-muted-foreground truncate">{contact.company}</div>
+          )}
+        </div>
+        {showAccountantBadge && (
+          <Badge className="bg-gold/20 text-gold-deep border-gold/40 text-[10px]">Your Accountant</Badge>
         )}
       </div>
     ) : (
