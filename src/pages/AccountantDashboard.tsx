@@ -345,7 +345,7 @@ const AccountantDashboard = () => {
             )}
 
             {view === "chat" && (
-              <ChatHubView t={t} />
+              <ChatHubView t={t} preselectId={chatPreselectId} />
             )}
 
             {view === "vault" && (
