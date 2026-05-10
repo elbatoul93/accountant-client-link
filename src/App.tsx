@@ -25,6 +25,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/invite/:token" element={<InviteSignup />} />
             <Route path="/dashboard/accountant" element={<AccountantDashboard />} />
             <Route path="/dashboard/client" element={<ClientDashboard />} />
             <Route path="*" element={<NotFound />} />
