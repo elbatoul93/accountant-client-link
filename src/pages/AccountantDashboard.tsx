@@ -726,12 +726,6 @@ const AccountantDashboard = () => {
         }}
       />
 
-      <ChatSidebar
-        t={t}
-        role="accountant"
-        selfName={user.name}
-        contacts={clients.map((c) => ({ email: c.contact, name: c.name }))}
-      />
     </div>
   );
 };
