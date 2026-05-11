@@ -79,6 +79,34 @@ const ClientDashboard = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
   }, [docs]);
 
+  // Hydrate the document list from Supabase so deletes can target real rows/files.
+  useEffect(() => {
+    let cancelled = false;
+    const fetchDocs = async () => {
+      const { data: au } = await supabase.auth.getUser();
+      const uid = au.user?.id;
+      if (!uid) return;
+      const { data, error } = await supabase
+        .from("documents")
+        .select("id,file_name,file_path,size,created_at")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: false });
+      if (cancelled || error || !data) return;
+      setDocs(
+        data.map((d) => ({
+          id: d.id,
+          file_path: d.file_path,
+          name: d.file_name,
+          size: typeof d.size === "number" ? `${(d.size / 1024).toFixed(0)} KB` : "—",
+          date: new Date(d.created_at).toLocaleDateString(),
+          status: "pending" as const,
+        })),
+      );
+    };
+    fetchDocs();
+    return () => { cancelled = true; };
+  }, []);
+
   // Listen to portal-wide changes (signatures, new shared docs, etc.)
   useEffect(() => onPortalChange(() => setTick((x) => x + 1)), []);
 
