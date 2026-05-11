@@ -154,15 +154,17 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
                 {mode === "login"
                   ? t("auth_welcome_back")
                   : isInvite
-                    ? "Créer votre compte client"
-                    : "Espace Comptable — Inscription"}
+                    ? t("auth_invite_title")
+                    : t("auth_acc_signup_title")}
               </h1>
               <p className="text-sm text-muted-foreground">
                 {mode === "login"
                   ? t("auth_login_subtitle")
                   : isInvite
-                    ? `Vous avez été invité${accountantName ? ` par ${accountantName}` : ""}. Complétez votre inscription pour accéder à votre portail.`
-                    : "Cette page est réservée aux comptables. Les clients accèdent uniquement par invitation."}
+                    ? (accountantName
+                        ? t("auth_invite_subtitle_by").replace("{name}", accountantName)
+                        : t("auth_invite_subtitle"))
+                    : t("auth_acc_subtitle")}
               </p>
             </div>
 
