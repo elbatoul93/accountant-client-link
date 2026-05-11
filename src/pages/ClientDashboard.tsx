@@ -31,7 +31,7 @@ import {
   addIncomingInvoice, pushNotification, signSharedDoc, getVault, onPortalChange, type VaultEntry,
 } from "@/lib/portal";
 
-interface Doc { name: string; size: string; date: string; status: "processed" | "pending" }
+interface Doc { id?: string; file_path?: string; name: string; size: string; date: string; status: "processed" | "pending" }
 type DeclType = "G50" | "CNAS" | "CASNOS" | "CACOBATPH" | "TAP" | "IBS" | "FS" | "G12" | "CP";
 type TaxRegime = "REEL" | "SIMPLIFIE" | "IFU";
 interface Decl { id: string; clientId: string; clientName: string; type: DeclType; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
@@ -78,6 +78,34 @@ const ClientDashboard = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
   }, [docs]);
+
+  // Hydrate the document list from Supabase so deletes can target real rows/files.
+  useEffect(() => {
+    let cancelled = false;
+    const fetchDocs = async () => {
+      const { data: au } = await supabase.auth.getUser();
+      const uid = au.user?.id;
+      if (!uid) return;
+      const { data, error } = await supabase
+        .from("documents")
+        .select("id,file_name,file_path,size,created_at")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: false });
+      if (cancelled || error || !data) return;
+      setDocs(
+        data.map((d) => ({
+          id: d.id,
+          file_path: d.file_path,
+          name: d.file_name,
+          size: typeof d.size === "number" ? `${(d.size / 1024).toFixed(0)} KB` : "—",
+          date: new Date(d.created_at).toLocaleDateString(),
+          status: "pending" as const,
+        })),
+      );
+    };
+    fetchDocs();
+    return () => { cancelled = true; };
+  }, []);
 
   // Listen to portal-wide changes (signatures, new shared docs, etc.)
   useEffect(() => onPortalChange(() => setTick((x) => x + 1)), []);
@@ -139,7 +167,7 @@ const ClientDashboard = () => {
       setUploadProgress(70);
 
       // 3) Insert document metadata row
-      const { error: dbErr } = await supabase.from("documents").insert({
+      const { data: inserted, error: dbErr } = await supabase.from("documents").insert({
         user_id: uid,
         title: uploadTitle.trim(),
         description: uploadDescription.trim() || null,
@@ -147,7 +175,7 @@ const ClientDashboard = () => {
         file_path: path,
         mime_type: pendingFile.type || "application/octet-stream",
         size: pendingFile.size,
-      });
+      }).select("id,file_path").single();
       if (dbErr) throw dbErr;
       setUploadProgress(90);
 
@@ -176,6 +204,8 @@ const ClientDashboard = () => {
       } catch { /* non-blocking */ }
 
       setDocs((prev) => [{
+        id: inserted?.id,
+        file_path: inserted?.file_path ?? path,
         name: pendingFile.name,
         size: `${(pendingFile.size / 1024).toFixed(0)} KB`,
         date: new Date().toLocaleDateString(),
@@ -235,7 +265,46 @@ const ClientDashboard = () => {
 
   // Auth/role guard handled by ProtectedRoute wrapper — keep all hooks unconditional below.
 
-  const removeDoc = (i: number) => setDocs((prev) => prev.filter((_, idx) => idx !== i));
+  const removeDoc = useCallback(async (i: number) => {
+    const doc = docs[i];
+    if (!doc) return;
+
+    // Legacy local-only entry (no backend record) — just drop from UI.
+    if (!doc.id || !doc.file_path) {
+      setDocs((prev) => prev.filter((_, idx) => idx !== i));
+      return;
+    }
+
+    const { data: au } = await supabase.auth.getUser();
+    const uid = au.user?.id;
+    if (!uid) {
+      toast.error(t("upload_session_expired"));
+      return;
+    }
+
+    // 1) Delete the file from Supabase Storage first.
+    const { error: storageErr } = await supabase.storage
+      .from("client-uploads")
+      .remove([doc.file_path]);
+    if (storageErr) {
+      toast.error(storageErr.message);
+      return;
+    }
+
+    // 2) Then delete the metadata row. RLS already restricts deletes to user_id = auth.uid().
+    const { error: dbErr } = await supabase
+      .from("documents")
+      .delete()
+      .eq("id", doc.id)
+      .eq("user_id", uid);
+    if (dbErr) {
+      toast.error(dbErr.message);
+      return;
+    }
+
+    // 3) Only now drop from the UI.
+    setDocs((prev) => prev.filter((_, idx) => idx !== i));
+  }, [docs, t]);
 
   const declsForApproval = mySharedDocs.filter((s) => s.type === "G50");
 
