@@ -167,7 +167,7 @@ const ClientDashboard = () => {
       setUploadProgress(70);
 
       // 3) Insert document metadata row
-      const { error: dbErr } = await supabase.from("documents").insert({
+      const { data: inserted, error: dbErr } = await supabase.from("documents").insert({
         user_id: uid,
         title: uploadTitle.trim(),
         description: uploadDescription.trim() || null,
@@ -175,7 +175,7 @@ const ClientDashboard = () => {
         file_path: path,
         mime_type: pendingFile.type || "application/octet-stream",
         size: pendingFile.size,
-      });
+      }).select("id,file_path").single();
       if (dbErr) throw dbErr;
       setUploadProgress(90);
 
@@ -204,6 +204,8 @@ const ClientDashboard = () => {
       } catch { /* non-blocking */ }
 
       setDocs((prev) => [{
+        id: inserted?.id,
+        file_path: inserted?.file_path ?? path,
         name: pendingFile.name,
         size: `${(pendingFile.size / 1024).toFixed(0)} KB`,
         date: new Date().toLocaleDateString(),
