@@ -121,7 +121,7 @@ const ClientDashboard = () => {
       // 1) Resolve auth user id (storage path requires it)
       const { data: au } = await supabase.auth.getUser();
       const uid = au.user?.id;
-      if (!uid) throw new Error("Session expirée");
+      if (!uid) throw new Error(t("upload_session_expired"));
 
       const safeName = pendingFile.name.replace(/[^\w.\-]+/g, "_");
       const path = `${uid}/${Date.now()}_${safeName}`;
