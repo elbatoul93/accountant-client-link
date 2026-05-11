@@ -47,6 +47,7 @@ import {
 import { ClientStatusIcon } from "@/components/ClientStatusIcon";
 import { ClientInviteManager } from "@/components/ClientInviteManager";
 import { ClientFilesSection } from "@/components/ClientFilesSection";
+import { IncomingDocumentsLive } from "@/components/IncomingDocumentsLive";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
 
 const fmtDZD = (n: number) =>
