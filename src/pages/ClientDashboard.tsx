@@ -31,7 +31,7 @@ import {
   addIncomingInvoice, pushNotification, signSharedDoc, getVault, onPortalChange, type VaultEntry,
 } from "@/lib/portal";
 
-interface Doc { name: string; size: string; date: string; status: "processed" | "pending" }
+interface Doc { id?: string; file_path?: string; name: string; size: string; date: string; status: "processed" | "pending" }
 type DeclType = "G50" | "CNAS" | "CASNOS" | "CACOBATPH" | "TAP" | "IBS" | "FS" | "G12" | "CP";
 type TaxRegime = "REEL" | "SIMPLIFIE" | "IFU";
 interface Decl { id: string; clientId: string; clientName: string; type: DeclType; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
