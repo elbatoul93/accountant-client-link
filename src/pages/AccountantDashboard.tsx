@@ -1777,7 +1777,6 @@ const G50GeneratorDialog = ({
   const [rIrg, setRIrg] = useState("10");
   const [rIbs, setRIbs] = useState("23");
   const [synced, setSynced] = useState(false);
-  const [validateAndLock, setValidateAndLock] = useState(true);
 
   // Auto-fill from live journal aggregates when client/period changes
   useEffect(() => {
@@ -1815,7 +1814,7 @@ const G50GeneratorDialog = ({
     const declId = crypto.randomUUID();
     const decl: Decl = {
       id: declId, clientId: c.id, clientName: c.name,
-      type: "G50", amount: Math.round(total), due: `${period}-20`, status: validateAndLock ? "filed" : "upcoming",
+      type: "G50", amount: Math.round(total), due: `${period}-20`, status: "filed",
     };
     const shared: SharedDoc = {
       id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
@@ -1823,13 +1822,11 @@ const G50GeneratorDialog = ({
       label: `G50 ${period} — ${fmtDZD(total)}`,
       date: new Date().toLocaleDateString("fr-DZ"),
       payload: JSON.stringify({ nif: c.taxId, bp: c.bp, caHt, salaries, benefice, rTap, rTva, rIrg, rIbs, tap, tva, irg, ibs, total, period }),
-      workflow: validateAndLock ? "filed" : "draft",
+      workflow: "filed",
     };
-    const lockOpts = validateAndLock
-      ? { clientId: c.id, period, reference: declId }
-      : null;
+    const lockOpts = { clientId: c.id, period, reference: declId };
     onGenerate(decl, shared, lockOpts);
-    toast.success(validateAndLock ? t("eng_g50_filed_locked") : "G50 généré et envoyé au client");
+    toast.success(t("eng_g50_filed_locked"));
     setClientId(""); setCaHt(""); setSalaries(""); setBenefice("");
   };
   return (
@@ -1901,13 +1898,6 @@ const G50GeneratorDialog = ({
             <span className="text-sm font-semibold text-primary">{t("tools_g50_total")}</span>
             <span className="text-2xl font-bold text-gold-deep">{fmtDZD(total)}</span>
           </div>
-          <label className="flex items-center gap-2 text-xs cursor-pointer rounded-md border border-border/60 p-2.5 hover:bg-muted/40">
-            <Switch checked={validateAndLock} onCheckedChange={setValidateAndLock} />
-            <div className="flex-1">
-              <div className="font-semibold text-primary">{t("eng_validate_and_lock")}</div>
-              <div className="text-[11px] text-muted-foreground">{t("eng_validate_and_lock_hint")}</div>
-            </div>
-          </label>
         </div>
         <DialogFooter><Button onClick={submit} variant="gold">{t("tools_g50_generate")}</Button></DialogFooter>
       </DialogContent>
