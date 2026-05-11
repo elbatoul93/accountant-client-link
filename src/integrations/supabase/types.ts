@@ -200,6 +200,10 @@ export type Database = {
         Args: { client_user_id: string }
         Returns: boolean
       }
+      is_linked_accountant_by_folder: {
+        Args: { folder_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "accountant" | "client"
