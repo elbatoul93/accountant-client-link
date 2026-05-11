@@ -182,9 +182,9 @@ export type Database = {
     }
     Functions: {
       get_linked_client_names: {
-        Args: { accountant_id: string }
+        Args: never
         Returns: {
-          client_name: string
+          full_name: string
           id: string
         }[]
       }
