@@ -197,6 +197,29 @@ const AccountantDashboard = () => {
   const [unreadMsgs, setUnreadMsgs] = useState<number>(() => unreadChatCount("accountant"));
   useEffect(() => onPortalChange(() => setUnreadMsgs(unreadChatCount("accountant"))), []);
 
+  // Live count of incoming documents (same source as the IncomingDocumentsLive feed).
+  // RLS already restricts visibility to documents owned by clients linked to this accountant.
+  const [incomingLiveCount, setIncomingLiveCount] = useState<number>(0);
+  useEffect(() => {
+    let cancelled = false;
+    const fetchCount = async () => {
+      const { count } = await supabase
+        .from("documents")
+        .select("id", { count: "exact", head: true });
+      if (!cancelled) setIncomingLiveCount(count ?? 0);
+    };
+    fetchCount();
+    const channel = supabase
+      .channel("documents-badge")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "documents" },
+        () => fetchCount(),
+      )
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, []);
+
   // 5 main sections — "Judge-friendly" simplified architecture
   const sidebarGroups: { label: string; items: { key: View; label: string; icon: any; count?: number; badge?: number }[] }[] = [
     {
@@ -209,7 +232,7 @@ const AccountantDashboard = () => {
     {
       label: t("nav_group_documents"),
       items: [
-        { key: "incoming", label: t("side_incoming"), icon: InboxIcon, count: incoming.filter((i) => i.status === "pending").length },
+        { key: "incoming", label: t("side_incoming"), icon: InboxIcon, count: incomingLiveCount },
         { key: "tracking", label: t("side_tracking"), icon: ListChecks },
         { key: "vault", label: t("side_vault"), icon: Archive, count: vault.length },
         { key: "clients", label: t("side_clients"), icon: Users, count: clients.length },
@@ -328,13 +351,7 @@ const AccountantDashboard = () => {
             )}
 
             {view === "incoming" && (
-              <>
-                <IncomingDocumentsLive t={t} />
-                <IncomingDocsView t={t} items={incoming}
-                  onMarkProcessed={(id) => updateIncomingStatus(id, "processed")}
-                  onDelete={(id) => deleteIncomingInvoice(id)}
-                  onPreview={(it) => setPreviewIncoming(it)}
-                /></>
+              <IncomingDocumentsLive t={t} />
             )}
 
             {view === "tracking" && (
