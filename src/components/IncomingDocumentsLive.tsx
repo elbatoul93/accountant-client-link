@@ -53,27 +53,33 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
       return;
     }
 
-    // 2) Resolve client display names by joining on profiles
-    //    (documents.user_id = profiles.user_id, the auth user id).
-    const ids = Array.from(new Set(docs.map((d) => d.user_id)));
-    const { data: profiles, error: pErr } = await supabase
-      .from("profiles")
-      .select("user_id,name,email")
-      .in("user_id", ids);
-    if (pErr) {
-      setError(pErr.message);
+    // 2) Resolve client display names through the safe SECURITY DEFINER RPC.
+    //    This avoids querying profiles directly and lets database RLS handle access.
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    const user = userData?.user;
+    if (userErr || !user) {
+      setError(userErr?.message || "Session introuvable");
+      setLoading(false);
+      return;
+    }
+
+    const { data: names, error: namesErr } = await supabase.rpc("get_linked_client_names", {
+      accountant_id: user.id,
+    });
+    if (namesErr) {
+      setError(namesErr.message);
       setLoading(false);
       return;
     }
     const byId = new Map(
-      (profiles || []).map((p) => [p.user_id, { name: p.name || p.email, email: p.email }] as const),
+      (names || []).map((client) => [client.id, client.client_name] as const),
     );
 
     setRows(
       docs.map((d) => ({
         ...d,
-        client_name: byId.get(d.user_id)?.name || "—",
-        client_email: byId.get(d.user_id)?.email || "",
+        client_name: byId.get(d.user_id) || "—",
+        client_email: "",
       })) as Row[],
     );
     setLoading(false);
