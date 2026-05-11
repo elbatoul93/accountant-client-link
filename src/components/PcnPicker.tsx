@@ -49,7 +49,7 @@ export const PcnPicker = ({ value, onChange, classes, placeholder, className }: 
                   {current && <span className="ms-2 text-muted-foreground font-sans">{current.label}</span>}
                 </>
               ) : (
-                <span className="text-muted-foreground font-sans">{placeholder ?? "Compte PCN…"}</span>
+                <span className="text-muted-foreground font-sans">{placeholder ?? t("pcn_search_ph")}</span>
               )}
             </span>
             <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
