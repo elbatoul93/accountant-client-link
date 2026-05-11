@@ -1777,7 +1777,6 @@ const G50GeneratorDialog = ({
   const [rIrg, setRIrg] = useState("10");
   const [rIbs, setRIbs] = useState("23");
   const [synced, setSynced] = useState(false);
-  const [validateAndLock, setValidateAndLock] = useState(true);
 
   // Auto-fill from live journal aggregates when client/period changes
   useEffect(() => {
