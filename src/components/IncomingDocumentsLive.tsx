@@ -79,12 +79,12 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
 
   const open = async (path: string) => {
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 600);
-    if (error || !data?.signedUrl) return toast.error(error?.message || "Impossible d'ouvrir");
+    if (error || !data?.signedUrl) return toast.error(error?.message || t("incoming_open_failed"));
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
   const download = async (path: string, name: string) => {
     const { data, error } = await supabase.storage.from(BUCKET).download(path);
-    if (error || !data) return toast.error(error?.message || "Impossible de télécharger");
+    if (error || !data) return toast.error(error?.message || t("incoming_download_failed"));
     const url = URL.createObjectURL(data);
     const a = document.createElement("a");
     a.href = url; a.download = name; a.click();
@@ -95,7 +95,7 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
     <Card className="p-5 shadow-card mb-5">
       <div className="flex items-center justify-between mb-1">
         <h2 className="text-lg font-bold text-primary flex items-center gap-2">
-          <InboxIcon className="h-4 w-4 text-gold-deep" /> Documents reçus (tous clients)
+          <InboxIcon className="h-4 w-4 text-gold-deep" /> {t("incoming_all_clients")}
         </h2>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-xs">{rows.length}</Badge>
@@ -105,7 +105,7 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
         </div>
       </div>
       <p className="text-xs text-muted-foreground mb-4">
-        Flux unifié des derniers fichiers téléversés par vos clients.
+        {t("incoming_subtitle_unified")}
       </p>
 
       {loading && (
@@ -116,14 +116,14 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
 
       {!loading && error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive flex items-center gap-2">
-          <AlertCircle className="h-4 w-4" /> Erreur de chargement: {error}
+          <AlertCircle className="h-4 w-4" /> {t("incoming_load_error")}: {error}
         </div>
       )}
 
       {!loading && !error && rows.length === 0 && (
         <div className="text-center py-10 text-sm text-muted-foreground">
           <InboxIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          Aucun document n'a encore été téléversé par vos clients.
+          {t("incoming_empty")}
         </div>
       )}
 
@@ -137,7 +137,7 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm truncate">
                   {r.title || r.file_name}
-                  <span className="text-muted-foreground font-normal"> — Téléversé par </span>
+                  <span className="text-muted-foreground font-normal"> — {t("incoming_uploaded_by")} </span>
                   <span className="text-primary">{r.client_name}</span>
                 </div>
                 {r.description && (
@@ -147,7 +147,7 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
                   <span className="truncate max-w-[180px]">{r.file_name}</span>
                   {r.mime_type && <Badge variant="outline" className="text-[10px] font-mono">{r.mime_type}</Badge>}
                   {typeof r.size === "number" && <span>{(r.size / 1024).toFixed(1)} KB</span>}
-                  <span>• {new Date(r.created_at).toLocaleString("fr-DZ")}</span>
+                  <span>• {new Date(r.created_at).toLocaleString()}</span>
                 </div>
               </div>
               <div className="flex items-center gap-1">
