@@ -181,21 +181,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_linked_client_names:
-        | {
-            Args: never
-            Returns: {
-              full_name: string
-              id: string
-            }[]
-          }
-        | {
-            Args: { accountant_id: string }
-            Returns: {
-              client_name: string
-              id: string
-            }[]
-          }
+      get_linked_client_names: {
+        Args: never
+        Returns: {
+          full_name: string
+          id: string
+        }[]
+      }
       get_user_type: { Args: { user_id: string }; Returns: string }
       has_role: {
         Args: {
