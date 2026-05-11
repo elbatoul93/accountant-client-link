@@ -48,15 +48,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       return;
     }
+    // Derive role synchronously from JWT metadata to stay consistent with RLS (auth.jwt() ->> 'user_type')
+    const meta = (session.user.user_metadata ?? {}) as { user_type?: string; role?: string };
+    const role: Role = (meta.user_type ?? meta.role) === "accountant" ? "accountant" : "client";
     // Defer DB calls outside the auth callback to avoid deadlocks
     setTimeout(async () => {
       const uid = session.user.id;
-      const [{ data: profile }, { data: roles }] = await Promise.all([
-        supabase.from("profiles").select("name,email,company").eq("user_id", uid).maybeSingle(),
-        supabase.from("user_roles").select("role").eq("user_id", uid),
-      ]);
-      const role: Role =
-        roles?.some((r) => r.role === "accountant") ? "accountant" : "client";
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("name,email,company")
+        .eq("user_id", uid)
+        .maybeSingle();
       setUser({
         name: profile?.name || session.user.email?.split("@")[0] || "User",
         email: profile?.email || session.user.email || "",
