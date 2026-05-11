@@ -173,7 +173,7 @@ export const ClientFilesSection = ({ clientId, clientEmail, clientName, t }: Pro
                     <Badge variant="outline" className="text-[10px] font-mono">{f.mime_type}</Badge>
                   )}
                   {typeof f.size === "number" && <span>{(f.size / 1024).toFixed(1)} KB</span>}
-                  <span>• {new Date(f.created_at).toLocaleDateString("fr-DZ")}</span>
+                  <span>• {new Date(f.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
               <div className="flex flex-col gap-1">
