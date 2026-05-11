@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, ChevronDown } from "lucide-react";
 import { PCN, searchPcn, getPcn, type PcnAccount } from "@/lib/accounting/pcn";
+import { useApp } from "@/contexts/AppContext";
 
 interface Props {
   value: string;
