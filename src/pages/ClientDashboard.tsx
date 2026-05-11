@@ -304,7 +304,6 @@ const ClientDashboard = () => {
 
     // 3) Only now drop from the UI.
     setDocs((prev) => prev.filter((_, idx) => idx !== i));
-    toast.success(t("preview_download") /* reuse generic; replaced by translated label below */);
   }, [docs, t]);
 
   const declsForApproval = mySharedDocs.filter((s) => s.type === "G50");
