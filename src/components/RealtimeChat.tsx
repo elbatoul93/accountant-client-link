@@ -54,13 +54,18 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
       setLoadingContacts(true);
       try {
         if (role === "accountant") {
-          const { data, error } = await supabase
-            .from("profiles")
-            .select("user_id,name,email,company")
-            .eq("linked_accountant_id", selfId);
+          // Use RPC to bypass profiles RLS recursion
+          const { data, error } = await supabase.rpc("get_linked_client_names", {
+            accountant_id: selfId,
+          });
           if (error) throw error;
           if (cancelled) return;
-          const list = (data || []) as Contact[];
+          const list: Contact[] = (data || []).map((row: any) => ({
+            user_id: row.id,
+            name: row.client_name || "",
+            email: "",
+            company: null,
+          }));
           setContacts(list);
           if (list.length > 0) {
             const target = preselectId && list.some((c) => c.user_id === preselectId) ? preselectId : list[0].user_id;
