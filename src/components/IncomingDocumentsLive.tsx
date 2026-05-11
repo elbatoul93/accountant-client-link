@@ -55,24 +55,14 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
 
     // 2) Resolve client display names through the safe SECURITY DEFINER RPC.
     //    This avoids querying profiles directly and lets database RLS handle access.
-    const { data: userData, error: userErr } = await supabase.auth.getUser();
-    const user = userData?.user;
-    if (userErr || !user) {
-      setError(userErr?.message || "Session introuvable");
-      setLoading(false);
-      return;
-    }
-
-    const { data: names, error: namesErr } = await supabase.rpc("get_linked_client_names", {
-      accountant_id: user.id,
-    });
+    const { data: names, error: namesErr } = await supabase.rpc("get_linked_client_names");
     if (namesErr) {
       setError(namesErr.message);
       setLoading(false);
       return;
     }
     const byId = new Map(
-      (names || []).map((client) => [client.id, client.client_name] as const),
+      (names || []).map((client) => [client.id, client.full_name] as const),
     );
 
     setRows(
