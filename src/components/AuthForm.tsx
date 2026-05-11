@@ -75,6 +75,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
               name: name || email.split("@")[0],
               company: company || (role === "accountant" ? "Managementik & Co." : "My Business"),
               role,
+              user_type: role,
               ...(isInvite ? { invite_token: token } : {}),
             },
           },
