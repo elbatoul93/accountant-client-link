@@ -33,39 +33,13 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const { data: au } = await supabase.auth.getUser();
-    const uid = au.user?.id;
-    if (!uid) {
-      setError("Session expirée");
-      setLoading(false);
-      return;
-    }
 
-    // 1) All clients linked to this accountant
-    const { data: clients, error: cErr } = await supabase
-      .from("profiles")
-      .select("user_id,name,email")
-      .eq("linked_accountant_id", uid);
-    if (cErr) {
-      setError(cErr.message);
-      setLoading(false);
-      return;
-    }
-    const ids = (clients || []).map((c) => c.user_id);
-    if (ids.length === 0) {
-      setRows([]);
-      setLoading(false);
-      return;
-    }
-    const byId = new Map(
-      (clients || []).map((c) => [c.user_id, { name: c.name || c.email, email: c.email }] as const),
-    );
-
-    // 2) Latest documents from any of those clients
+    // 1) Pull every document the accountant is allowed to read.
+    //    RLS on `documents` already restricts rows to clients linked to this
+    //    accountant via profiles.linked_accountant_id — no role check here.
     const { data: docs, error: dErr } = await supabase
       .from("documents")
       .select("id,title,description,file_name,file_path,mime_type,size,created_at,user_id")
-      .in("user_id", ids)
       .order("created_at", { ascending: false })
       .limit(100);
     if (dErr) {
@@ -73,9 +47,30 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
       setLoading(false);
       return;
     }
+    if (!docs || docs.length === 0) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+
+    // 2) Resolve client display names by joining on profiles
+    //    (documents.user_id = profiles.user_id, the auth user id).
+    const ids = Array.from(new Set(docs.map((d) => d.user_id)));
+    const { data: profiles, error: pErr } = await supabase
+      .from("profiles")
+      .select("user_id,name,email")
+      .in("user_id", ids);
+    if (pErr) {
+      setError(pErr.message);
+      setLoading(false);
+      return;
+    }
+    const byId = new Map(
+      (profiles || []).map((p) => [p.user_id, { name: p.name || p.email, email: p.email }] as const),
+    );
 
     setRows(
-      (docs || []).map((d) => ({
+      docs.map((d) => ({
         ...d,
         client_name: byId.get(d.user_id)?.name || "—",
         client_email: byId.get(d.user_id)?.email || "",
