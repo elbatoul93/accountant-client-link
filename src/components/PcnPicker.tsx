@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, ChevronDown } from "lucide-react";
 import { PCN, searchPcn, getPcn, type PcnAccount } from "@/lib/accounting/pcn";
+import { useApp } from "@/contexts/AppContext";
 
 interface Props {
   value: string;
@@ -20,6 +21,7 @@ interface Props {
  * any code (validated against the catalog) and a dropdown filter.
  */
 export const PcnPicker = ({ value, onChange, classes, placeholder, className }: Props) => {
+  const { t } = useApp();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
 
@@ -47,7 +49,7 @@ export const PcnPicker = ({ value, onChange, classes, placeholder, className }: 
                   {current && <span className="ms-2 text-muted-foreground font-sans">{current.label}</span>}
                 </>
               ) : (
-                <span className="text-muted-foreground font-sans">{placeholder ?? "Compte PCN…"}</span>
+                <span className="text-muted-foreground font-sans">{placeholder ?? t("pcn_search_ph")}</span>
               )}
             </span>
             <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
@@ -61,17 +63,17 @@ export const PcnPicker = ({ value, onChange, classes, placeholder, className }: 
                 autoFocus
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Code, nom français ou arabe…"
+                placeholder={t("pcn_search_ph")}
                 className="ps-7 h-8 text-xs"
               />
             </div>
             <div className="text-[10px] text-muted-foreground mt-1.5">
-              {results.length} / {PCN.length} comptes — Plan Comptable National
+              {results.length} / {PCN.length} {t("pcn_accounts_label")}
             </div>
           </div>
           <div className="max-h-72 overflow-y-auto">
             {results.length === 0 ? (
-              <div className="p-4 text-center text-xs text-muted-foreground">Aucun compte trouvé</div>
+              <div className="p-4 text-center text-xs text-muted-foreground">{t("pcn_no_results")}</div>
             ) : (
               results.map((a) => (
                 <button

@@ -93,7 +93,7 @@ export const ClientFilesSection = ({ clientId, clientEmail, clientName, t }: Pro
   const openFile = async (path: string) => {
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 10);
     if (error || !data?.signedUrl) {
-      toast.error(error?.message || "Unable to open file");
+      toast.error(error?.message || t("incoming_open_failed"));
       return;
     }
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
@@ -102,7 +102,7 @@ export const ClientFilesSection = ({ clientId, clientEmail, clientName, t }: Pro
   const downloadFile = async (path: string, name: string) => {
     const { data, error } = await supabase.storage.from(BUCKET).download(path);
     if (error || !data) {
-      toast.error(error?.message || "Unable to download file");
+      toast.error(error?.message || t("incoming_download_failed"));
       return;
     }
     const url = URL.createObjectURL(data);
@@ -116,14 +116,14 @@ export const ClientFilesSection = ({ clientId, clientEmail, clientName, t }: Pro
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-semibold text-primary flex items-center gap-2">
-            <FolderOpen className="h-4 w-4" /> Fichiers du client
+            <FolderOpen className="h-4 w-4" /> {t("cf_title")}
           </h3>
           <p className="text-xs text-muted-foreground">
-            {clientName ? `Documents téléversés par ${clientName}` : "Documents téléversés par le client"}
+            {clientName ? t("cf_subtitle_with").replace("{name}", clientName) : t("cf_subtitle_generic")}
           </p>
         </div>
         <Button variant="ghost" size="sm" onClick={fetchFiles} disabled={loading}>
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /> Actualiser
+          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /> {t("cf_refresh")}
         </Button>
       </div>
 
@@ -137,21 +137,21 @@ export const ClientFilesSection = ({ clientId, clientEmail, clientName, t }: Pro
 
       {!loading && error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
-          Erreur de chargement: {error}
+          {t("incoming_load_error")}: {error}
         </div>
       )}
 
       {!loading && !error && !resolvedId && (
         <div className="text-center py-10 text-sm text-muted-foreground">
           <Inbox className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          Ce client n'a pas encore de compte lié au portail.
+          {t("cf_no_account")}
         </div>
       )}
 
       {!loading && !error && resolvedId && files.length === 0 && (
         <div className="text-center py-10 text-sm text-muted-foreground">
           <Inbox className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          Aucun fichier téléversé pour le moment.
+          {t("cf_empty")}
         </div>
       )}
 
@@ -173,7 +173,7 @@ export const ClientFilesSection = ({ clientId, clientEmail, clientName, t }: Pro
                     <Badge variant="outline" className="text-[10px] font-mono">{f.mime_type}</Badge>
                   )}
                   {typeof f.size === "number" && <span>{(f.size / 1024).toFixed(1)} KB</span>}
-                  <span>• {new Date(f.created_at).toLocaleDateString("fr-DZ")}</span>
+                  <span>• {new Date(f.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
               <div className="flex flex-col gap-1">

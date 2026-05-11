@@ -28,7 +28,7 @@ const AppContext = createContext<AppContextValue | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [lang, setLangState] = useState<Lang>(() => {
     const saved = localStorage.getItem("mgmtk_lang");
-    return (saved as Lang) || "en";
+    return (saved as Lang) || "ar";
   });
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);

@@ -24,7 +24,7 @@ const randomToken = () => {
 };
 
 export const ClientInviteManager = () => {
-  const { user } = useApp();
+  const { user, t } = useApp();
   const [invites, setInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -49,7 +49,7 @@ export const ClientInviteManager = () => {
     setBusy(true);
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) { toast.error("Not authenticated"); return; }
+      if (!authUser) { toast.error(t("upload_session_expired")); return; }
       const token = randomToken();
       const { error } = await supabase.from("invitations").insert({
         token,
@@ -59,7 +59,7 @@ export const ClientInviteManager = () => {
       if (error) { toast.error(error.message); return; }
       const url = `${window.location.origin}/invite/${token}`;
       await navigator.clipboard.writeText(url).catch(() => {});
-      toast.success("Lien d'invitation généré et copié");
+      toast.success(t("invite_generated_copied"));
       setEmail("");
       load();
     } finally {
@@ -70,7 +70,7 @@ export const ClientInviteManager = () => {
   const copy = async (token: string) => {
     const url = `${window.location.origin}/invite/${token}`;
     await navigator.clipboard.writeText(url);
-    toast.success("Lien copié");
+    toast.success(t("invite_copied"));
   };
 
   if (!user || user.role !== "accountant") return null;
@@ -80,10 +80,10 @@ export const ClientInviteManager = () => {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h3 className="font-semibold text-lg flex items-center gap-2">
-            <Link2 className="h-5 w-5 text-primary" /> Inviter un client
+            <Link2 className="h-5 w-5 text-primary" /> {t("invite_title")}
           </h3>
           <p className="text-sm text-muted-foreground">
-            Générez un lien unique. Le client crée son compte et est automatiquement lié à votre cabinet.
+            {t("invite_subtitle")}
           </p>
         </div>
       </div>
@@ -91,22 +91,22 @@ export const ClientInviteManager = () => {
       <div className="flex flex-col sm:flex-row gap-2">
         <Input
           type="email"
-          placeholder="Email du client (optionnel)"
+          placeholder={t("invite_email_ph")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <Button onClick={generate} disabled={busy}>
           {busy ? <Loader2 className="h-4 w-4 me-2 animate-spin" /> : <Plus className="h-4 w-4 me-2" />}
-          Générer le lien
+          {t("invite_generate")}
         </Button>
       </div>
 
       <div className="border-t pt-4">
-        <h4 className="text-sm font-semibold mb-2">Invitations récentes</h4>
+        <h4 className="text-sm font-semibold mb-2">{t("invite_recent")}</h4>
         {loading ? (
-          <div className="text-sm text-muted-foreground">Chargement…</div>
+          <div className="text-sm text-muted-foreground">{t("invite_loading")}</div>
         ) : invites.length === 0 ? (
-          <div className="text-sm text-muted-foreground">Aucune invitation pour le moment.</div>
+          <div className="text-sm text-muted-foreground">{t("invite_empty")}</div>
         ) : (
           <ul className="space-y-2">
             {invites.map((inv) => {
@@ -116,14 +116,14 @@ export const ClientInviteManager = () => {
                 <li key={inv.id} className="flex items-center justify-between gap-3 p-2 rounded-md border bg-card/50">
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-medium truncate">
-                      {inv.email || "Sans email"}
+                      {inv.email || t("invite_no_email")}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">
                       /invite/{inv.token}
                     </div>
                   </div>
                   <Badge variant={status === "active" ? "default" : status === "used" ? "secondary" : "outline"}>
-                    {status === "active" ? "Active" : status === "used" ? "Utilisée" : "Expirée"}
+                    {status === "active" ? t("invite_status_active") : status === "used" ? t("invite_status_used") : t("invite_status_expired")}
                   </Badge>
                   <Button
                     size="sm"

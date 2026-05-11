@@ -652,6 +652,66 @@ const en = {
   // Client deadlines section title
   cli_deadlines_title: "Upcoming Deadlines",
   cli_deadlines_subtitle: "Tax & social deadlines for your tax regime.",
+
+  // Incoming Documents (unified feed)
+  incoming_all_clients: "Incoming Documents (all clients)",
+  incoming_subtitle_unified: "Unified feed of the latest files uploaded by your clients.",
+  incoming_uploaded_by: "Uploaded by",
+  incoming_load_error: "Loading error",
+  incoming_open_failed: "Unable to open file",
+  incoming_download_failed: "Unable to download file",
+
+  // Client invitations
+  invite_title: "Invite a client",
+  invite_subtitle: "Generate a unique link. The client creates their account and is automatically linked to your firm.",
+  invite_email_ph: "Client email (optional)",
+  invite_generate: "Generate link",
+  invite_recent: "Recent invitations",
+  invite_loading: "Loading…",
+  invite_empty: "No invitation yet.",
+  invite_no_email: "No email",
+  invite_status_active: "Active",
+  invite_status_used: "Used",
+  invite_status_expired: "Expired",
+  invite_copied: "Link copied",
+  invite_generated_copied: "Invite link generated and copied",
+  invite_link_expired_title: "Invite Link Expired",
+  invite_link_expired_msg: "This invitation link has already been used or has expired. Please ask your accountant for a new link.",
+  invite_back_login: "Back to sign in",
+
+  // Client files (per-client view)
+  cf_title: "Client files",
+  cf_subtitle_with: "Documents uploaded by {name}",
+  cf_subtitle_generic: "Documents uploaded by the client",
+  cf_refresh: "Refresh",
+  cf_no_account: "This client does not have a portal account yet.",
+  cf_empty: "No files uploaded yet.",
+
+  // Upload modal
+  upload_confirm_title: "Confirm upload",
+  upload_title_label: "Title *",
+  upload_title_ph: "e.g. Invoice March 2026",
+  upload_desc_label: "Description",
+  upload_desc_ph: "Notes or context (optional)",
+  upload_progress: "Uploading…",
+  upload_cancel: "Cancel",
+  upload_confirm: "Confirm",
+  upload_success: "{name} uploaded successfully",
+  upload_failed: "Upload failed",
+  upload_session_expired: "Session expired",
+  upload_file_type_default: "file",
+
+  // PCN picker
+  pcn_search_ph: "Code, French or Arabic name…",
+  pcn_no_results: "No account found",
+  pcn_accounts_label: "accounts — National Chart of Accounts",
+
+  // Auth (invite + accountant signup)
+  auth_invite_title: "Create your client account",
+  auth_acc_signup_title: "Accountant Space — Registration",
+  auth_invite_subtitle: "You have been invited. Complete your registration to access your portal.",
+  auth_invite_subtitle_by: "You have been invited by {name}. Complete your registration to access your portal.",
+  auth_acc_subtitle: "This page is reserved for accountants. Clients only access via invitation.",
 };
 
 const fr: typeof en = {
@@ -1290,6 +1350,60 @@ const fr: typeof en = {
 
   cli_deadlines_title: "Échéances à venir",
   cli_deadlines_subtitle: "Échéances fiscales & sociales selon votre régime.",
+
+  incoming_all_clients: "Documents reçus (tous clients)",
+  incoming_subtitle_unified: "Flux unifié des derniers fichiers téléversés par vos clients.",
+  incoming_uploaded_by: "Téléversé par",
+  incoming_load_error: "Erreur de chargement",
+  incoming_open_failed: "Impossible d'ouvrir le fichier",
+  incoming_download_failed: "Impossible de télécharger le fichier",
+
+  invite_title: "Inviter un client",
+  invite_subtitle: "Générez un lien unique. Le client crée son compte et est automatiquement lié à votre cabinet.",
+  invite_email_ph: "Email du client (optionnel)",
+  invite_generate: "Générer le lien",
+  invite_recent: "Invitations récentes",
+  invite_loading: "Chargement…",
+  invite_empty: "Aucune invitation pour le moment.",
+  invite_no_email: "Sans email",
+  invite_status_active: "Active",
+  invite_status_used: "Utilisée",
+  invite_status_expired: "Expirée",
+  invite_copied: "Lien copié",
+  invite_generated_copied: "Lien d'invitation généré et copié",
+  invite_link_expired_title: "Lien d'invitation expiré",
+  invite_link_expired_msg: "Ce lien d'invitation a déjà été utilisé ou a expiré. Veuillez demander un nouveau lien à votre comptable.",
+  invite_back_login: "Retour à la connexion",
+
+  cf_title: "Fichiers du client",
+  cf_subtitle_with: "Documents téléversés par {name}",
+  cf_subtitle_generic: "Documents téléversés par le client",
+  cf_refresh: "Actualiser",
+  cf_no_account: "Ce client n'a pas encore de compte lié au portail.",
+  cf_empty: "Aucun fichier téléversé pour le moment.",
+
+  upload_confirm_title: "Confirmer le téléversement",
+  upload_title_label: "Titre *",
+  upload_title_ph: "Ex: Facture Mars 2026",
+  upload_desc_label: "Description",
+  upload_desc_ph: "Notes ou contexte (facultatif)",
+  upload_progress: "Téléversement…",
+  upload_cancel: "Annuler",
+  upload_confirm: "Confirmer",
+  upload_success: "{name} téléversé avec succès",
+  upload_failed: "Échec du téléversement",
+  upload_session_expired: "Session expirée",
+  upload_file_type_default: "fichier",
+
+  pcn_search_ph: "Code, nom français ou arabe…",
+  pcn_no_results: "Aucun compte trouvé",
+  pcn_accounts_label: "comptes — Plan Comptable National",
+
+  auth_invite_title: "Créer votre compte client",
+  auth_acc_signup_title: "Espace Comptable — Inscription",
+  auth_invite_subtitle: "Vous avez été invité. Complétez votre inscription pour accéder à votre portail.",
+  auth_invite_subtitle_by: "Vous avez été invité par {name}. Complétez votre inscription pour accéder à votre portail.",
+  auth_acc_subtitle: "Cette page est réservée aux comptables. Les clients accèdent uniquement par invitation.",
 };
 
 const ar: typeof en = {
@@ -1928,6 +2042,60 @@ const ar: typeof en = {
 
   cli_deadlines_title: "المواعيد القادمة",
   cli_deadlines_subtitle: "المواعيد الجبائية والاجتماعية حسب نظامك الضريبي.",
+
+  incoming_all_clients: "الوثائق الواردة (كل الزبائن)",
+  incoming_subtitle_unified: "تدفق موحد لأحدث الملفات المرفوعة من زبائنك.",
+  incoming_uploaded_by: "رفعها",
+  incoming_load_error: "خطأ في التحميل",
+  incoming_open_failed: "تعذّر فتح الملف",
+  incoming_download_failed: "تعذّر تنزيل الملف",
+
+  invite_title: "دعوة زبون",
+  invite_subtitle: "أنشئ رابطًا فريدًا. ينشئ الزبون حسابه ويُربط تلقائيًا بمكتبك.",
+  invite_email_ph: "بريد الزبون (اختياري)",
+  invite_generate: "إنشاء الرابط",
+  invite_recent: "الدعوات الأخيرة",
+  invite_loading: "جارٍ التحميل…",
+  invite_empty: "لا توجد دعوات بعد.",
+  invite_no_email: "بدون بريد",
+  invite_status_active: "نشطة",
+  invite_status_used: "مستعملة",
+  invite_status_expired: "منتهية",
+  invite_copied: "تم نسخ الرابط",
+  invite_generated_copied: "تم إنشاء رابط الدعوة ونسخه",
+  invite_link_expired_title: "انتهت صلاحية رابط الدعوة",
+  invite_link_expired_msg: "تم استخدام هذا الرابط من قبل أو انتهت صلاحيته. الرجاء طلب رابط جديد من محاسبك.",
+  invite_back_login: "العودة إلى تسجيل الدخول",
+
+  cf_title: "ملفات الزبون",
+  cf_subtitle_with: "وثائق رفعها {name}",
+  cf_subtitle_generic: "وثائق رفعها الزبون",
+  cf_refresh: "تحديث",
+  cf_no_account: "ليس لهذا الزبون حساب مرتبط بالبوابة بعد.",
+  cf_empty: "لا توجد ملفات مرفوعة بعد.",
+
+  upload_confirm_title: "تأكيد الرفع",
+  upload_title_label: "العنوان *",
+  upload_title_ph: "مثال: فاتورة مارس 2026",
+  upload_desc_label: "الوصف",
+  upload_desc_ph: "ملاحظات أو سياق (اختياري)",
+  upload_progress: "جارٍ الرفع…",
+  upload_cancel: "إلغاء",
+  upload_confirm: "تأكيد",
+  upload_success: "تم رفع {name} بنجاح",
+  upload_failed: "فشل الرفع",
+  upload_session_expired: "انتهت الجلسة",
+  upload_file_type_default: "ملف",
+
+  pcn_search_ph: "الرمز، الاسم بالفرنسية أو العربية…",
+  pcn_no_results: "لم يتم العثور على حساب",
+  pcn_accounts_label: "حساب — المخطط المحاسبي الوطني",
+
+  auth_invite_title: "إنشاء حساب الزبون",
+  auth_acc_signup_title: "فضاء المحاسب — التسجيل",
+  auth_invite_subtitle: "لقد تمت دعوتك. أكمل تسجيلك للوصول إلى بوابتك.",
+  auth_invite_subtitle_by: "لقد تمت دعوتك من قبل {name}. أكمل تسجيلك للوصول إلى بوابتك.",
+  auth_acc_subtitle: "هذه الصفحة مخصصة للمحاسبين. يصل الزبائن عبر الدعوة فقط.",
 };
 
 export const translations = { en, fr, ar };

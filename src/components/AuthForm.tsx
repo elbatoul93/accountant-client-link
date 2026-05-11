@@ -120,11 +120,11 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
         <Card className="p-8 max-w-md text-center">
-          <h1 className="text-2xl font-bold text-primary mb-2">Invite Link Expired</h1>
+          <h1 className="text-2xl font-bold text-primary mb-2">{t("invite_link_expired_title")}</h1>
           <p className="text-sm text-muted-foreground mb-4">
-            Ce lien d'invitation a déjà été utilisé ou a expiré. Veuillez demander un nouveau lien à votre comptable.
+            {t("invite_link_expired_msg")}
           </p>
-          <Link to="/login" className="text-primary font-semibold hover:underline">Retour à la connexion</Link>
+          <Link to="/login" className="text-primary font-semibold hover:underline">{t("invite_back_login")}</Link>
         </Card>
       </div>
     );
@@ -154,15 +154,17 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
                 {mode === "login"
                   ? t("auth_welcome_back")
                   : isInvite
-                    ? "Créer votre compte client"
-                    : "Espace Comptable — Inscription"}
+                    ? t("auth_invite_title")
+                    : t("auth_acc_signup_title")}
               </h1>
               <p className="text-sm text-muted-foreground">
                 {mode === "login"
                   ? t("auth_login_subtitle")
                   : isInvite
-                    ? `Vous avez été invité${accountantName ? ` par ${accountantName}` : ""}. Complétez votre inscription pour accéder à votre portail.`
-                    : "Cette page est réservée aux comptables. Les clients accèdent uniquement par invitation."}
+                    ? (accountantName
+                        ? t("auth_invite_subtitle_by").replace("{name}", accountantName)
+                        : t("auth_invite_subtitle"))
+                    : t("auth_acc_subtitle")}
               </p>
             </div>
 
