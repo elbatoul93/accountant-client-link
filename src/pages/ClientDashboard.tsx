@@ -265,7 +265,47 @@ const ClientDashboard = () => {
 
   // Auth/role guard handled by ProtectedRoute wrapper — keep all hooks unconditional below.
 
-  const removeDoc = (i: number) => setDocs((prev) => prev.filter((_, idx) => idx !== i));
+  const removeDoc = useCallback(async (i: number) => {
+    const doc = docs[i];
+    if (!doc) return;
+
+    // Legacy local-only entry (no backend record) — just drop from UI.
+    if (!doc.id || !doc.file_path) {
+      setDocs((prev) => prev.filter((_, idx) => idx !== i));
+      return;
+    }
+
+    const { data: au } = await supabase.auth.getUser();
+    const uid = au.user?.id;
+    if (!uid) {
+      toast.error(t("upload_session_expired"));
+      return;
+    }
+
+    // 1) Delete the file from Supabase Storage first.
+    const { error: storageErr } = await supabase.storage
+      .from("client-uploads")
+      .remove([doc.file_path]);
+    if (storageErr) {
+      toast.error(storageErr.message);
+      return;
+    }
+
+    // 2) Then delete the metadata row. RLS already restricts deletes to user_id = auth.uid().
+    const { error: dbErr } = await supabase
+      .from("documents")
+      .delete()
+      .eq("id", doc.id)
+      .eq("user_id", uid);
+    if (dbErr) {
+      toast.error(dbErr.message);
+      return;
+    }
+
+    // 3) Only now drop from the UI.
+    setDocs((prev) => prev.filter((_, idx) => idx !== i));
+    toast.success(t("preview_download") /* reuse generic; replaced by translated label below */);
+  }, [docs, t]);
 
   const declsForApproval = mySharedDocs.filter((s) => s.type === "G50");
 
