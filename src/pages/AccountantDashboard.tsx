@@ -47,6 +47,7 @@ import {
 import { ClientStatusIcon } from "@/components/ClientStatusIcon";
 import { ClientInviteManager } from "@/components/ClientInviteManager";
 import { ClientFilesSection } from "@/components/ClientFilesSection";
+import { IncomingDocumentsLive } from "@/components/IncomingDocumentsLive";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
 
 const fmtDZD = (n: number) =>
@@ -327,11 +328,13 @@ const AccountantDashboard = () => {
             )}
 
             {view === "incoming" && (
-              <IncomingDocsView t={t} items={incoming}
-                onMarkProcessed={(id) => updateIncomingStatus(id, "processed")}
-                onDelete={(id) => deleteIncomingInvoice(id)}
-                onPreview={(it) => setPreviewIncoming(it)}
-              />
+              <>
+                <IncomingDocumentsLive t={t} />
+                <IncomingDocsView t={t} items={incoming}
+                  onMarkProcessed={(id) => updateIncomingStatus(id, "processed")}
+                  onDelete={(id) => deleteIncomingInvoice(id)}
+                  onPreview={(it) => setPreviewIncoming(it)}
+                /></>
             )}
 
             {view === "tracking" && (
