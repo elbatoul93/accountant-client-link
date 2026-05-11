@@ -75,6 +75,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
               name: name || email.split("@")[0],
               company: company || (role === "accountant" ? "Managementik & Co." : "My Business"),
               role,
+              user_type: role,
               ...(isInvite ? { invite_token: token } : {}),
             },
           },
@@ -105,9 +106,8 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
         toast.error(error.message.includes("Invalid") ? "Invalid email or password." : error.message);
         return;
       }
-      const uid = data.user!.id;
-      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
-      const userRole = roles?.some((r) => r.role === "accountant") ? "accountant" : "client";
+      const meta = (data.user?.user_metadata ?? {}) as { user_type?: string; role?: string };
+      const userRole = (meta.user_type ?? meta.role) === "accountant" ? "accountant" : "client";
       toast.success(t("toast_login_success"));
       navigate(userRole === "accountant" ? "/dashboard/accountant" : "/dashboard/client");
     } finally {
