@@ -70,28 +70,18 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
             setActiveId((prev) => (prev && list.some((c) => c.user_id === prev) ? prev : target));
           }
         } else {
-          // client → find own profile.linked_accountant_id then load that profile
-          const { data: me, error: meErr } = await supabase
-            .from("profiles")
-            .select("linked_accountant_id")
-            .eq("user_id", selfId)
-            .maybeSingle();
-          if (meErr) throw meErr;
-          const accId = me?.linked_accountant_id;
-          if (!accId) {
-            setContacts([]);
-          } else {
-            const { data: acc, error: accErr } = await supabase
-              .from("profiles")
-              .select("user_id,name,email,company")
-              .eq("user_id", accId)
-              .maybeSingle();
-            if (accErr) throw accErr;
-            if (acc) {
-              setContacts([acc as Contact]);
-              setActiveId(acc.user_id);
-            }
-          }
+          // Use the same RPC as the accountant view so chat never reads profiles directly.
+          const { data, error } = await supabase.rpc("get_linked_client_names");
+          if (error) throw error;
+          if (cancelled) return;
+          const list: Contact[] = (data || []).map((row: any) => ({
+            user_id: row.id,
+            name: row.full_name || "",
+            email: "",
+            company: null,
+          }));
+          setContacts(list);
+          setActiveId(list[0]?.user_id ?? null);
         }
       } catch (e: any) {
         toast.error(e.message || "Failed to load contacts");
