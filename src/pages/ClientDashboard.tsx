@@ -178,19 +178,19 @@ const ClientDashboard = () => {
       setDocs((prev) => [{
         name: pendingFile.name,
         size: `${(pendingFile.size / 1024).toFixed(0)} KB`,
-        date: new Date().toLocaleDateString("fr-DZ"),
+        date: new Date().toLocaleDateString(),
         status: "pending",
       }, ...prev]);
 
       setUploadProgress(100);
-      toast.success(`"${uploadTitle.trim()}" téléversé avec succès`);
+      toast.success(t("upload_success").replace("{name}", uploadTitle.trim()));
 
       // Close modal
       setPendingFile(null);
       setUploadTitle("");
       setUploadDescription("");
     } catch (e: any) {
-      toast.error(e?.message || "Échec du téléversement");
+      toast.error(e?.message || t("upload_failed"));
     } finally {
       setUploading(false);
       setUploadProgress(0);
