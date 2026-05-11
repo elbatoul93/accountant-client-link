@@ -553,7 +553,7 @@ const ClientDashboard = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <UploadCloud className="h-4 w-4" /> Confirmer le téléversement
+              <UploadCloud className="h-4 w-4" /> {t("upload_confirm_title")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -565,30 +565,30 @@ const ClientDashboard = () => {
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-sm truncate">{pendingFile.name}</div>
                   <div className="text-[11px] text-muted-foreground">
-                    {(pendingFile.size / 1024).toFixed(1)} KB · {pendingFile.type || "fichier"}
+                    {(pendingFile.size / 1024).toFixed(1)} KB · {pendingFile.type || t("upload_file_type_default")}
                   </div>
                 </div>
               </div>
             )}
 
             <div className="space-y-1.5">
-              <Label htmlFor="up-title">Titre *</Label>
+              <Label htmlFor="up-title">{t("upload_title_label")}</Label>
               <Input
                 id="up-title"
                 value={uploadTitle}
                 onChange={(e) => setUploadTitle(e.target.value)}
-                placeholder="Ex: Facture Mars 2026"
+                placeholder={t("upload_title_ph")}
                 disabled={uploading}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="up-desc">Description</Label>
+              <Label htmlFor="up-desc">{t("upload_desc_label")}</Label>
               <Textarea
                 id="up-desc"
                 value={uploadDescription}
                 onChange={(e) => setUploadDescription(e.target.value)}
-                placeholder="Notes ou contexte (facultatif)"
+                placeholder={t("upload_desc_ph")}
                 rows={3}
                 disabled={uploading}
               />
@@ -598,17 +598,17 @@ const ClientDashboard = () => {
               <div className="space-y-1.5">
                 <Progress value={uploadProgress} className="h-2" />
                 <div className="text-[11px] text-muted-foreground text-center">
-                  Téléversement… {uploadProgress}%
+                  {t("upload_progress")} {uploadProgress}%
                 </div>
               </div>
             )}
           </div>
           <DialogFooter className="gap-2">
             <Button variant="ghost" onClick={closeUploadModal} disabled={uploading}>
-              Annuler
+              {t("upload_cancel")}
             </Button>
             <Button variant="hero" onClick={confirmUpload} disabled={uploading || !uploadTitle.trim()}>
-              {uploading ? "Téléversement…" : "Confirmer"}
+              {uploading ? t("upload_progress") : t("upload_confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
