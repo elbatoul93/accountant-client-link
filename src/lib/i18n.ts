@@ -652,6 +652,66 @@ const en = {
   // Client deadlines section title
   cli_deadlines_title: "Upcoming Deadlines",
   cli_deadlines_subtitle: "Tax & social deadlines for your tax regime.",
+
+  // Incoming Documents (unified feed)
+  incoming_all_clients: "Incoming Documents (all clients)",
+  incoming_subtitle_unified: "Unified feed of the latest files uploaded by your clients.",
+  incoming_uploaded_by: "Uploaded by",
+  incoming_load_error: "Loading error",
+  incoming_open_failed: "Unable to open file",
+  incoming_download_failed: "Unable to download file",
+
+  // Client invitations
+  invite_title: "Invite a client",
+  invite_subtitle: "Generate a unique link. The client creates their account and is automatically linked to your firm.",
+  invite_email_ph: "Client email (optional)",
+  invite_generate: "Generate link",
+  invite_recent: "Recent invitations",
+  invite_loading: "Loading…",
+  invite_empty: "No invitation yet.",
+  invite_no_email: "No email",
+  invite_status_active: "Active",
+  invite_status_used: "Used",
+  invite_status_expired: "Expired",
+  invite_copied: "Link copied",
+  invite_generated_copied: "Invite link generated and copied",
+  invite_link_expired_title: "Invite Link Expired",
+  invite_link_expired_msg: "This invitation link has already been used or has expired. Please ask your accountant for a new link.",
+  invite_back_login: "Back to sign in",
+
+  // Client files (per-client view)
+  cf_title: "Client files",
+  cf_subtitle_with: "Documents uploaded by {name}",
+  cf_subtitle_generic: "Documents uploaded by the client",
+  cf_refresh: "Refresh",
+  cf_no_account: "This client does not have a portal account yet.",
+  cf_empty: "No files uploaded yet.",
+
+  // Upload modal
+  upload_confirm_title: "Confirm upload",
+  upload_title_label: "Title *",
+  upload_title_ph: "e.g. Invoice March 2026",
+  upload_desc_label: "Description",
+  upload_desc_ph: "Notes or context (optional)",
+  upload_progress: "Uploading…",
+  upload_cancel: "Cancel",
+  upload_confirm: "Confirm",
+  upload_success: "{name} uploaded successfully",
+  upload_failed: "Upload failed",
+  upload_session_expired: "Session expired",
+  upload_file_type_default: "file",
+
+  // PCN picker
+  pcn_search_ph: "Code, French or Arabic name…",
+  pcn_no_results: "No account found",
+  pcn_accounts_label: "accounts — National Chart of Accounts",
+
+  // Auth (invite + accountant signup)
+  auth_invite_title: "Create your client account",
+  auth_acc_signup_title: "Accountant Space — Registration",
+  auth_invite_subtitle: "You have been invited. Complete your registration to access your portal.",
+  auth_invite_subtitle_by: "You have been invited by {name}. Complete your registration to access your portal.",
+  auth_acc_subtitle: "This page is reserved for accountants. Clients only access via invitation.",
 };
 
 const fr: typeof en = {
