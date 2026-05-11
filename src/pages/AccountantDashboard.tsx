@@ -336,8 +336,6 @@ const AccountantDashboard = () => {
                   onPreview={(it) => setPreviewIncoming(it)}
                 /></>
             )}
-              />
-            )}
 
             {view === "tracking" && (
               <TrackingView t={t} clients={clients} activeId={trackingClientId} setActiveId={setTrackingClientId} />
