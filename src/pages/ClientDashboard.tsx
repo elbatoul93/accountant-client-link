@@ -59,7 +59,7 @@ const fmtDZD = (n: number) =>
 const STORAGE_KEY = "mgmtk_client_docs";
 
 const ClientDashboard = () => {
-  const { t, user, loading } = useApp();
+  const { t, user } = useApp();
   const [docs, setDocs] = useState<Doc[]>(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -233,13 +233,7 @@ const ClientDashboard = () => {
     return { myDecls: myD, myInvoices: myI, mySharedDocs: myS, totalDue: due, myRegime: regime, requiredTypes: required, vault: v, myEmpCount: empCount, myHasCacobatph: hasCaco };
   }, [user, docs, tick]);
 
-  if (loading) return (
-    <div className="min-h-screen grid place-items-center bg-background">
-      <div className="h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-    </div>
-  );
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== "client") return <Navigate to="/dashboard/accountant" replace />;
+  // Auth/role guard handled by ProtectedRoute wrapper — keep all hooks unconditional below.
 
   const removeDoc = (i: number) => setDocs((prev) => prev.filter((_, idx) => idx !== i));
 

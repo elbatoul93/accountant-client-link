@@ -11,6 +11,7 @@ import InviteSignup from "./pages/InviteSignup.tsx";
 import AccountantDashboard from "./pages/AccountantDashboard.tsx";
 import ClientDashboard from "./pages/ClientDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -26,8 +27,8 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/invite/:token" element={<InviteSignup />} />
-            <Route path="/dashboard/accountant" element={<AccountantDashboard />} />
-            <Route path="/dashboard/client" element={<ClientDashboard />} />
+            <Route path="/dashboard/accountant" element={<ProtectedRoute role="accountant"><AccountantDashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/client" element={<ProtectedRoute role="client"><ClientDashboard /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
