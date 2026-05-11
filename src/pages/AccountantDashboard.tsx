@@ -232,7 +232,7 @@ const AccountantDashboard = () => {
     {
       label: t("nav_group_documents"),
       items: [
-        { key: "incoming", label: t("side_incoming"), icon: InboxIcon, count: incoming.filter((i) => i.status === "pending").length },
+        { key: "incoming", label: t("side_incoming"), icon: InboxIcon, count: incomingLiveCount },
         { key: "tracking", label: t("side_tracking"), icon: ListChecks },
         { key: "vault", label: t("side_vault"), icon: Archive, count: vault.length },
         { key: "clients", label: t("side_clients"), icon: Users, count: clients.length },
