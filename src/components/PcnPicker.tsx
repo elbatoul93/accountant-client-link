@@ -21,6 +21,7 @@ interface Props {
  * any code (validated against the catalog) and a dropdown filter.
  */
 export const PcnPicker = ({ value, onChange, classes, placeholder, className }: Props) => {
+  const { t } = useApp();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
 
