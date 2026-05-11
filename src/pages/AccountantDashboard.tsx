@@ -1814,7 +1814,7 @@ const G50GeneratorDialog = ({
     const declId = crypto.randomUUID();
     const decl: Decl = {
       id: declId, clientId: c.id, clientName: c.name,
-      type: "G50", amount: Math.round(total), due: `${period}-20`, status: validateAndLock ? "filed" : "upcoming",
+      type: "G50", amount: Math.round(total), due: `${period}-20`, status: "filed",
     };
     const shared: SharedDoc = {
       id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
@@ -1822,13 +1822,11 @@ const G50GeneratorDialog = ({
       label: `G50 ${period} — ${fmtDZD(total)}`,
       date: new Date().toLocaleDateString("fr-DZ"),
       payload: JSON.stringify({ nif: c.taxId, bp: c.bp, caHt, salaries, benefice, rTap, rTva, rIrg, rIbs, tap, tva, irg, ibs, total, period }),
-      workflow: validateAndLock ? "filed" : "draft",
+      workflow: "filed",
     };
-    const lockOpts = validateAndLock
-      ? { clientId: c.id, period, reference: declId }
-      : null;
+    const lockOpts = { clientId: c.id, period, reference: declId };
     onGenerate(decl, shared, lockOpts);
-    toast.success(validateAndLock ? t("eng_g50_filed_locked") : "G50 généré et envoyé au client");
+    toast.success(t("eng_g50_filed_locked"));
     setClientId(""); setCaHt(""); setSalaries(""); setBenefice("");
   };
   return (
