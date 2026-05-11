@@ -328,10 +328,14 @@ const AccountantDashboard = () => {
             )}
 
             {view === "incoming" && (
-              <IncomingDocsView t={t} items={incoming}
-                onMarkProcessed={(id) => updateIncomingStatus(id, "processed")}
-                onDelete={(id) => deleteIncomingInvoice(id)}
-                onPreview={(it) => setPreviewIncoming(it)}
+              <>
+                <IncomingDocumentsLive t={t} />
+                <IncomingDocsView t={t} items={incoming}
+                  onMarkProcessed={(id) => updateIncomingStatus(id, "processed")}
+                  onDelete={(id) => deleteIncomingInvoice(id)}
+                  onPreview={(it) => setPreviewIncoming(it)}
+                /></>
+            )}
               />
             )}
 
