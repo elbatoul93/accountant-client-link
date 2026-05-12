@@ -136,6 +136,35 @@ const AccountantDashboard = () => {
   const [trackingClientId, setTrackingClientId] = useState<string>("");
   const [viewG50Client, setViewG50Client] = useState<Client | null>(null);
   const [chatPreselectId, setChatPreselectId] = useState<string | null>(null);
+  const [dbLinkedClients, setDbLinkedClients] = useState<{ id: string; full_name: string }[]>([]);
+
+  // Fetch live linked clients from DB (used by G50 generator) — avoids stale localStorage.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.rpc("get_linked_client_names");
+      if (!cancelled && !error && data) setDbLinkedClients(data);
+    })();
+  }, [user?.email]);
+
+  // Merge DB-linked clients with local client metadata (NIF/BP/etc.) by name match.
+  const g50Clients = useMemo<Client[]>(() => {
+    if (dbLinkedClients.length === 0) return clients;
+    const byName = new Map(clients.map((c) => [c.name.trim().toLowerCase(), c]));
+    const merged: Client[] = dbLinkedClients.map((d) => {
+      const local = byName.get(d.full_name.trim().toLowerCase());
+      if (local) return { ...local, id: d.id };
+      return {
+        id: d.id, name: d.full_name, taxId: "", contact: "", status: "active",
+      };
+    });
+    // Include local-only clients (not yet in DB) so accountants can still pick them.
+    const dbNames = new Set(dbLinkedClients.map((d) => d.full_name.trim().toLowerCase()));
+    for (const c of clients) {
+      if (!dbNames.has(c.name.trim().toLowerCase())) merged.push(c);
+    }
+    return merged;
+  }, [dbLinkedClients, clients]);
 
   useEffect(() => { localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients)); }, [clients]);
   useEffect(() => { localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices)); }, [invoices]);
