@@ -1908,6 +1908,17 @@ const G50GeneratorDialog = ({
               <div className="space-y-1.5"><Label className="text-xs">Chiffre d'affaires HT (DA)</Label><Input type="number" value={caHt} onChange={(e) => setCaHt(e.target.value)} placeholder="1000000" /></div>
               <div className="space-y-1.5"><Label className="text-xs">Salaires bruts (DA)</Label><Input type="number" value={salaries} onChange={(e) => setSalaries(e.target.value)} placeholder="200000" /></div>
               <div className="space-y-1.5"><Label className="text-xs">Bénéfice imposable (DA)</Label><Input type="number" value={benefice} onChange={(e) => setBenefice(e.target.value)} placeholder="150000" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">CA HT Imposable (TVA) (DA)</Label><Input type="number" value={caHtImposable} onChange={(e) => setCaHtImposable(e.target.value)} placeholder="CA imposable" /></div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-xs font-semibold text-primary uppercase">Identification G50</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Direction</Label><Input value={direction} onChange={(e) => setDirection(e.target.value)} placeholder="Direction des Impôts" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Commune</Label><Input value={commune} onChange={(e) => setCommune(e.target.value)} placeholder="Commune" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Trimestre (optionnel)</Label><Input type="number" min={1} max={4} value={trimestre} onChange={(e) => setTrimestre(e.target.value)} placeholder="1-4" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">BP (optionnel)</Label><Input value={bpInput} onChange={(e) => setBpInput(e.target.value)} placeholder="Boîte postale" /></div>
             </div>
           </div>
 
