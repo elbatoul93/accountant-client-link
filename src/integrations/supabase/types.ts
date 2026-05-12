@@ -121,8 +121,11 @@ export type Database = {
       }
       profiles: {
         Row: {
+          bp: string | null
+          commune: string | null
           company: string | null
           created_at: string
+          direction: string | null
           email: string
           id: string
           linked_accountant_id: string | null
@@ -132,8 +135,11 @@ export type Database = {
           user_type: Database["public"]["Enums"]["app_role"]
         }
         Insert: {
+          bp?: string | null
+          commune?: string | null
           company?: string | null
           created_at?: string
+          direction?: string | null
           email?: string
           id?: string
           linked_accountant_id?: string | null
@@ -143,8 +149,11 @@ export type Database = {
           user_type?: Database["public"]["Enums"]["app_role"]
         }
         Update: {
+          bp?: string | null
+          commune?: string | null
           company?: string | null
           created_at?: string
+          direction?: string | null
           email?: string
           id?: string
           linked_accountant_id?: string | null
@@ -184,6 +193,9 @@ export type Database = {
       get_linked_client_names: {
         Args: never
         Returns: {
+          bp: string
+          commune: string
+          direction: string
           full_name: string
           id: string
         }[]

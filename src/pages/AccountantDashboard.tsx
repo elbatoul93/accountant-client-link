@@ -61,6 +61,7 @@ interface Client {
   taxId: string; bp?: string; nis?: string; rc?: string;
   cnasNo?: string; casnosNo?: string; hasCacobatph?: boolean;
   email?: string; phone?: string; address?: string; legalForm?: string; activity?: string;
+  direction?: string; commune?: string;
   taxRegime?: TaxRegime;
   contact: string; // legacy email used by client portal matching
   status: "active" | "review";
@@ -136,35 +137,62 @@ const AccountantDashboard = () => {
   const [trackingClientId, setTrackingClientId] = useState<string>("");
   const [viewG50Client, setViewG50Client] = useState<Client | null>(null);
   const [chatPreselectId, setChatPreselectId] = useState<string | null>(null);
-  const [dbLinkedClients, setDbLinkedClients] = useState<{ id: string; full_name: string }[]>([]);
+  const [dbLinkedClients, setDbLinkedClients] = useState<{ id: string; full_name: string; direction: string | null; commune: string | null; bp: string | null }[]>([]);
 
   // Fetch live linked clients from DB (used by G50 generator) — avoids stale localStorage.
+  const refetchLinkedClients = async () => {
+    const { data, error } = await supabase.rpc("get_linked_client_names");
+    if (!error && data) setDbLinkedClients(data as typeof dbLinkedClients);
+  };
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase.rpc("get_linked_client_names");
-      if (!cancelled && !error && data) setDbLinkedClients(data);
+      if (!cancelled && !error && data) setDbLinkedClients(data as typeof dbLinkedClients);
     })();
+    return () => { cancelled = true; };
   }, [user?.email]);
 
-  // Merge DB-linked clients with local client metadata (NIF/BP/etc.) by name match.
+  // Merge DB-linked clients with local client metadata by name match.
+  // Direction / Commune / BP are sourced from the DB profile (authoritative).
   const g50Clients = useMemo<Client[]>(() => {
     if (dbLinkedClients.length === 0) return clients;
     const byName = new Map(clients.map((c) => [c.name.trim().toLowerCase(), c]));
     const merged: Client[] = dbLinkedClients.map((d) => {
       const local = byName.get(d.full_name.trim().toLowerCase());
-      if (local) return { ...local, id: d.id };
+      const base: Client = local
+        ? { ...local, id: d.id }
+        : { id: d.id, name: d.full_name, taxId: "", contact: "", status: "active" };
       return {
-        id: d.id, name: d.full_name, taxId: "", contact: "", status: "active",
+        ...base,
+        direction: d.direction ?? base.direction,
+        commune: d.commune ?? base.commune,
+        bp: d.bp ?? base.bp,
       };
     });
-    // Include local-only clients (not yet in DB) so accountants can still pick them.
     const dbNames = new Set(dbLinkedClients.map((d) => d.full_name.trim().toLowerCase()));
     for (const c of clients) {
       if (!dbNames.has(c.name.trim().toLowerCase())) merged.push(c);
     }
     return merged;
   }, [dbLinkedClients, clients]);
+
+  // Persist Direction / Commune / BP to the linked client's profile (if matched in DB).
+  const persistClientProfileFields = async (c: Client) => {
+    const match = dbLinkedClients.find(
+      (d) => d.full_name.trim().toLowerCase() === c.name.trim().toLowerCase(),
+    );
+    if (!match) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        direction: c.direction ?? null,
+        commune: c.commune ?? null,
+        bp: c.bp ?? null,
+      })
+      .eq("user_id", match.id);
+    if (!error) await refetchLinkedClients();
+  };
 
   useEffect(() => { localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients)); }, [clients]);
   useEffect(() => { localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices)); }, [invoices]);
@@ -631,7 +659,11 @@ const AccountantDashboard = () => {
 
       {/* Global dialogs */}
       <AddClientDialog open={openAdd} onOpenChange={setOpenAdd}
-        onAdd={(c) => { setClients((p) => [c, ...p]); setOpenAdd(false); }} t={t} />
+        onAdd={(c) => {
+          setClients((p) => [c, ...p]);
+          setOpenAdd(false);
+          void persistClientProfileFields(c);
+        }} t={t} />
 
       {/* Secure edit: password lock then edit form */}
       <LockDialog
@@ -649,6 +681,7 @@ const AccountantDashboard = () => {
         onUpdate={(updated) => {
           setClients((p) => p.map((x) => (x.id === updated.id ? updated : x)));
           setEditingClient(null);
+          void persistClientProfileFields(updated);
         }}
         t={t}
       />
@@ -1246,6 +1279,8 @@ const AddClientDialog = ({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [direction, setDirection] = useState("");
+  const [commune, setCommune] = useState("");
 
   const reset = () => {
     setName(""); setCompany(""); setLegalForm(""); setActivity("");
@@ -1253,6 +1288,7 @@ const AddClientDialog = ({
     setCnasNo(""); setCasnosNo(""); setHasCacobatph(false);
     setTaxRegime("");
     setEmail(""); setPhone(""); setAddress("");
+    setDirection(""); setCommune("");
   };
 
   // Seed form when entering edit mode (or when the target client changes).
@@ -1273,6 +1309,8 @@ const AddClientDialog = ({
       setEmail(initial.email || "");
       setPhone(initial.phone || "");
       setAddress(initial.address || "");
+      setDirection(initial.direction || "");
+      setCommune(initial.commune || "");
     }
   }, [mode, initial, open]);
 
@@ -1289,6 +1327,7 @@ const AddClientDialog = ({
       cnasNo: cnasNo.trim() || undefined, casnosNo: casnosNo.trim() || undefined, hasCacobatph,
       taxRegime: taxRegime as TaxRegime,
       email: email.trim() || undefined, phone: phone.trim() || undefined, address: address.trim() || undefined,
+      direction: direction.trim() || undefined, commune: commune.trim() || undefined,
       contact: email.trim() || (initial?.contact ?? ""),
       status: initial?.status ?? "active",
     };
@@ -1345,6 +1384,8 @@ const AddClientDialog = ({
               <div className="grid sm:grid-cols-2 gap-3">
                 <Field label={t("client_nif") + " *"}><Input value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="000016001234567" className="font-mono" /></Field>
                 <Field label={t("client_bp")}><Input value={bp} onChange={(e) => setBp(e.target.value)} placeholder="16xxxxxxxx" className="font-mono" /></Field>
+                <Field label="Direction"><Input value={direction} onChange={(e) => setDirection(e.target.value)} placeholder="Direction des Impôts" /></Field>
+                <Field label="Commune"><Input value={commune} onChange={(e) => setCommune(e.target.value)} placeholder="Commune" /></Field>
                 <Field label={t("client_tax_regime") + " *"} full>
                   <Select value={taxRegime} onValueChange={(v) => setTaxRegime(v as TaxRegime)}>
                     <SelectTrigger><SelectValue placeholder={t("client_tax_regime_placeholder")} /></SelectTrigger>
@@ -1806,10 +1847,7 @@ const G50GeneratorDialog = ({
   const [rTva, setRTva] = useState("19");
   const [rIrg, setRIrg] = useState("10");
   const [rIbs, setRIbs] = useState("23");
-  const [direction, setDirection] = useState("");
-  const [commune, setCommune] = useState("");
   const [trimestre, setTrimestre] = useState("");
-  const [bpInput, setBpInput] = useState("");
   const [caHtImposable, setCaHtImposable] = useState("");
   const [synced, setSynced] = useState(false);
 
@@ -1856,10 +1894,10 @@ const G50GeneratorDialog = ({
         month: mm,
         trimestre: trimestre || undefined,
         year: yyyy,
-        direction,
-        commune,
+        direction: c.direction,
+        commune: c.commune,
         nif: c.taxId,
-        bp: bpInput || c.bp,
+        bp: c.bp,
         caHtTotal: Number(caHt || 0),
         caHtImposable: Number(caHtImposable || caHt || 0),
         fileName: `G50_${c.taxId || "NIF"}_${yyyy}_${mm}.xlsx`,
@@ -1883,7 +1921,7 @@ const G50GeneratorDialog = ({
     const lockOpts = { clientId: c.id, period, reference: declId };
     onGenerate(decl, shared, lockOpts);
     toast.success(t("eng_g50_filed_locked"));
-    setClientId(""); setCaHt(""); setSalaries(""); setBenefice(""); setCaHtImposable(""); setDirection(""); setCommune(""); setTrimestre(""); setBpInput("");
+    setClientId(""); setCaHt(""); setSalaries(""); setBenefice(""); setCaHtImposable(""); setTrimestre("");
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -1912,7 +1950,7 @@ const G50GeneratorDialog = ({
             const sel = clients.find((c) => c.id === clientId);
             if (!sel) return null;
             return (
-              <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
                 <div>
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("client_nif")}</div>
                   <div className="font-mono text-sm font-semibold">{sel.taxId || "—"}</div>
@@ -1920,6 +1958,14 @@ const G50GeneratorDialog = ({
                 <div>
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("client_bp")}</div>
                   <div className="font-mono text-sm font-semibold">{sel.bp || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Direction</div>
+                  <div className="text-sm font-semibold">{sel.direction || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Commune</div>
+                  <div className="text-sm font-semibold">{sel.commune || "—"}</div>
                 </div>
               </div>
             );
@@ -1944,10 +1990,7 @@ const G50GeneratorDialog = ({
           <div className="space-y-2">
             <div className="text-xs font-semibold text-primary uppercase">Identification G50</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label className="text-xs">Direction</Label><Input value={direction} onChange={(e) => setDirection(e.target.value)} placeholder="Direction des Impôts" /></div>
-              <div className="space-y-1.5"><Label className="text-xs">Commune</Label><Input value={commune} onChange={(e) => setCommune(e.target.value)} placeholder="Commune" /></div>
               <div className="space-y-1.5"><Label className="text-xs">Trimestre (optionnel)</Label><Input type="number" min={1} max={4} value={trimestre} onChange={(e) => setTrimestre(e.target.value)} placeholder="1-4" /></div>
-              <div className="space-y-1.5"><Label className="text-xs">BP (optionnel)</Label><Input value={bpInput} onChange={(e) => setBpInput(e.target.value)} placeholder="Boîte postale" /></div>
             </div>
           </div>
 
