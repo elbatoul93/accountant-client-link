@@ -642,7 +642,11 @@ const AccountantDashboard = () => {
 
       {/* Global dialogs */}
       <AddClientDialog open={openAdd} onOpenChange={setOpenAdd}
-        onAdd={(c) => { setClients((p) => [c, ...p]); setOpenAdd(false); }} t={t} />
+        onAdd={(c) => {
+          setClients((p) => [c, ...p]);
+          setOpenAdd(false);
+          void persistClientProfileFields(c);
+        }} t={t} />
 
       {/* Secure edit: password lock then edit form */}
       <LockDialog
@@ -660,6 +664,7 @@ const AccountantDashboard = () => {
         onUpdate={(updated) => {
           setClients((p) => p.map((x) => (x.id === updated.id ? updated : x)));
           setEditingClient(null);
+          void persistClientProfileFields(updated);
         }}
         t={t}
       />
