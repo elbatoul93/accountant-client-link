@@ -1827,10 +1827,10 @@ const G50GeneratorDialog = ({
         month: mm,
         trimestre: trimestre || undefined,
         year: yyyy,
-        direction: bpInput ? bpInput : direction, // keep direction
+        direction,
         commune,
         nif: c.taxId,
-        bp: c.bp || bpInput,
+        bp: bpInput || c.bp,
         caHtTotal: Number(caHt || 0),
         caHtImposable: Number(caHtImposable || caHt || 0),
         fileName: `G50_${c.taxId || "NIF"}_${yyyy}_${mm}.xlsx`,
