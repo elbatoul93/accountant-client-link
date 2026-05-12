@@ -1384,6 +1384,8 @@ const AddClientDialog = ({
               <div className="grid sm:grid-cols-2 gap-3">
                 <Field label={t("client_nif") + " *"}><Input value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="000016001234567" className="font-mono" /></Field>
                 <Field label={t("client_bp")}><Input value={bp} onChange={(e) => setBp(e.target.value)} placeholder="16xxxxxxxx" className="font-mono" /></Field>
+                <Field label="Direction"><Input value={direction} onChange={(e) => setDirection(e.target.value)} placeholder="Direction des Impôts" /></Field>
+                <Field label="Commune"><Input value={commune} onChange={(e) => setCommune(e.target.value)} placeholder="Commune" /></Field>
                 <Field label={t("client_tax_regime") + " *"} full>
                   <Select value={taxRegime} onValueChange={(v) => setTaxRegime(v as TaxRegime)}>
                     <SelectTrigger><SelectValue placeholder={t("client_tax_regime_placeholder")} /></SelectTrigger>
