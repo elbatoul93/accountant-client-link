@@ -1847,10 +1847,7 @@ const G50GeneratorDialog = ({
   const [rTva, setRTva] = useState("19");
   const [rIrg, setRIrg] = useState("10");
   const [rIbs, setRIbs] = useState("23");
-  const [direction, setDirection] = useState("");
-  const [commune, setCommune] = useState("");
   const [trimestre, setTrimestre] = useState("");
-  const [bpInput, setBpInput] = useState("");
   const [caHtImposable, setCaHtImposable] = useState("");
   const [synced, setSynced] = useState(false);
 
