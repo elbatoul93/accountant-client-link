@@ -661,6 +661,7 @@ const AccountantDashboard = () => {
       <G50GeneratorDialog
         open={openTool === "g50"} onOpenChange={(o) => !o && setOpenTool(null)}
         clients={g50Clients} t={t}
+        getAggregates={(cid) => aggregateForG50(cid, bills, employees)}
         getLiveG50={(cid, period) => computeG50FromJournal(journal, { clientId: cid, period })}
         onGenerate={(d, shared, lockOpts) => {
           setDecls((p) => [d, ...p]);
