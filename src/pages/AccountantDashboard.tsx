@@ -49,6 +49,7 @@ import { ClientInviteManager } from "@/components/ClientInviteManager";
 import { ClientFilesSection } from "@/components/ClientFilesSection";
 import { IncomingDocumentsLive } from "@/components/IncomingDocumentsLive";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
+import { generateG50Xlsx } from "@/lib/g50Export";
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
@@ -1776,6 +1777,11 @@ const G50GeneratorDialog = ({
   const [rTva, setRTva] = useState("19");
   const [rIrg, setRIrg] = useState("10");
   const [rIbs, setRIbs] = useState("23");
+  const [direction, setDirection] = useState("");
+  const [commune, setCommune] = useState("");
+  const [trimestre, setTrimestre] = useState("");
+  const [bpInput, setBpInput] = useState("");
+  const [caHtImposable, setCaHtImposable] = useState("");
   const [synced, setSynced] = useState(false);
 
   // Auto-fill from live journal aggregates when client/period changes
@@ -1808,10 +1814,31 @@ const G50GeneratorDialog = ({
   const ibs = (Number(benefice || 0) * Number(rIbs || 0)) / 100;
   const total = tap + tva + irg + ibs;
 
-  const submit = () => {
+  const submit = async () => {
     const c = clients.find((x) => x.id === clientId);
     if (!c || !period || total <= 0) { toast.error("Champs requis"); return; }
     const declId = crypto.randomUUID();
+    const [yyyy, mm] = period.split("-");
+    try {
+      await generateG50Xlsx({
+        companyName: c.company || c.name,
+        activity: c.activity,
+        address: c.address,
+        month: mm,
+        trimestre: trimestre || undefined,
+        year: yyyy,
+        direction,
+        commune,
+        nif: c.taxId,
+        bp: bpInput || c.bp,
+        caHtTotal: Number(caHt || 0),
+        caHtImposable: Number(caHtImposable || caHt || 0),
+        fileName: `G50_${c.taxId || "NIF"}_${yyyy}_${mm}.xlsx`,
+      });
+    } catch (e) {
+      console.error(e);
+      toast.error("Export G50 échoué");
+    }
     const decl: Decl = {
       id: declId, clientId: c.id, clientName: c.name,
       type: "G50", amount: Math.round(total), due: `${period}-20`, status: "filed",
@@ -1827,7 +1854,7 @@ const G50GeneratorDialog = ({
     const lockOpts = { clientId: c.id, period, reference: declId };
     onGenerate(decl, shared, lockOpts);
     toast.success(t("eng_g50_filed_locked"));
-    setClientId(""); setCaHt(""); setSalaries(""); setBenefice("");
+    setClientId(""); setCaHt(""); setSalaries(""); setBenefice(""); setCaHtImposable(""); setDirection(""); setCommune(""); setTrimestre(""); setBpInput("");
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -1881,6 +1908,17 @@ const G50GeneratorDialog = ({
               <div className="space-y-1.5"><Label className="text-xs">Chiffre d'affaires HT (DA)</Label><Input type="number" value={caHt} onChange={(e) => setCaHt(e.target.value)} placeholder="1000000" /></div>
               <div className="space-y-1.5"><Label className="text-xs">Salaires bruts (DA)</Label><Input type="number" value={salaries} onChange={(e) => setSalaries(e.target.value)} placeholder="200000" /></div>
               <div className="space-y-1.5"><Label className="text-xs">Bénéfice imposable (DA)</Label><Input type="number" value={benefice} onChange={(e) => setBenefice(e.target.value)} placeholder="150000" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">CA HT Imposable (TVA) (DA)</Label><Input type="number" value={caHtImposable} onChange={(e) => setCaHtImposable(e.target.value)} placeholder="CA imposable" /></div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-xs font-semibold text-primary uppercase">Identification G50</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs">Direction</Label><Input value={direction} onChange={(e) => setDirection(e.target.value)} placeholder="Direction des Impôts" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Commune</Label><Input value={commune} onChange={(e) => setCommune(e.target.value)} placeholder="Commune" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Trimestre (optionnel)</Label><Input type="number" min={1} max={4} value={trimestre} onChange={(e) => setTrimestre(e.target.value)} placeholder="1-4" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">BP (optionnel)</Label><Input value={bpInput} onChange={(e) => setBpInput(e.target.value)} placeholder="Boîte postale" /></div>
             </div>
           </div>
 
