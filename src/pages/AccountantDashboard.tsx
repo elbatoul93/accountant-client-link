@@ -137,29 +137,39 @@ const AccountantDashboard = () => {
   const [trackingClientId, setTrackingClientId] = useState<string>("");
   const [viewG50Client, setViewG50Client] = useState<Client | null>(null);
   const [chatPreselectId, setChatPreselectId] = useState<string | null>(null);
-  const [dbLinkedClients, setDbLinkedClients] = useState<{ id: string; full_name: string }[]>([]);
+  const [dbLinkedClients, setDbLinkedClients] = useState<{ id: string; full_name: string; direction: string | null; commune: string | null; bp: string | null }[]>([]);
 
   // Fetch live linked clients from DB (used by G50 generator) — avoids stale localStorage.
+  const refetchLinkedClients = async () => {
+    const { data, error } = await supabase.rpc("get_linked_client_names");
+    if (!error && data) setDbLinkedClients(data as typeof dbLinkedClients);
+  };
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase.rpc("get_linked_client_names");
-      if (!cancelled && !error && data) setDbLinkedClients(data);
+      if (!cancelled && !error && data) setDbLinkedClients(data as typeof dbLinkedClients);
     })();
+    return () => { cancelled = true; };
   }, [user?.email]);
 
-  // Merge DB-linked clients with local client metadata (NIF/BP/etc.) by name match.
+  // Merge DB-linked clients with local client metadata by name match.
+  // Direction / Commune / BP are sourced from the DB profile (authoritative).
   const g50Clients = useMemo<Client[]>(() => {
     if (dbLinkedClients.length === 0) return clients;
     const byName = new Map(clients.map((c) => [c.name.trim().toLowerCase(), c]));
     const merged: Client[] = dbLinkedClients.map((d) => {
       const local = byName.get(d.full_name.trim().toLowerCase());
-      if (local) return { ...local, id: d.id };
+      const base: Client = local
+        ? { ...local, id: d.id }
+        : { id: d.id, name: d.full_name, taxId: "", contact: "", status: "active" };
       return {
-        id: d.id, name: d.full_name, taxId: "", contact: "", status: "active",
+        ...base,
+        direction: d.direction ?? base.direction,
+        commune: d.commune ?? base.commune,
+        bp: d.bp ?? base.bp,
       };
     });
-    // Include local-only clients (not yet in DB) so accountants can still pick them.
     const dbNames = new Set(dbLinkedClients.map((d) => d.full_name.trim().toLowerCase()));
     for (const c of clients) {
       if (!dbNames.has(c.name.trim().toLowerCase())) merged.push(c);
