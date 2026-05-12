@@ -49,6 +49,7 @@ import { ClientInviteManager } from "@/components/ClientInviteManager";
 import { ClientFilesSection } from "@/components/ClientFilesSection";
 import { IncomingDocumentsLive } from "@/components/IncomingDocumentsLive";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
+import { generateG50Xlsx } from "@/lib/g50Export";
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
@@ -1776,6 +1777,11 @@ const G50GeneratorDialog = ({
   const [rTva, setRTva] = useState("19");
   const [rIrg, setRIrg] = useState("10");
   const [rIbs, setRIbs] = useState("23");
+  const [direction, setDirection] = useState("");
+  const [commune, setCommune] = useState("");
+  const [trimestre, setTrimestre] = useState("");
+  const [bpInput, setBpInput] = useState("");
+  const [caHtImposable, setCaHtImposable] = useState("");
   const [synced, setSynced] = useState(false);
 
   // Auto-fill from live journal aggregates when client/period changes
@@ -1808,10 +1814,31 @@ const G50GeneratorDialog = ({
   const ibs = (Number(benefice || 0) * Number(rIbs || 0)) / 100;
   const total = tap + tva + irg + ibs;
 
-  const submit = () => {
+  const submit = async () => {
     const c = clients.find((x) => x.id === clientId);
     if (!c || !period || total <= 0) { toast.error("Champs requis"); return; }
     const declId = crypto.randomUUID();
+    const [yyyy, mm] = period.split("-");
+    try {
+      await generateG50Xlsx({
+        companyName: c.company || c.name,
+        activity: c.activity,
+        address: c.address,
+        month: mm,
+        trimestre: trimestre || undefined,
+        year: yyyy,
+        direction: bpInput ? bpInput : direction, // keep direction
+        commune,
+        nif: c.taxId,
+        bp: c.bp || bpInput,
+        caHtTotal: Number(caHt || 0),
+        caHtImposable: Number(caHtImposable || caHt || 0),
+        fileName: `G50_${c.taxId || "NIF"}_${yyyy}_${mm}.xlsx`,
+      });
+    } catch (e) {
+      console.error(e);
+      toast.error("Export G50 échoué");
+    }
     const decl: Decl = {
       id: declId, clientId: c.id, clientName: c.name,
       type: "G50", amount: Math.round(total), due: `${period}-20`, status: "filed",
