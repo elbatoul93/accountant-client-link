@@ -545,7 +545,7 @@ const AccountantDashboard = () => {
                   <ToolCard icon={BookOpen} title={t("tools_fs_title")} subtitle={t("tools_fs_subtitle")}
                     cta={t("tools_open")} onClick={() => setOpenTool("fs")} disabled={clients.length === 0} />
                   <ToolCard icon={Calculator} title={t("tools_g50_title")} subtitle={t("tools_g50_subtitle")}
-                    cta={t("tools_open")} onClick={() => setOpenTool("g50")} disabled={clients.length === 0} />
+                    cta={t("tools_open")} onClick={() => setOpenTool("g50")} />
                   <ToolCard icon={FileDown} title={t("tools_extract_title")} subtitle={t("tools_extract_subtitle")}
                     cta={t("acc_extract")} onClick={() => clients[0] && setObligationsClient(clients[0])}
                     disabled={clients.length === 0} />
