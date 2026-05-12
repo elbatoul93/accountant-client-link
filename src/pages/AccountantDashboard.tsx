@@ -1854,7 +1854,7 @@ const G50GeneratorDialog = ({
     const lockOpts = { clientId: c.id, period, reference: declId };
     onGenerate(decl, shared, lockOpts);
     toast.success(t("eng_g50_filed_locked"));
-    setClientId(""); setCaHt(""); setSalaries(""); setBenefice("");
+    setClientId(""); setCaHt(""); setSalaries(""); setBenefice(""); setCaHtImposable(""); setDirection(""); setCommune(""); setTrimestre(""); setBpInput("");
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
