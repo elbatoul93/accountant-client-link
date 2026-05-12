@@ -61,6 +61,7 @@ interface Client {
   taxId: string; bp?: string; nis?: string; rc?: string;
   cnasNo?: string; casnosNo?: string; hasCacobatph?: boolean;
   email?: string; phone?: string; address?: string; legalForm?: string; activity?: string;
+  direction?: string; commune?: string;
   taxRegime?: TaxRegime;
   contact: string; // legacy email used by client portal matching
   status: "active" | "review";
