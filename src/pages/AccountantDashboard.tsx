@@ -177,6 +177,23 @@ const AccountantDashboard = () => {
     return merged;
   }, [dbLinkedClients, clients]);
 
+  // Persist Direction / Commune / BP to the linked client's profile (if matched in DB).
+  const persistClientProfileFields = async (c: Client) => {
+    const match = dbLinkedClients.find(
+      (d) => d.full_name.trim().toLowerCase() === c.name.trim().toLowerCase(),
+    );
+    if (!match) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        direction: c.direction ?? null,
+        commune: c.commune ?? null,
+        bp: c.bp ?? null,
+      })
+      .eq("user_id", match.id);
+    if (!error) await refetchLinkedClients();
+  };
+
   useEffect(() => { localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients)); }, [clients]);
   useEffect(() => { localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices)); }, [invoices]);
   useEffect(() => { localStorage.setItem(KEY_DECLS, JSON.stringify(decls)); }, [decls]);
