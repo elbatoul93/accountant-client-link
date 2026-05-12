@@ -1950,7 +1950,7 @@ const G50GeneratorDialog = ({
             const sel = clients.find((c) => c.id === clientId);
             if (!sel) return null;
             return (
-              <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
                 <div>
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("client_nif")}</div>
                   <div className="font-mono text-sm font-semibold">{sel.taxId || "—"}</div>
@@ -1958,6 +1958,14 @@ const G50GeneratorDialog = ({
                 <div>
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("client_bp")}</div>
                   <div className="font-mono text-sm font-semibold">{sel.bp || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Direction</div>
+                  <div className="text-sm font-semibold">{sel.direction || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Commune</div>
+                  <div className="text-sm font-semibold">{sel.commune || "—"}</div>
                 </div>
               </div>
             );
