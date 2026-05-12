@@ -1279,6 +1279,8 @@ const AddClientDialog = ({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [direction, setDirection] = useState("");
+  const [commune, setCommune] = useState("");
 
   const reset = () => {
     setName(""); setCompany(""); setLegalForm(""); setActivity("");
@@ -1286,6 +1288,7 @@ const AddClientDialog = ({
     setCnasNo(""); setCasnosNo(""); setHasCacobatph(false);
     setTaxRegime("");
     setEmail(""); setPhone(""); setAddress("");
+    setDirection(""); setCommune("");
   };
 
   // Seed form when entering edit mode (or when the target client changes).
@@ -1306,6 +1309,8 @@ const AddClientDialog = ({
       setEmail(initial.email || "");
       setPhone(initial.phone || "");
       setAddress(initial.address || "");
+      setDirection(initial.direction || "");
+      setCommune(initial.commune || "");
     }
   }, [mode, initial, open]);
 
@@ -1322,6 +1327,7 @@ const AddClientDialog = ({
       cnasNo: cnasNo.trim() || undefined, casnosNo: casnosNo.trim() || undefined, hasCacobatph,
       taxRegime: taxRegime as TaxRegime,
       email: email.trim() || undefined, phone: phone.trim() || undefined, address: address.trim() || undefined,
+      direction: direction.trim() || undefined, commune: commune.trim() || undefined,
       contact: email.trim() || (initial?.contact ?? ""),
       status: initial?.status ?? "active",
     };
