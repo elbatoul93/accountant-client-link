@@ -1982,10 +1982,7 @@ const G50GeneratorDialog = ({
           <div className="space-y-2">
             <div className="text-xs font-semibold text-primary uppercase">Identification G50</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label className="text-xs">Direction</Label><Input value={direction} onChange={(e) => setDirection(e.target.value)} placeholder="Direction des Impôts" /></div>
-              <div className="space-y-1.5"><Label className="text-xs">Commune</Label><Input value={commune} onChange={(e) => setCommune(e.target.value)} placeholder="Commune" /></div>
               <div className="space-y-1.5"><Label className="text-xs">Trimestre (optionnel)</Label><Input type="number" min={1} max={4} value={trimestre} onChange={(e) => setTrimestre(e.target.value)} placeholder="1-4" /></div>
-              <div className="space-y-1.5"><Label className="text-xs">BP (optionnel)</Label><Input value={bpInput} onChange={(e) => setBpInput(e.target.value)} placeholder="Boîte postale" /></div>
             </div>
           </div>
 
