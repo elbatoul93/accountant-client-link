@@ -345,7 +345,7 @@ const ClientDashboard = () => {
               <Badge className="ms-1 h-4 px-1 text-[10px] bg-gold text-gold-foreground border-0">{declsForApproval.length}</Badge>
             )}</TabsTrigger>
             <TabsTrigger value="vault"><Archive className="h-4 w-4" /> {t("vault_title")}</TabsTrigger>
-            <TabsTrigger value="chat"><MessageCircle className="h-4 w-4" /> Chat</TabsTrigger>
+            <TabsTrigger value="chat"><MessageCircle className="h-4 w-4" /> {t("chat_label")}</TabsTrigger>
           </TabsList>
 
           {/* === UPLOAD CENTER === */}
