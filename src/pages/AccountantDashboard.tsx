@@ -51,6 +51,7 @@ import {
 import { ClientStatusIcon } from "@/components/ClientStatusIcon";
 import { ClientInviteManager } from "@/components/ClientInviteManager";
 import { ClientFilesSection } from "@/components/ClientFilesSection";
+import { ClientDocumentsSection } from "@/components/ClientDocumentsSection";
 import { IncomingDocumentsLive } from "@/components/IncomingDocumentsLive";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
 import { generateG50Xlsx, generateG50Pdf } from "@/lib/g50Export";
