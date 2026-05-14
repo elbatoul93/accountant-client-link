@@ -2216,6 +2216,14 @@ const G50GeneratorDialog = ({
         commune: c.commune,
         nif: c.taxId,
         bp: c.bp,
+        clientId: c.id,
+        caHt: Number(caHt || 0),
+        salaries: Number(salaries || 0),
+        benefice: Number(benefice || 0),
+        rTap: Number(rTap || 0),
+        rTva: Number(rTva || 0),
+        rIrg: Number(rIrg || 0),
+        rIbs: Number(rIbs || 0),
         caHtTotal: Number(caHt || 0),
         caHtImposable: Number(caHtImposable || caHt || 0),
         fileName: `G50_${c.taxId || "NIF"}_${yyyy}_${mm}.${ext}`,
@@ -2225,18 +2233,29 @@ const G50GeneratorDialog = ({
       } else {
         await generateG50Xlsx(payload);
       }
-      // Persist form inputs so this G50 can be regenerated later
+      // Persist form inputs so this G50 can be regenerated/edited later
       try {
         const { data: auth } = await supabase.auth.getUser();
         const accountantId = auth?.user?.id;
         if (accountantId) {
-          await supabase.from("g50_declarations").insert({
-            accountant_id: accountantId,
-            client_id: c.id,
-            month: Number(mm),
-            year: Number(yyyy),
-            form_data: payload as any,
-          });
+          if (editing?.id) {
+            await supabase.from("g50_declarations")
+              .update({
+                month: Number(mm),
+                year: Number(yyyy),
+                form_data: payload as any,
+                generated_at: new Date().toISOString(),
+              })
+              .eq("id", editing.id);
+          } else {
+            await supabase.from("g50_declarations").insert({
+              accountant_id: accountantId,
+              client_id: c.id,
+              month: Number(mm),
+              year: Number(yyyy),
+              form_data: payload as any,
+            });
+          }
         }
       } catch (saveErr) {
         console.error("Failed to save G50 declaration", saveErr);
