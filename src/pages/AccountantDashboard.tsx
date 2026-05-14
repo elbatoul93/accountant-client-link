@@ -2113,8 +2113,9 @@ const FinancialStatementsDialog = ({
 };
 
 const G50GeneratorDialog = ({
-  open, onOpenChange, clients, t, onGenerate, getAggregates, getLiveG50,
+  open, onOpenChange, clients, t, onGenerate, getAggregates, getLiveG50, editing,
 }: { open: boolean; onOpenChange: (o: boolean) => void; clients: Client[]; t: (k: string) => string;
+     editing?: { id: string; formData: any } | null;
      onGenerate: (
        d: Decl,
        shared: SharedDoc | null,
