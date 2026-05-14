@@ -469,11 +469,24 @@ export type Database = {
       get_linked_client_names: {
         Args: never
         Returns: {
+          activity: string
+          address: string
           bp: string
+          casnos_no: string
+          cnas_no: string
           commune: string
+          company: string
           direction: string
+          email: string
           full_name: string
+          has_cacobatph: boolean
           id: string
+          legal_form: string
+          nis: string
+          phone: string
+          rc: string
+          tax_id: string
+          tax_regime: string
         }[]
       }
       get_user_type: { Args: { user_id: string }; Returns: string }
