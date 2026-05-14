@@ -1488,9 +1488,10 @@ const AddClientDialog = ({
       taxId: taxId.trim(), bp: bp.trim() || undefined, nis: nis.trim() || undefined, rc: rc.trim() || undefined,
       cnasNo: cnasNo.trim() || undefined, casnosNo: casnosNo.trim() || undefined, hasCacobatph,
       taxRegime: taxRegime as TaxRegime,
-      email: email.trim() || undefined, phone: phone.trim() || undefined, address: address.trim() || undefined,
+      email: mode === "edit" && initial ? initial.email : (email.trim() || undefined),
+      phone: phone.trim() || undefined, address: address.trim() || undefined,
       direction: direction.trim() || undefined, commune: commune.trim() || undefined,
-      contact: email.trim() || (initial?.contact ?? ""),
+      contact: mode === "edit" && initial ? initial.contact : (email.trim() || ""),
       status: initial?.status ?? "active",
     };
     if (mode === "edit" && onUpdate) {
