@@ -62,13 +62,13 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
       return;
     }
     const byId = new Map(
-      (names || []).map((client) => [client.id, client.full_name] as const),
+      (names || []).map((client) => [client.id, (client.full_name && client.full_name.trim()) || "Unknown"] as const),
     );
 
     setRows(
       docs.map((d) => ({
         ...d,
-        client_name: byId.get(d.user_id) || "—",
+        client_name: byId.get(d.user_id) || "Unknown",
         client_email: "",
       })) as Row[],
     );
