@@ -183,7 +183,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
               {mode === "signup" && !isInvite && (
                 <div className="space-y-1.5">
                   <Label htmlFor="name">{t("auth_full_name")}</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Sarah Bennani" />
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("auth_ph_full_name")} />
                 </div>
               )}
               {isInvite && prefillName && (
