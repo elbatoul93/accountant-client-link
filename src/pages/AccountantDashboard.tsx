@@ -683,7 +683,7 @@ const AccountantDashboard = () => {
                 onDeleteLegal={(id) => setLegalDocs((p) => p.filter((x) => x.id !== id))}
                 onAddDecl={(d) => setDecls((p) => [d, ...p])}
                 onExtract={() => setObligationsClient(activeClient)}
-                onEdit={(c) => setPendingEditClient(c)}
+                onEdit={(c) => setEditingClient(c)}
                 onMessage={async () => {
                   try {
                     const { data: auth } = await supabase.auth.getUser();
