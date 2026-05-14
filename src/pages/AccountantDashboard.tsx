@@ -884,8 +884,9 @@ const AccountantDashboard = () => {
         onSave={(fs) => { setFsList((p) => [fs, ...p]); setOpenTool(null); }}
       />
       <G50GeneratorDialog
-        open={openTool === "g50"} onOpenChange={(o) => !o && setOpenTool(null)}
+        open={openTool === "g50"} onOpenChange={(o) => { if (!o) { setOpenTool(null); setEditG50(null); } }}
         clients={g50Clients} t={t}
+        editing={editG50}
         getAggregates={(cid) => aggregateForG50(cid, bills, employees)}
         getLiveG50={(cid, period) => computeG50FromJournal(journal, { clientId: cid, period })}
         onGenerate={(d, shared, lockOpts) => {
@@ -904,6 +905,7 @@ const AccountantDashboard = () => {
           }
           if (lockOpts) setLocks((p) => lockPeriod(p, lockOpts));
           setOpenTool(null);
+          setEditG50(null);
         }}
       />
       <SendDocumentDialog
