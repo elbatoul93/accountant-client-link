@@ -683,30 +683,19 @@ const AccountantDashboard = () => {
                 onAddLegal={(doc) => setLegalDocs((p) => [doc, ...p])}
                 onDeleteLegal={(id) => setLegalDocs((p) => p.filter((x) => x.id !== id))}
                 onAddDecl={(d) => setDecls((p) => [d, ...p])}
+                onDeleteDecl={(id) => setDecls((p) => p.filter((x) => x.id !== id))}
                 onExtract={() => setObligationsClient(activeClient)}
                 onEdit={(c) => setEditingClient(c)}
                 onEditG50={(d) => { setEditG50(d); setOpenTool("g50"); }}
-                onMessage={async () => {
-                  try {
-                    const { data: auth } = await supabase.auth.getUser();
-                    const accId = auth.user?.id;
-                    if (!accId) return;
-                    const { data, error } = await supabase
-                      .from("profiles")
-                      .select("user_id")
-                      .eq("email", activeClient.contact)
-                      .eq("linked_accountant_id", accId)
-                      .maybeSingle();
-                    if (error) throw error;
-                    if (!data?.user_id) {
-                      toast.error(t("acc_client_inactive"));
-                      return;
-                    }
-                    setChatPreselectId(data.user_id);
-                    setView("chat");
-                  } catch (e: any) {
-                    toast.error(e.message || t("i18n_error_generic"));
+                onMessage={() => {
+                  // activeClient.id is the client's auth user_id (from get_linked_client_names RPC).
+                  // Avoid querying profiles directly — that triggers RLS recursion.
+                  if (!activeClient.id) {
+                    toast.error(t("acc_client_inactive"));
+                    return;
                   }
+                  setChatPreselectId(activeClient.id);
+                  setView("chat");
                 }}
               />
             )}
@@ -1182,11 +1171,12 @@ const ClientsListView = ({
 );
 
 const ClientProfileView = ({
-  t, client, decls, invoices, legalDocs, onBack, onAddLegal, onDeleteLegal, onAddDecl, onExtract, onMessage, onEdit, onEditG50,
+  t, client, decls, invoices, legalDocs, onBack, onAddLegal, onDeleteLegal, onAddDecl, onDeleteDecl, onExtract, onMessage, onEdit, onEditG50,
 }: {
   t: (k: string) => string; client: Client; decls: Decl[]; invoices: Invoice[]; legalDocs: LegalDoc[];
   onBack: () => void; onAddLegal: (d: LegalDoc) => void; onDeleteLegal: (id: string) => void;
-  onAddDecl: (d: Decl) => void; onExtract: () => void; onMessage: () => void; onEdit: (c: Client) => void;
+  onAddDecl: (d: Decl) => void; onDeleteDecl: (id: string) => void;
+  onExtract: () => void; onMessage: () => void; onEdit: (c: Client) => void;
   onEditG50: (data: { id: string; formData: any }) => void;
 }) => {
   const totalDue = decls.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
@@ -1369,7 +1359,38 @@ const ClientProfileView = ({
             <DeclList
               items={obligations}
               t={t}
-              onDelete={() => {}}
+              onDelete={async (declId) => {
+                const item = obligations.find((x) => x.id === declId);
+                if (!item) return;
+                const period = item.due.slice(0, 7);
+                const [yyyy, mm] = period.split("-");
+                const { data: row, error: lookupErr } = await supabase
+                  .from("g50_declarations")
+                  .select("id")
+                  .eq("client_id", client.id)
+                  .eq("year", Number(yyyy))
+                  .eq("month", Number(mm))
+                  .order("generated_at", { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                if (lookupErr) {
+                  toast.error(lookupErr.message || t("i18n_error_generic"));
+                  return;
+                }
+                if (row?.id) {
+                  const { error: delErr } = await supabase
+                    .from("g50_declarations")
+                    .delete()
+                    .eq("id", row.id);
+                  if (delErr) {
+                    toast.error(delErr.message || t("i18n_error_generic"));
+                    return;
+                  }
+                }
+                // Remove the obligation entry from the UI immediately.
+                onDeleteDecl(declId);
+                toast.success(t("acc_deleted"));
+              }}
               showType
               onRegenerate={async (d, fmt) => {
                 const period = d.due.slice(0, 7);
