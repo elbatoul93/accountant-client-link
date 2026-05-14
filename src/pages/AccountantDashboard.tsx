@@ -141,19 +141,53 @@ const AccountantDashboard = () => {
   const [chatPreselectId, setChatPreselectId] = useState<string | null>(null);
   const [dbLinkedClients, setDbLinkedClients] = useState<{ id: string; full_name: string; direction: string | null; commune: string | null; bp: string | null }[]>([]);
 
-  // Fetch live linked clients from DB (used by G50 generator) — avoids stale localStorage.
+  // Fetch live linked clients from DB. Authoritative source — always refreshed on mount/login.
+  const mergeDbIntoClients = (db: typeof dbLinkedClients) => {
+    setClients((prev) => {
+      const byName = new Map(prev.map((c) => [c.name.trim().toLowerCase(), c]));
+      const merged: Client[] = db.map((d) => {
+        const local = byName.get((d.full_name || "").trim().toLowerCase());
+        const base: Client = local
+          ? { ...local, id: d.id }
+          : { id: d.id, name: (d.full_name && d.full_name.trim()) || "Unknown", taxId: "", contact: "", status: "active" };
+        return {
+          ...base,
+          direction: d.direction ?? base.direction,
+          commune: d.commune ?? base.commune,
+          bp: d.bp ?? base.bp,
+        };
+      });
+      const dbNames = new Set(db.map((d) => (d.full_name || "").trim().toLowerCase()));
+      for (const c of prev) {
+        if (!dbNames.has(c.name.trim().toLowerCase())) merged.push(c);
+      }
+      return merged;
+    });
+  };
   const refetchLinkedClients = async () => {
     const { data, error } = await supabase.rpc("get_linked_client_names");
-    if (!error && data) setDbLinkedClients(data as typeof dbLinkedClients);
+    if (!error && data) {
+      const list = data as typeof dbLinkedClients;
+      setDbLinkedClients(list);
+      mergeDbIntoClients(list);
+    }
   };
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const load = async () => {
       const { data, error } = await supabase.rpc("get_linked_client_names");
-      if (!cancelled && !error && data) setDbLinkedClients(data as typeof dbLinkedClients);
-    })();
-    return () => { cancelled = true; };
-  }, [user?.email]);
+      if (cancelled || error || !data) return;
+      const list = data as typeof dbLinkedClients;
+      setDbLinkedClients(list);
+      mergeDbIntoClients(list);
+    };
+    load();
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (session?.user) load();
+    });
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Merge DB-linked clients with local client metadata by name match.
   // Direction / Commune / BP are sourced from the DB profile (authoritative).
