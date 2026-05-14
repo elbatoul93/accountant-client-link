@@ -52,7 +52,7 @@ export const SiteHeader = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-popover w-56">
                 <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                  {user.email}
+                  {user.name}
                   <div className="font-semibold text-foreground capitalize mt-0.5">{t(user.role === "accountant" ? "auth_role_accountant" : "auth_role_client")}</div>
                 </div>
                 <DropdownMenuSeparator />
