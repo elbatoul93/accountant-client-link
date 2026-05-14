@@ -608,13 +608,13 @@ const AccountantDashboard = () => {
                         if (data?.user_id) clientUserId = data.user_id;
                       }
                       if (!clientUserId) {
-                        toast.error("Ce client n'a pas encore activé son compte.");
+                        toast.error(t("acc_client_inactive"));
                         return;
                       }
                       setChatPreselectId(clientUserId);
                       setView("chat");
                     } catch (e: any) {
-                      toast.error(e?.message || "Erreur");
+                      toast.error(e?.message || t("i18n_error_generic"));
                     }
                   }}
                   onDelete={(id) => {
@@ -622,14 +622,14 @@ const AccountantDashboard = () => {
                     setInvoices((p) => p.filter((x) => x.clientId !== id));
                     setDecls((p) => p.filter((x) => x.clientId !== id));
                     setLegalDocs((p) => p.filter((x) => x.clientId !== id));
-                    toast.success("Supprimé");
+                    toast.success(t("acc_deleted"));
                   }}
                   onExtract={setObligationsClient}
                   onViewG50={setViewG50Client}
                   onCopyInvite={async (c) => {
                     try {
                       const { data: { user: au } } = await supabase.auth.getUser();
-                      if (!au) { toast.error("Non authentifié"); return; }
+                      if (!au) { toast.error(t("i18n_not_authenticated")); return; }
                       const targetEmail = (c.email || c.contact || "").toLowerCase() || null;
                       let token: string | null = null;
                       if (targetEmail) {
@@ -664,9 +664,9 @@ const AccountantDashboard = () => {
                       }
                       const url = `${window.location.origin}/invite/${token}`;
                       await navigator.clipboard.writeText(url).catch(() => {});
-                      toast.success(`Lien d'invitation copié pour ${c.name}`);
+                      toast.success(t("acc_invite_copied").replace("{name}", c.name));
                     } catch (e: any) {
-                      toast.error(e?.message || "Erreur");
+                      toast.error(e?.message || t("i18n_error_generic"));
                     }
                   }}
                 />
@@ -699,13 +699,13 @@ const AccountantDashboard = () => {
                       .maybeSingle();
                     if (error) throw error;
                     if (!data?.user_id) {
-                      toast.error("Ce client n'a pas encore activé son compte.");
+                      toast.error(t("acc_client_inactive"));
                       return;
                     }
                     setChatPreselectId(data.user_id);
                     setView("chat");
                   } catch (e: any) {
-                    toast.error(e.message || "Erreur");
+                    toast.error(e.message || t("i18n_error_generic"));
                   }
                 }}
               />
@@ -1148,7 +1148,7 @@ const ClientsListView = ({
                   </td>
                   <td className="py-3 text-end" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
-                      <Button size="sm" variant="secondary" className="h-7 gap-1.5 text-xs" onClick={() => onCopyInvite(c)} title="Copier le lien d'invitation">
+                      <Button size="sm" variant="secondary" className="h-7 gap-1.5 text-xs" onClick={() => onCopyInvite(c)} title={t("acc_copy_invite_title")}>
                         <Link2 className="h-3.5 w-3.5" /> Copier invitation
                       </Button>
                       <Button size="sm" variant="gold" className="h-7 gap-1.5 text-xs" onClick={() => onViewG50(c)}>
@@ -1157,7 +1157,7 @@ const ClientsListView = ({
                       <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => onExtract(c)}>
                         <FileDown className="h-3.5 w-3.5" /> {t("acc_extract")}
                       </Button>
-                      <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => onMessage(c)} title="Message">
+                      <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => onMessage(c)} title={t("i18n_message")}>
                         <MessageCircle className="h-3.5 w-3.5" /> Message
                       </Button>
                       <Button size="sm" variant="outlineGold" className="h-7 gap-1.5 text-xs" onClick={() => onEdit(c)}>
@@ -1257,7 +1257,7 @@ const ClientProfileView = ({
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="grid grid-cols-5 w-full">
           <TabsTrigger value="overview">{t("profile_tab_overview")}</TabsTrigger>
-          <TabsTrigger value="files">Fichiers</TabsTrigger>
+          <TabsTrigger value="files">{t("acc_tab_files")}</TabsTrigger>
           <TabsTrigger value="legal">{t("profile_tab_legal")}</TabsTrigger>
           <TabsTrigger value="obligations">{t("profile_tab_obligations")}</TabsTrigger>
           <TabsTrigger value="social">{t("profile_tab_social")}</TabsTrigger>
@@ -1384,7 +1384,7 @@ const ClientProfileView = ({
                   .limit(1)
                   .maybeSingle();
                 if (error || !data?.form_data) {
-                  toast.error("Aucune donnée G50 enregistrée pour cette période");
+                  toast.error(t("acc_no_g50_data"));
                   return;
                 }
                 const payload = data.form_data as any;
@@ -1411,7 +1411,7 @@ const ClientProfileView = ({
                   .limit(1)
                   .maybeSingle();
                 if (error || !data?.form_data) {
-                  toast.error("Aucune donnée G50 enregistrée pour cette période");
+                  toast.error(t("acc_no_g50_data"));
                   return;
                 }
                 onEditG50({ id: data.id, formData: data.form_data });
@@ -1589,7 +1589,7 @@ const AddClientDialog = ({
       toast.success(t("edit_client_saved"));
     } else {
       onAdd(payload);
-      toast.success("Client ajouté");
+      toast.success(t("acc_client_added"));
       reset();
     }
   };
@@ -1607,8 +1607,8 @@ const AddClientDialog = ({
         <div className="space-y-5">
           <Section title={t("client_section_identity")} icon={IdCard}>
             <div className="grid sm:grid-cols-2 gap-3">
-              <Field label={t("acc_client_name") + " *"}><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Mohamed Benali" /></Field>
-              <Field label={t("client_company")}><Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Acme SARL" /></Field>
+              <Field label={t("acc_client_name") + " *"}><Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("acc_ph_full_name")} /></Field>
+              <Field label={t("client_company")}><Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder={t("acc_ph_company")} /></Field>
               <Field label={t("client_legal_form") + " *"}>
                 <Select value={legalForm} onValueChange={setLegalForm}>
                   <SelectTrigger><SelectValue placeholder={t("client_legal_form_placeholder")} /></SelectTrigger>
@@ -1623,7 +1623,7 @@ const AddClientDialog = ({
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label={t("client_activity")}><Input value={activity} onChange={(e) => setActivity(e.target.value)} placeholder="Commerce de gros" /></Field>
+              <Field label={t("client_activity")}><Input value={activity} onChange={(e) => setActivity(e.target.value)} placeholder={t("acc_ph_activity")} /></Field>
             </div>
           </Section>
 
@@ -1636,9 +1636,9 @@ const AddClientDialog = ({
               )}
               <div className="grid sm:grid-cols-2 gap-3">
                 <Field label={t("client_nif") + " *"}><Input value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="000016001234567" className="font-mono" /></Field>
-                <Field label={t("client_bp")}><Input value={bp} onChange={(e) => setBp(e.target.value)} placeholder="16xxxxxxxx" className="font-mono" /></Field>
-                <Field label="Direction"><Input value={direction} onChange={(e) => setDirection(e.target.value)} placeholder="Direction des Impôts" /></Field>
-                <Field label="Commune"><Input value={commune} onChange={(e) => setCommune(e.target.value)} placeholder="Commune" /></Field>
+                <Field label={t("client_bp")}><Input value={bp} onChange={(e) => setBp(e.target.value)} placeholder={t("acc_ph_bp")} className="font-mono" /></Field>
+                <Field label={t("acc_direction_label")}><Input value={direction} onChange={(e) => setDirection(e.target.value)} placeholder={t("acc_ph_direction")} /></Field>
+                <Field label={t("acc_commune_label")}><Input value={commune} onChange={(e) => setCommune(e.target.value)} placeholder={t("acc_ph_commune")} /></Field>
                 <Field label={t("client_tax_regime") + " *"} full>
                   <Select value={taxRegime} onValueChange={(v) => setTaxRegime(v as TaxRegime)}>
                     <SelectTrigger><SelectValue placeholder={t("client_tax_regime_placeholder")} /></SelectTrigger>
@@ -1681,10 +1681,10 @@ const AddClientDialog = ({
           <Section title={t("client_section_social")} icon={ShieldCheck}>
             <div className="grid sm:grid-cols-2 gap-3">
               <Field label={t("client_cnas_no")}>
-                <Input value={cnasNo} onChange={(e) => setCnasNo(e.target.value)} placeholder="N° CNAS" className="font-mono" />
+                <Input value={cnasNo} onChange={(e) => setCnasNo(e.target.value)} placeholder={t("acc_ph_cnas_no")} className="font-mono" />
               </Field>
               <Field label={t("client_casnos_no")}>
-                <Input value={casnosNo} onChange={(e) => setCasnosNo(e.target.value)} placeholder="N° CASNOS" className="font-mono" />
+                <Input value={casnosNo} onChange={(e) => setCasnosNo(e.target.value)} placeholder={t("acc_ph_casnos_no")} className="font-mono" />
               </Field>
             </div>
             <div className="mt-3 flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
@@ -1706,10 +1706,10 @@ const AddClientDialog = ({
           <Section title={t("client_section_contact")} icon={Mail}>
             <div className="grid sm:grid-cols-2 gap-3">
               {mode !== "edit" && (
-                <Field label={t("client_email")}><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contact@acme.dz" /></Field>
+                <Field label={t("client_email")}><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("acc_ph_email_contact")} /></Field>
               )}
               <Field label={t("client_phone")}><Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+213 555 12 34 56" /></Field>
-              <Field label={t("client_address")} full><Textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Rue, ville, wilaya" rows={2} /></Field>
+              <Field label={t("client_address")} full><Textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t("acc_ph_address")} rows={2} /></Field>
             </div>
           </Section>
         </div>
@@ -1807,7 +1807,7 @@ const UploadLegalDialog = ({ clientId, onAdd, t }: { clientId: string; onAdd: (d
   const onFileChange = (f: File | null) => {
     setFile(f);
     if (!f) { setFileData(""); return; }
-    if (f.size > 5 * 1024 * 1024) { toast.error("Max 5 MB"); return; }
+    if (f.size > 5 * 1024 * 1024) { toast.error(t("i18n_max_5mb")); return; }
     const reader = new FileReader();
     reader.onload = () => setFileData(reader.result as string);
     reader.readAsDataURL(f);
@@ -1820,7 +1820,7 @@ const UploadLegalDialog = ({ clientId, onAdd, t }: { clientId: string; onAdd: (d
       fileName: file?.name, mimeType: file?.type, fileData: fileData || undefined,
       date: new Date().toLocaleDateString("fr-DZ"),
     });
-    toast.success("Document ajouté");
+    toast.success(t("acc_doc_added"));
     setLabel(""); setKind("RC"); setFile(null); setFileData(""); setOpen(false);
   };
 
@@ -1836,16 +1836,16 @@ const UploadLegalDialog = ({ clientId, onAdd, t }: { clientId: string; onAdd: (d
             <Select value={kind} onValueChange={(v) => setKind(v as LegalDoc["kind"])}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="RC">RC — Registre du Commerce</SelectItem>
-                <SelectItem value="NIF">NIF — Carte fiscale</SelectItem>
-                <SelectItem value="NIS">NIS — Identif. statistique</SelectItem>
-                <SelectItem value="STATUTS">Statuts</SelectItem>
+                <SelectItem value="RC">{t("doc_rc_full")}</SelectItem>
+                <SelectItem value="NIF">{t("doc_nif_full")}</SelectItem>
+                <SelectItem value="NIS">{t("doc_nis_full")}</SelectItem>
+                <SelectItem value="STATUTS">{t("doc_statuts")}</SelectItem>
                 <SelectItem value="OTHER">{t("tools_doc_other")}</SelectItem>
               </SelectContent>
             </Select>
           </Field>
-          <Field label={t("profile_doc_label")}><Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Extrait RC 2024" /></Field>
-          <Field label="Fichier (PDF / Image, max 5 MB)">
+          <Field label={t("profile_doc_label")}><Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t("acc_ph_doc_label")} /></Field>
+          <Field label={t("i18n_file_pdf_image_5mb")}>
             <Input type="file" accept="application/pdf,image/*" onChange={(e) => onFileChange(e.target.files?.[0] || null)} />
             {file && <p className="text-xs text-muted-foreground mt-1">{file.name} • {(file.size / 1024).toFixed(0)} KB</p>}
           </Field>
@@ -1864,7 +1864,7 @@ const AddInvoiceDialog = ({ clients, onAdd, t }: { clients: Client[]; onAdd: (i:
   const [amount, setAmount] = useState("");
   const submit = () => {
     const c = clients.find((x) => x.id === clientId);
-    if (!c || !amount) { toast.error("Client & montant requis"); return; }
+    if (!c || !amount) { toast.error(t("acc_client_amount_required")); return; }
     onAdd({
       id: `INV-${Date.now().toString().slice(-5)}`,
       clientId: c.id, clientName: c.name,
@@ -1872,7 +1872,7 @@ const AddInvoiceDialog = ({ clients, onAdd, t }: { clients: Client[]; onAdd: (i:
       date: new Date().toLocaleDateString("fr-DZ"),
       status: "pending",
     });
-    toast.success("Facture ajoutée");
+    toast.success(t("acc_invoice_added"));
     setClientId(""); setAmount(""); setOpen(false);
   };
   return (
@@ -1908,13 +1908,13 @@ const AddDeclarationDialog = ({
   const [due, setDue] = useState("");
   const submit = () => {
     const c = clients.find((x) => x.id === clientId);
-    if (!c || !amount || !due) { toast.error("Champs requis"); return; }
+    if (!c || !amount || !due) { toast.error(t("i18n_required_fields")); return; }
     onAdd({
       id: crypto.randomUUID(),
       clientId: c.id, clientName: c.name,
       type: declType, amount: Number(amount), due, status: "upcoming",
     });
-    toast.success("Déclaration ajoutée");
+    toast.success(t("acc_decl_added"));
     setClientId(clients.length === 1 ? clients[0].id : ""); setAmount(""); setDue(""); setOpen(false);
   };
   return (
@@ -1936,7 +1936,7 @@ const AddDeclarationDialog = ({
           )}
           {social && (
             <div className="space-y-1.5">
-              <Label>Organisme</Label>
+              <Label>{t("i18n_organization")}</Label>
               <Select value={declType} onValueChange={(v) => setDeclType(v as Decl["type"])}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -2066,14 +2066,14 @@ const FinancialStatementsDialog = ({
   const [net, setNet] = useState("");
   const submit = () => {
     const c = clients.find((x) => x.id === clientId);
-    if (!c || !year || !assets) { toast.error("Champs requis"); return; }
+    if (!c || !year || !assets) { toast.error(t("i18n_required_fields")); return; }
     onSave({
       id: crypto.randomUUID(), clientId: c.id, clientName: c.name, year,
       assets: Number(assets), liabilities: Number(liab || 0), equity: Number(equity || 0),
       revenue: Number(revenue || 0), netResult: Number(net || 0),
       createdAt: new Date().toLocaleDateString("fr-DZ"),
     });
-    toast.success("Bilan enregistré");
+    toast.success(t("acc_balance_saved"));
     setClientId(""); setAssets(""); setLiab(""); setEquity(""); setRevenue(""); setNet("");
   };
   return (
@@ -2199,7 +2199,7 @@ const G50GeneratorDialog = ({
 
   const submit = async () => {
     const c = clients.find((x) => x.id === clientId);
-    if (!c || !period || total <= 0) { toast.error("Champs requis"); return; }
+    if (!c || !period || total <= 0) { toast.error(t("i18n_required_fields")); return; }
     const declId = crypto.randomUUID();
     const [yyyy, mm] = period.split("-");
     const ext = format === "pdf" ? "pdf" : "xlsx";
@@ -2321,11 +2321,11 @@ const G50GeneratorDialog = ({
                   <div className="font-mono text-sm font-semibold">{sel.bp || "—"}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Direction</div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("acc_direction_label")}</div>
                   <div className="text-sm font-semibold">{sel.direction || "—"}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Commune</div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("acc_commune_label")}</div>
                   <div className="text-sm font-semibold">{sel.commune || "—"}</div>
                 </div>
               </div>
@@ -2339,24 +2339,24 @@ const G50GeneratorDialog = ({
           )}
 
           <div className="space-y-2">
-            <div className="text-xs font-semibold text-primary uppercase">Bases imposables</div>
+            <div className="text-xs font-semibold text-primary uppercase">{t("i18n_taxable_bases")}</div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="space-y-1.5"><Label className="text-xs">Chiffre d'affaires HT (DA)</Label><Input type="number" value={caHt} onChange={(e) => setCaHt(e.target.value)} placeholder="1000000" /></div>
-              <div className="space-y-1.5"><Label className="text-xs">Salaires bruts (DA)</Label><Input type="number" value={salaries} onChange={(e) => setSalaries(e.target.value)} placeholder="200000" /></div>
-              <div className="space-y-1.5"><Label className="text-xs">Bénéfice imposable (DA)</Label><Input type="number" value={benefice} onChange={(e) => setBenefice(e.target.value)} placeholder="150000" /></div>
-              <div className="space-y-1.5"><Label className="text-xs">CA HT Imposable (TVA) (DA)</Label><Input type="number" value={caHtImposable} onChange={(e) => setCaHtImposable(e.target.value)} placeholder="CA imposable" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">{t("i18n_label_ca_ht")}</Label><Input type="number" value={caHt} onChange={(e) => setCaHt(e.target.value)} placeholder="1000000" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">{t("i18n_label_salaries_brut")}</Label><Input type="number" value={salaries} onChange={(e) => setSalaries(e.target.value)} placeholder="200000" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">{t("i18n_label_taxable_profit")}</Label><Input type="number" value={benefice} onChange={(e) => setBenefice(e.target.value)} placeholder="150000" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">{t("i18n_label_ca_taxable_tva")}</Label><Input type="number" value={caHtImposable} onChange={(e) => setCaHtImposable(e.target.value)} placeholder={t("i18n_ph_taxable_ca")} /></div>
             </div>
           </div>
 
           <div className="space-y-2">
-            <div className="text-xs font-semibold text-primary uppercase">Identification G50</div>
+            <div className="text-xs font-semibold text-primary uppercase">{t("i18n_g50_identification")}</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label className="text-xs">Trimestre (optionnel)</Label><Input type="number" min={1} max={4} value={trimestre} onChange={(e) => setTrimestre(e.target.value)} placeholder="1-4" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">{t("i18n_quarter_optional")}</Label><Input type="number" min={1} max={4} value={trimestre} onChange={(e) => setTrimestre(e.target.value)} placeholder="1-4" /></div>
             </div>
           </div>
 
           <div className="space-y-2">
-            <div className="text-xs font-semibold text-primary uppercase">Taux & calcul automatique</div>
+            <div className="text-xs font-semibold text-primary uppercase">{t("i18n_rates_auto_calc")}</div>
             <div className="space-y-1.5">
               <CalcRow label={`${t("tools_g50_tap")} (TAP)`} rate={rTap} setRate={setRTap} amount={tap} />
               <CalcRow label={t("tools_g50_tva")} rate={rTva} setRate={setRTva} amount={tva} />
@@ -2434,7 +2434,7 @@ const SendDocumentDialog = ({
   const onFileChange = (f: File | null) => {
     setFile(f);
     if (!f) { setFileData(""); return; }
-    if (f.size > 5 * 1024 * 1024) { toast.error("Max 5 MB"); return; }
+    if (f.size > 5 * 1024 * 1024) { toast.error(t("i18n_max_5mb")); return; }
     const reader = new FileReader();
     reader.onload = () => setFileData(reader.result as string);
     reader.readAsDataURL(f);
@@ -2442,14 +2442,14 @@ const SendDocumentDialog = ({
 
   const submit = () => {
     const c = clients.find((x) => x.id === clientId);
-    if (!c || !label) { toast.error("Champs requis"); return; }
+    if (!c || !label) { toast.error(t("i18n_required_fields")); return; }
     onSend({
       id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
       clientEmail: c.contact, type, label,
       date: new Date().toLocaleDateString("fr-DZ"),
       fileName: file?.name, mimeType: file?.type, fileData: fileData || undefined,
     });
-    toast.success("Document partagé avec le client");
+    toast.success(t("acc_doc_shared"));
     setClientId(""); setLabel(""); setType("G50"); setFile(null); setFileData("");
   };
   return (
@@ -2481,11 +2481,11 @@ const SendDocumentDialog = ({
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>Description</Label>
-            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="G50 - Mars 2025" />
+            <Label>{t("i18n_description")}</Label>
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t("acc_ph_send_label")} />
           </div>
           <div className="space-y-1.5">
-            <Label>Fichier (PDF / Image, max 5 MB)</Label>
+            <Label>{t("i18n_file_pdf_image_5mb")}</Label>
             <Input type="file" accept="application/pdf,image/*"
               onChange={(e) => onFileChange(e.target.files?.[0] || null)} />
             {file && <p className="text-xs text-muted-foreground">{file.name} • {(file.size / 1024).toFixed(0)} KB</p>}
@@ -2701,12 +2701,12 @@ const EditDeclDialog = ({ doc, onClose, onSave, t }: {
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-xs">Label</Label>
+            <Label className="text-xs">{t("i18n_label")}</Label>
             <Input value={label} onChange={(e) => setLabel(e.target.value)} />
           </div>
 
           <div>
-            <div className="text-xs font-semibold text-primary uppercase mb-2">Payload</div>
+            <div className="text-xs font-semibold text-primary uppercase mb-2">{t("i18n_payload")}</div>
             <div className="grid grid-cols-2 gap-2">
               {Object.keys(fields).map((k) => (
                 <div key={k} className="space-y-1">
@@ -2728,10 +2728,10 @@ const EditDeclDialog = ({ doc, onClose, onSave, t }: {
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="ghost" onClick={onClose}>{t("i18n_cancel")}</Button>
           <Button variant="gold" onClick={() => {
             onSave(doc.id, JSON.stringify(fields), label, workflow);
-            toast.success("Updated");
+            toast.success(t("i18n_updated"));
             onClose();
           }}>{t("sig_apply").includes("Sign") ? "Save" : "Enregistrer"}</Button>
         </DialogFooter>

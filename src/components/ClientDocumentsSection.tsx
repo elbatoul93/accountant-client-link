@@ -98,20 +98,20 @@ export const ClientDocumentsSection = ({
     <Card className="p-5 shadow-card">
       <div className="mb-4">
         <h3 className="font-semibold text-primary flex items-center gap-2">
-          <FolderOpen className="h-4 w-4" /> Documents
+          <FolderOpen className="h-4 w-4" /> {t("nav_group_documents")}
         </h3>
         <p className="text-xs text-muted-foreground">
-          Documents uploaded by this client
+          {t("cdoc_subtitle")}
         </p>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin me-2" /> Loading…
+          <Loader2 className="h-4 w-4 animate-spin me-2" /> {t("invite_loading")}
         </div>
       ) : docs.length === 0 ? (
         <div className="text-sm text-muted-foreground text-center py-8">
-          No documents uploaded yet.
+          {t("cdoc_empty")}
         </div>
       ) : (
         <div className="space-y-2">
@@ -142,7 +142,7 @@ export const ClientDocumentsSection = ({
                 className="h-8 w-8"
                 onClick={() => handleDownload(d)}
                 disabled={downloading === d.id}
-                aria-label="Download"
+                aria-label={t("cdoc_aria_download")}
               >
                 {downloading === d.id ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />

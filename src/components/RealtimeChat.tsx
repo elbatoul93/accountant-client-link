@@ -9,6 +9,7 @@ import { ArrowLeft, MessageCircle, Send, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useApp } from "@/contexts/AppContext";
 
 interface Message {
   id: string;
@@ -36,6 +37,7 @@ interface Props {
 }
 
 export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
+  const { t } = useApp();
   const isMobile = useIsMobile();
   const [showThreadOnMobile, setShowThreadOnMobile] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -214,19 +216,20 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
   if (role === "client") {
     return (
       <Card className="flex flex-col h-[70vh] shadow-card overflow-hidden">
-        <ChatHeader contact={activeContact} loading={loadingContacts} showAccountantBadge />
+        <ChatHeader contact={activeContact} loading={loadingContacts} showAccountantBadge t={t} />
         <ChatThread
           ref={scrollerRef}
           loading={loadingMessages}
           messages={messages}
           selfId={selfId}
-          empty={!activeContact && !loadingContacts ? "No accountant linked yet." : "No messages yet."}
+          empty={!activeContact && !loadingContacts ? t("chat_no_linked_clients") : t("chat_no_messages_yet")}
         />
         <ChatComposer
           draft={draft}
           setDraft={setDraft}
           send={send}
           disabled={!activeContact || sending}
+          t={t}
         />
       </Card>
     );
@@ -241,7 +244,7 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
       {showSidebar && (
         <aside className="border-e border-border bg-muted/20 overflow-y-auto">
           <div className="p-3 border-b text-xs font-semibold text-muted-foreground flex items-center gap-2">
-            <Users className="h-3.5 w-3.5" /> Clients
+            <Users className="h-3.5 w-3.5" /> {t("dash_clients")}
           </div>
           {loadingContacts ? (
             <div className="p-3 space-y-2">
@@ -250,7 +253,7 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
               <Skeleton className="h-12 w-full" />
             </div>
           ) : contacts.length === 0 ? (
-            <p className="p-4 text-xs text-muted-foreground">No linked clients yet.</p>
+            <p className="p-4 text-xs text-muted-foreground">{t("chat_no_linked_clients")}</p>
           ) : (
             <ul>
               {contacts.map((c) => {
@@ -285,19 +288,21 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
             contact={activeContact}
             loading={loadingContacts}
             onBack={isMobile ? () => setShowThreadOnMobile(false) : undefined}
+            t={t}
           />
           <ChatThread
             ref={scrollerRef}
             loading={loadingMessages}
             messages={messages}
             selfId={selfId}
-            empty={!activeContact ? "Select a client to start chatting." : "No messages yet."}
+            empty={!activeContact ? t("chat_select_to_start") : t("chat_no_messages_yet")}
           />
           <ChatComposer
             draft={draft}
             setDraft={setDraft}
             send={send}
             disabled={!activeContact || sending}
+            t={t}
           />
         </section>
       )}
@@ -306,13 +311,13 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
 };
 
 const ChatHeader = ({
-  contact, loading, showAccountantBadge, onBack,
+  contact, loading, showAccountantBadge, onBack, t,
 }: {
-  contact: Contact | null; loading: boolean; showAccountantBadge?: boolean; onBack?: () => void;
+  contact: Contact | null; loading: boolean; showAccountantBadge?: boolean; onBack?: () => void; t: (k: string) => string;
 }) => (
   <div className="px-4 py-3 border-b flex items-center gap-3 bg-card">
     {onBack && (
-      <Button variant="ghost" size="icon" className="h-8 w-8 -ms-1" onClick={onBack} aria-label="Back">
+      <Button variant="ghost" size="icon" className="h-8 w-8 -ms-1" onClick={onBack} aria-label={t("i18n_back")}>
         <ArrowLeft className="h-4 w-4" />
       </Button>
     )}
@@ -328,11 +333,11 @@ const ChatHeader = ({
           )}
         </div>
         {showAccountantBadge && (
-          <Badge className="bg-gold/20 text-gold-deep border-gold/40 text-[10px]">Your Accountant</Badge>
+          <Badge className="bg-gold/20 text-gold-deep border-gold/40 text-[10px]">{t("chat_your_accountant")}</Badge>
         )}
       </div>
     ) : (
-      <span className="text-sm text-muted-foreground">No conversation</span>
+      <span className="text-sm text-muted-foreground">{t("chat_no_conversation")}</span>
     )}
   </div>
 );
@@ -389,11 +394,13 @@ const ChatComposer = ({
   setDraft,
   send,
   disabled,
+  t,
 }: {
   draft: string;
   setDraft: (s: string) => void;
   send: () => void;
   disabled: boolean;
+  t: (k: string) => string;
 }) => (
   <div className="p-3 border-t flex items-center gap-2 bg-card">
     <Input
@@ -405,7 +412,7 @@ const ChatComposer = ({
           send();
         }
       }}
-      placeholder="Type a message…"
+      placeholder={t("chat_type_message")}
       disabled={disabled}
     />
     <Button variant="gold" size="icon" onClick={send} disabled={disabled || !draft.trim()}>

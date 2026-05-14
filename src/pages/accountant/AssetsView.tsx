@@ -173,9 +173,9 @@ const ScheduleTable = ({ asset, t }: { asset: FixedAsset; t: (k: string) => stri
       <table className="w-full text-xs">
         <thead>
           <tr className="border-b border-border/60 text-muted-foreground uppercase">
-            <th className="text-start py-1.5">Année</th>
-            <th className="text-end py-1.5">Annuité</th>
-            <th className="text-end py-1.5">Cumul amort.</th>
+            <th className="text-start py-1.5">{t("asset_year")}</th>
+            <th className="text-end py-1.5">{t("asset_annuity")}</th>
+            <th className="text-end py-1.5">{t("asset_cumul_amort")}</th>
             <th className="text-end py-1.5">VNC</th>
           </tr>
         </thead>
@@ -230,7 +230,7 @@ const AddAssetDialog = ({ open, onOpenChange, clients, onAdd, t }: {
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label className="text-xs">{t("assets_label")} *</Label>
-            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Serveur Dell PowerEdge" />
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t("ph_asset_example")} />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">{t("assets_category")} *</Label>
@@ -250,7 +250,7 @@ const AddAssetDialog = ({ open, onOpenChange, clients, onAdd, t }: {
               <Select value={clientId} onValueChange={setClientId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">— Cabinet —</SelectItem>
+                  <SelectItem value="none">{t("ph_cabinet_dash")}</SelectItem>
                   {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>

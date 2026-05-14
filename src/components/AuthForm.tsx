@@ -63,7 +63,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("Please fill in all fields");
+      toast.error(t("auth_fill_all_fields"));
       return;
     }
     setBusy(true);
@@ -93,16 +93,16 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
         });
         if (error) {
           if (error.message.toLowerCase().includes("already")) {
-            toast.error("An account with this email already exists. Please sign in.");
+            toast.error(t("auth_account_exists"));
           } else if (error.message.toLowerCase().includes("invit") || error.message.toLowerCase().includes("expired")) {
-            toast.error("Invite Link Expired");
+            toast.error(t("auth_invite_link_expired"));
           } else {
             toast.error(error.message);
           }
           return;
         }
         if (!data.session) {
-          toast.success("Check your email to confirm your account, then sign in.");
+          toast.success(t("auth_check_email_confirm"));
           navigate("/login");
           return;
         }
@@ -183,7 +183,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
               {mode === "signup" && !isInvite && (
                 <div className="space-y-1.5">
                   <Label htmlFor="name">{t("auth_full_name")}</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Sarah Bennani" />
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("auth_ph_full_name")} />
                 </div>
               )}
               {isInvite && prefillName && (
@@ -196,7 +196,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
               )}
               <div className="space-y-1.5">
                 <Label htmlFor="email">{t("auth_email")}</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" required />
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth_ph_email")} required />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="password">{t("auth_password")}</Label>

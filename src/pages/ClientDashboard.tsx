@@ -148,7 +148,7 @@ const ClientDashboard = () => {
   const confirmUpload = useCallback(async () => {
     if (!user || !pendingFile) return;
     if (!uploadTitle.trim()) {
-      toast.error("Le titre est requis");
+      toast.error(t("title_required"));
       return;
     }
     setUploading(true);
@@ -345,7 +345,7 @@ const ClientDashboard = () => {
               <Badge className="ms-1 h-4 px-1 text-[10px] bg-gold text-gold-foreground border-0">{declsForApproval.length}</Badge>
             )}</TabsTrigger>
             <TabsTrigger value="vault"><Archive className="h-4 w-4" /> {t("vault_title")}</TabsTrigger>
-            <TabsTrigger value="chat"><MessageCircle className="h-4 w-4" /> Chat</TabsTrigger>
+            <TabsTrigger value="chat"><MessageCircle className="h-4 w-4" /> {t("chat_label")}</TabsTrigger>
           </TabsList>
 
           {/* === UPLOAD CENTER === */}
@@ -370,7 +370,7 @@ const ClientDashboard = () => {
                     <div className="text-lg font-semibold text-foreground mb-1">
                       {isDragActive ? t("dash_upload_drop") : t("dash_upload_title")}
                     </div>
-                    <div className="text-sm text-muted-foreground mb-4">PDF, JPG, PNG • Max 5 MB</div>
+                    <div className="text-sm text-muted-foreground mb-4">{t("file_pdf_jpg_png_5mb")}</div>
                     <Button variant="hero" size="sm" type="button">{t("dash_upload_cta")}</Button>
                   </div>
                 </Card>
@@ -747,7 +747,7 @@ const SignDialog = ({
               <CheckCircle2 className="h-3 w-3 me-1" /> {t("sig_signed_stamp")}
             </Badge>
             {doc.signatureDataUrl && (
-              <img src={doc.signatureDataUrl} alt="signature" className="mx-auto h-20 object-contain" />
+              <img src={doc.signatureDataUrl} alt={t("i18n_signature")} className="mx-auto h-20 object-contain" />
             )}
             <div className="text-xs text-muted-foreground">
               {doc.signedBy} • {doc.signedAt && new Date(doc.signedAt).toLocaleString("fr-DZ")}

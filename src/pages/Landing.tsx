@@ -131,19 +131,19 @@ const Landing = () => {
           <div className="grid grid-cols-2 gap-3">
             <Card className="p-5 shadow-card hover:shadow-elegant transition-smooth">
               <div className="text-3xl font-bold text-primary">10k+</div>
-              <div className="text-xs text-muted-foreground mt-1">Businesses</div>
+              <div className="text-xs text-muted-foreground mt-1">{t("landing_businesses")}</div>
             </Card>
             <Card className="p-5 shadow-card mt-6 hover:shadow-elegant transition-smooth">
               <div className="text-3xl font-bold text-gold-deep">99.9%</div>
-              <div className="text-xs text-muted-foreground mt-1">Uptime</div>
+              <div className="text-xs text-muted-foreground mt-1">{t("landing_uptime")}</div>
             </Card>
             <Card className="p-5 shadow-card hover:shadow-elegant transition-smooth">
               <div className="text-3xl font-bold text-gold-deep">DZD</div>
-              <div className="text-xs text-muted-foreground mt-1">Devise locale (Dinar Algérien)</div>
+              <div className="text-xs text-muted-foreground mt-1">{t("landing_local_currency")}</div>
             </Card>
             <Card className="p-5 shadow-card mt-6 hover:shadow-elegant transition-smooth">
               <div className="text-3xl font-bold text-primary">3</div>
-              <div className="text-xs text-muted-foreground mt-1">Languages • RTL ready</div>
+              <div className="text-xs text-muted-foreground mt-1">{t("landing_languages_rtl")}</div>
             </Card>
           </div>
         </div>
@@ -152,8 +152,8 @@ const Landing = () => {
       {/* PRICING / FINAL CTA */}
       <section id="pricing" className="py-20 bg-gradient-hero text-primary-foreground">
         <div className="container text-center max-w-2xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to bridge the gap?</h2>
-          <p className="text-primary-foreground/80 mb-8">Try both portals — accountant & client — in one click.</p>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4">{t("landing_ready_bridge")}</h2>
+          <p className="text-primary-foreground/80 mb-8">{t("landing_try_portals")}</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button variant="gold" size="lg" onClick={() => navigate("/signup")}>{t("nav_get_started")}</Button>
             <Button variant="outline" size="lg" onClick={() => navigate("/login")}
@@ -168,9 +168,9 @@ const Landing = () => {
         <div className="container flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
           <div>© 2026 Managementik — {t("brand_tagline")}</div>
           <div className="flex gap-5">
-            <a href="#" className="hover:text-primary transition-smooth">Privacy</a>
-            <a href="#" className="hover:text-primary transition-smooth">Terms</a>
-            <a href="#" className="hover:text-primary transition-smooth">Contact</a>
+            <a href="#" className="hover:text-primary transition-smooth">{t("landing_privacy")}</a>
+            <a href="#" className="hover:text-primary transition-smooth">{t("landing_terms")}</a>
+            <a href="#" className="hover:text-primary transition-smooth">{t("landing_contact")}</a>
           </div>
         </div>
       </footer>
