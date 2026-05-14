@@ -28,8 +28,9 @@ import { DocPreviewDialog } from "@/components/DocPreviewDialog";
 import { WorkflowBadge } from "@/components/WorkflowStatus";
 import { FiscalCalendar } from "@/components/FiscalCalendar";
 import {
-  addIncomingInvoice, pushNotification, signSharedDoc, getVault, onPortalChange, type VaultEntry,
+  addIncomingInvoice, pushNotification, getVault, onPortalChange, type VaultEntry,
 } from "@/lib/portal";
+import { loadSharedDocsForClient, signSharedDocDb } from "@/lib/accountantStore";
 
 interface Doc { id?: string; file_path?: string; name: string; size: string; date: string; status: "processed" | "pending" }
 type DeclType = "G50" | "CNAS" | "CASNOS" | "CACOBATPH" | "TAP" | "IBS" | "FS" | "G12" | "CP";
