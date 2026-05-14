@@ -37,6 +37,7 @@ interface Props {
 }
 
 export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
+  const { t } = useApp();
   const isMobile = useIsMobile();
   const [showThreadOnMobile, setShowThreadOnMobile] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
