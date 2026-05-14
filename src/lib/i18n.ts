@@ -825,6 +825,11 @@ const en = {
   landing_contact: "Contact",
   notfound_oops: "Oops! Page not found",
   notfound_return: "Return to Home",
+  // === extra audit keys ===
+  cdoc_subtitle: "Documents uploaded by this client",
+  cdoc_empty: "No documents uploaded yet.",
+  cdoc_aria_download: "Download",
+
 };
 
 const fr: typeof en = {
@@ -1630,6 +1635,11 @@ const fr: typeof en = {
   landing_contact: "Contact",
   notfound_oops: "Oups! Page introuvable",
   notfound_return: "Retour à l'accueil",
+  // === extra audit keys ===
+  cdoc_subtitle: "Documents téléversés par ce client",
+  cdoc_empty: "Aucun document téléversé pour le moment.",
+  cdoc_aria_download: "Télécharger",
+
 };
 
 const ar: typeof en = {
@@ -2435,6 +2445,11 @@ const ar: typeof en = {
   landing_contact: "اتصل بنا",
   notfound_oops: "عذرًا! الصفحة غير موجودة",
   notfound_return: "العودة إلى الرئيسية",
+  // === extra audit keys ===
+  cdoc_subtitle: "الوثائق التي رفعها هذا الزبون",
+  cdoc_empty: "لم يتم رفع أي وثائق بعد.",
+  cdoc_aria_download: "تنزيل",
+
 };
 
 export const translations = { en, fr, ar };
