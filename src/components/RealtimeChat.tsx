@@ -394,11 +394,13 @@ const ChatComposer = ({
   setDraft,
   send,
   disabled,
+  t,
 }: {
   draft: string;
   setDraft: (s: string) => void;
   send: () => void;
   disabled: boolean;
+  t: (k: string) => string;
 }) => (
   <div className="p-3 border-t flex items-center gap-2 bg-card">
     <Input
@@ -410,7 +412,7 @@ const ChatComposer = ({
           send();
         }
       }}
-      placeholder="Type a message…"
+      placeholder={t("chat_type_message")}
       disabled={disabled}
     />
     <Button variant="gold" size="icon" onClick={send} disabled={disabled || !draft.trim()}>
