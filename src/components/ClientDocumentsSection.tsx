@@ -142,7 +142,7 @@ export const ClientDocumentsSection = ({
                 className="h-8 w-8"
                 onClick={() => handleDownload(d)}
                 disabled={downloading === d.id}
-                aria-label="Download"
+                aria-label={t("cdoc_aria_download")}
               >
                 {downloading === d.id ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
