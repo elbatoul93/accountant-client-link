@@ -1585,6 +1585,8 @@ const ar: typeof en = {
   tools_g50_ibs: "تسبيق IBS",
   tools_g50_total: "إجمالي G50",
   tools_g50_generate: "إنشاء G50",
+  tools_g50_regenerate: "إعادة إنشاء",
+  tools_g50_edit: "تعديل",
   tools_g50_generate_pdf: "إنشاء PDF",
   tools_g50_generate_excel: "إنشاء Excel",
   tools_g50_generating: "جارٍ الإنشاء…",
