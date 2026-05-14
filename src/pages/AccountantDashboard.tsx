@@ -685,6 +685,7 @@ const AccountantDashboard = () => {
                 onAddDecl={(d) => setDecls((p) => [d, ...p])}
                 onExtract={() => setObligationsClient(activeClient)}
                 onEdit={(c) => setEditingClient(c)}
+                onEditG50={(d) => { setEditG50(d); setOpenTool("g50"); }}
                 onMessage={async () => {
                   try {
                     const { data: auth } = await supabase.auth.getUser();
