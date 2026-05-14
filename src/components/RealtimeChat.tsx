@@ -243,7 +243,7 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
       {showSidebar && (
         <aside className="border-e border-border bg-muted/20 overflow-y-auto">
           <div className="p-3 border-b text-xs font-semibold text-muted-foreground flex items-center gap-2">
-            <Users className="h-3.5 w-3.5" /> Clients
+            <Users className="h-3.5 w-3.5" /> {t("acc_clients")}
           </div>
           {loadingContacts ? (
             <div className="p-3 space-y-2">
