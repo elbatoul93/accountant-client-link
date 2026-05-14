@@ -310,13 +310,13 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
 };
 
 const ChatHeader = ({
-  contact, loading, showAccountantBadge, onBack,
+  contact, loading, showAccountantBadge, onBack, t,
 }: {
-  contact: Contact | null; loading: boolean; showAccountantBadge?: boolean; onBack?: () => void;
+  contact: Contact | null; loading: boolean; showAccountantBadge?: boolean; onBack?: () => void; t: (k: string) => string;
 }) => (
   <div className="px-4 py-3 border-b flex items-center gap-3 bg-card">
     {onBack && (
-      <Button variant="ghost" size="icon" className="h-8 w-8 -ms-1" onClick={onBack} aria-label="Back">
+      <Button variant="ghost" size="icon" className="h-8 w-8 -ms-1" onClick={onBack} aria-label={t("i18n_back")}>
         <ArrowLeft className="h-4 w-4" />
       </Button>
     )}
@@ -332,11 +332,11 @@ const ChatHeader = ({
           )}
         </div>
         {showAccountantBadge && (
-          <Badge className="bg-gold/20 text-gold-deep border-gold/40 text-[10px]">Your Accountant</Badge>
+          <Badge className="bg-gold/20 text-gold-deep border-gold/40 text-[10px]">{t("chat_your_accountant")}</Badge>
         )}
       </div>
     ) : (
-      <span className="text-sm text-muted-foreground">No conversation</span>
+      <span className="text-sm text-muted-foreground">{t("chat_no_conversation")}</span>
     )}
   </div>
 );
