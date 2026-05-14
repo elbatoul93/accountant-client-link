@@ -132,6 +132,7 @@ const AccountantDashboard = () => {
   const { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks, precompte, setPrecompte } = useSuiteData();
   const [obligationsClient, setObligationsClient] = useState<Client | null>(null);
   const [openTool, setOpenTool] = useState<null | "fs" | "g50" | "send">(null);
+  const [editG50, setEditG50] = useState<{ id: string; formData: any } | null>(null);
   const [view, setView] = useState<View>("dashboard");
   const [activeClientId, setActiveClientId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -684,6 +685,7 @@ const AccountantDashboard = () => {
                 onAddDecl={(d) => setDecls((p) => [d, ...p])}
                 onExtract={() => setObligationsClient(activeClient)}
                 onEdit={(c) => setEditingClient(c)}
+                onEditG50={(d) => { setEditG50(d); setOpenTool("g50"); }}
                 onMessage={async () => {
                   try {
                     const { data: auth } = await supabase.auth.getUser();
@@ -882,8 +884,9 @@ const AccountantDashboard = () => {
         onSave={(fs) => { setFsList((p) => [fs, ...p]); setOpenTool(null); }}
       />
       <G50GeneratorDialog
-        open={openTool === "g50"} onOpenChange={(o) => !o && setOpenTool(null)}
+        open={openTool === "g50"} onOpenChange={(o) => { if (!o) { setOpenTool(null); setEditG50(null); } }}
         clients={g50Clients} t={t}
+        editing={editG50}
         getAggregates={(cid) => aggregateForG50(cid, bills, employees)}
         getLiveG50={(cid, period) => computeG50FromJournal(journal, { clientId: cid, period })}
         onGenerate={(d, shared, lockOpts) => {
@@ -902,6 +905,7 @@ const AccountantDashboard = () => {
           }
           if (lockOpts) setLocks((p) => lockPeriod(p, lockOpts));
           setOpenTool(null);
+          setEditG50(null);
         }}
       />
       <SendDocumentDialog
@@ -1178,11 +1182,12 @@ const ClientsListView = ({
 );
 
 const ClientProfileView = ({
-  t, client, decls, invoices, legalDocs, onBack, onAddLegal, onDeleteLegal, onAddDecl, onExtract, onMessage, onEdit,
+  t, client, decls, invoices, legalDocs, onBack, onAddLegal, onDeleteLegal, onAddDecl, onExtract, onMessage, onEdit, onEditG50,
 }: {
   t: (k: string) => string; client: Client; decls: Decl[]; invoices: Invoice[]; legalDocs: LegalDoc[];
   onBack: () => void; onAddLegal: (d: LegalDoc) => void; onDeleteLegal: (id: string) => void;
   onAddDecl: (d: Decl) => void; onExtract: () => void; onMessage: () => void; onEdit: (c: Client) => void;
+  onEditG50: (data: { id: string; formData: any }) => void;
 }) => {
   const totalDue = decls.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
   const filed = decls.filter((d) => d.status === "filed").length;
@@ -1392,6 +1397,24 @@ const ClientProfileView = ({
                   console.error(e);
                   toast.error(fmt === "pdf" ? "Export PDF échoué" : "Export G50 échoué");
                 }
+              }}
+              onEditG50={async (d) => {
+                const period = d.due.slice(0, 7);
+                const [yyyy, mm] = period.split("-");
+                const { data, error } = await supabase
+                  .from("g50_declarations")
+                  .select("id, form_data")
+                  .eq("client_id", client.id)
+                  .eq("year", Number(yyyy))
+                  .eq("month", Number(mm))
+                  .order("generated_at", { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                if (error || !data?.form_data) {
+                  toast.error("Aucune donnée G50 enregistrée pour cette période");
+                  return;
+                }
+                onEditG50({ id: data.id, formData: data.form_data });
               }}
             />
           </Card>
@@ -1933,11 +1956,12 @@ const AddDeclarationDialog = ({
   );
 };
 
-const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, onRegenerate }: {
+const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, onRegenerate, onEditG50 }: {
   items: Decl[]; onDelete: (id: string) => void; t: (k: string) => string;
   showType?: boolean; onSend?: (d: Decl) => void;
   sharedDocs?: SharedDoc[]; onReview?: (s: SharedDoc) => void;
   onRegenerate?: (d: Decl, format: "pdf" | "xlsx") => void | Promise<void>;
+  onEditG50?: (d: Decl) => void | Promise<void>;
 }) => {
   const [busyId, setBusyId] = useState<string | null>(null);
   if (items.length === 0) return <EmptyState label={t("empty_no_decls")} />;
@@ -1975,7 +1999,7 @@ const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, 
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" variant="outlineGold" disabled={!!busyId && busyId.startsWith(d.id)}>
                     <Download className="h-3.5 w-3.5" />
-                    {busyId && busyId.startsWith(d.id) ? t("tools_g50_generating") : t("tools_g50_generate")}
+                    {busyId && busyId.startsWith(d.id) ? t("tools_g50_generating") : t("tools_g50_regenerate")}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -1987,6 +2011,11 @@ const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, 
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            )}
+            {onEditG50 && d.type === "G50" && (
+              <Button size="sm" variant="outline" onClick={() => onEditG50(d)} title={t("tools_g50_edit")}>
+                <Pencil className="h-3.5 w-3.5" /> {t("tools_g50_edit")}
+              </Button>
             )}
             {shared && onReview && (
               <Button size="sm" variant="outline" onClick={() => onReview(shared)} title={t("wf_review_edit")}>
@@ -2084,8 +2113,9 @@ const FinancialStatementsDialog = ({
 };
 
 const G50GeneratorDialog = ({
-  open, onOpenChange, clients, t, onGenerate, getAggregates, getLiveG50,
+  open, onOpenChange, clients, t, onGenerate, getAggregates, getLiveG50, editing,
 }: { open: boolean; onOpenChange: (o: boolean) => void; clients: Client[]; t: (k: string) => string;
+     editing?: { id: string; formData: any } | null;
      onGenerate: (
        d: Decl,
        shared: SharedDoc | null,
@@ -2110,8 +2140,35 @@ const G50GeneratorDialog = ({
   const [format, setFormat] = useState<"pdf" | "xlsx">("pdf");
   const [generating, setGenerating] = useState(false);
 
+  // Prefill from editing row when opened in edit mode
+  useEffect(() => {
+    if (!open) return;
+    if (editing?.formData) {
+      const f = editing.formData;
+      const cid = f.clientId || clients.find((c) => c.taxId && c.taxId === f.nif)?.id || "";
+      if (cid) setClientId(cid);
+      if (f.year && f.month) setPeriod(`${f.year}-${String(f.month).padStart(2, "0")}`);
+      setCaHt(f.caHt != null ? String(f.caHt) : (f.caHtTotal != null ? String(f.caHtTotal) : ""));
+      setSalaries(f.salaries != null ? String(f.salaries) : "");
+      setBenefice(f.benefice != null ? String(f.benefice) : "");
+      setRTap(f.rTap != null ? String(f.rTap) : "2");
+      setRTva(f.rTva != null ? String(f.rTva) : "19");
+      setRIrg(f.rIrg != null ? String(f.rIrg) : "10");
+      setRIbs(f.rIbs != null ? String(f.rIbs) : "23");
+      setTrimestre(f.trimestre ? String(f.trimestre) : "");
+      setCaHtImposable(f.caHtImposable != null ? String(f.caHtImposable) : "");
+      setSynced(false);
+    } else {
+      // reset on open in create mode
+      setClientId(""); setCaHt(""); setSalaries(""); setBenefice("");
+      setCaHtImposable(""); setTrimestre("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editing?.id]);
+
   // Auto-fill from live journal aggregates when client/period changes
   useEffect(() => {
+    if (editing) return; // don't override edit prefill
     if (!clientId) { setSynced(false); return; }
     if (getLiveG50) {
       const live = getLiveG50(clientId, period);
@@ -2132,7 +2189,7 @@ const G50GeneratorDialog = ({
       }
     }
     setSynced(false);
-  }, [clientId, period, getLiveG50, getAggregates]);
+  }, [clientId, period, getLiveG50, getAggregates, editing]);
 
   const tap = (Number(caHt || 0) * Number(rTap || 0)) / 100;
   const tva = (Number(caHt || 0) * Number(rTva || 0)) / 100;
@@ -2159,6 +2216,14 @@ const G50GeneratorDialog = ({
         commune: c.commune,
         nif: c.taxId,
         bp: c.bp,
+        clientId: c.id,
+        caHt: Number(caHt || 0),
+        salaries: Number(salaries || 0),
+        benefice: Number(benefice || 0),
+        rTap: Number(rTap || 0),
+        rTva: Number(rTva || 0),
+        rIrg: Number(rIrg || 0),
+        rIbs: Number(rIbs || 0),
         caHtTotal: Number(caHt || 0),
         caHtImposable: Number(caHtImposable || caHt || 0),
         fileName: `G50_${c.taxId || "NIF"}_${yyyy}_${mm}.${ext}`,
@@ -2168,18 +2233,29 @@ const G50GeneratorDialog = ({
       } else {
         await generateG50Xlsx(payload);
       }
-      // Persist form inputs so this G50 can be regenerated later
+      // Persist form inputs so this G50 can be regenerated/edited later
       try {
         const { data: auth } = await supabase.auth.getUser();
         const accountantId = auth?.user?.id;
         if (accountantId) {
-          await supabase.from("g50_declarations").insert({
-            accountant_id: accountantId,
-            client_id: c.id,
-            month: Number(mm),
-            year: Number(yyyy),
-            form_data: payload as any,
-          });
+          if (editing?.id) {
+            await supabase.from("g50_declarations")
+              .update({
+                month: Number(mm),
+                year: Number(yyyy),
+                form_data: payload as any,
+                generated_at: new Date().toISOString(),
+              })
+              .eq("id", editing.id);
+          } else {
+            await supabase.from("g50_declarations").insert({
+              accountant_id: accountantId,
+              client_id: c.id,
+              month: Number(mm),
+              year: Number(yyyy),
+              form_data: payload as any,
+            });
+          }
         }
       } catch (saveErr) {
         console.error("Failed to save G50 declaration", saveErr);
