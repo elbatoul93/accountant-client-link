@@ -370,7 +370,7 @@ const ClientDashboard = () => {
                     <div className="text-lg font-semibold text-foreground mb-1">
                       {isDragActive ? t("dash_upload_drop") : t("dash_upload_title")}
                     </div>
-                    <div className="text-sm text-muted-foreground mb-4">PDF, JPG, PNG • Max 5 MB</div>
+                    <div className="text-sm text-muted-foreground mb-4">{t("file_pdf_jpg_png_5mb")}</div>
                     <Button variant="hero" size="sm" type="button">{t("dash_upload_cta")}</Button>
                   </div>
                 </Card>
