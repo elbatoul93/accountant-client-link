@@ -1387,9 +1387,8 @@ const ClientProfileView = ({
                     return;
                   }
                 }
-                onDeleteLegal; // no-op: keep prior import shape
                 // Remove the obligation entry from the UI immediately.
-                setDecls((p) => p.filter((x) => x.id !== declId));
+                onDeleteDecl(declId);
                 toast.success(t("acc_deleted"));
               }}
               showType
