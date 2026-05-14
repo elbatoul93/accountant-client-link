@@ -28,8 +28,9 @@ import { DocPreviewDialog } from "@/components/DocPreviewDialog";
 import { WorkflowBadge } from "@/components/WorkflowStatus";
 import { FiscalCalendar } from "@/components/FiscalCalendar";
 import {
-  addIncomingInvoice, pushNotification, signSharedDoc, getVault, onPortalChange, type VaultEntry,
+  addIncomingInvoice, pushNotification, getVault, onPortalChange, type VaultEntry,
 } from "@/lib/portal";
+import { loadSharedDocsForClient, signSharedDocDb } from "@/lib/accountantStore";
 
 interface Doc { id?: string; file_path?: string; name: string; size: string; date: string; status: "processed" | "pending" }
 type DeclType = "G50" | "CNAS" | "CASNOS" | "CACOBATPH" | "TAP" | "IBS" | "FS" | "G12" | "CP";
@@ -67,6 +68,14 @@ const ClientDashboard = () => {
   const [tick, setTick] = useState(0);
   const [signing, setSigning] = useState<SharedDoc | null>(null);
   const [previewDoc, setPreviewDoc] = useState<SharedDoc | null>(null);
+  const [dbSharedDocs, setDbSharedDocs] = useState<SharedDoc[]>([]);
+
+  // Load shared documents from the DB (RLS scopes to this client).
+  const refreshSharedDocs = useCallback(async () => {
+    const rows = await loadSharedDocsForClient();
+    setDbSharedDocs(rows as SharedDoc[]);
+  }, []);
+  useEffect(() => { refreshSharedDocs(); }, [refreshSharedDocs]);
 
   // ── Upload confirmation modal state ──
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -257,11 +266,11 @@ const ClientDashboard = () => {
     const ownDecls = allDecls.filter((d) => ids.has(d.clientId));
     const myD = regime ? ownDecls.filter((d) => requiredSet.has(d.type)) : ownDecls;
     const myI = allInvoices.filter((i) => ids.has(i.clientId));
-    const myS = allShared.filter((s) => ids.has(s.clientId) || s.clientEmail?.toLowerCase() === user.email.toLowerCase());
+    const myS = dbSharedDocs;
     const due = myD.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
     const v = getVault({ clientEmail: user.email });
     return { myDecls: myD, myInvoices: myI, mySharedDocs: myS, totalDue: due, myRegime: regime, requiredTypes: required, vault: v, myEmpCount: empCount, myHasCacobatph: hasCaco };
-  }, [user, docs, tick]);
+  }, [user, docs, tick, dbSharedDocs]);
 
   // Auth/role guard handled by ProtectedRoute wrapper — keep all hooks unconditional below.
 
@@ -584,13 +593,14 @@ const ClientDashboard = () => {
       <SignDialog
         doc={signing}
         onClose={() => setSigning(null)}
-        onSigned={(id, sig) => {
+        onSigned={async (id, sig) => {
           if (!user) return;
-          signSharedDoc(id, {
+          await signSharedDocDb(id, {
             signatureDataUrl: sig,
             signedAt: new Date().toISOString(),
             signedBy: user.name,
           });
+          await refreshSharedDocs();
           pushNotification({
             forRole: "accountant",
             title: t("notif_doc_signed_title"),
