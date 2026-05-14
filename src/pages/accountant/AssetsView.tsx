@@ -250,7 +250,7 @@ const AddAssetDialog = ({ open, onOpenChange, clients, onAdd, t }: {
               <Select value={clientId} onValueChange={setClientId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">— Cabinet —</SelectItem>
+                  <SelectItem value="none">{t("ph_cabinet_dash")}</SelectItem>
                   {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
