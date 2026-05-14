@@ -252,7 +252,7 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
               <Skeleton className="h-12 w-full" />
             </div>
           ) : contacts.length === 0 ? (
-            <p className="p-4 text-xs text-muted-foreground">No linked clients yet.</p>
+            <p className="p-4 text-xs text-muted-foreground">{t("chat_no_linked_clients")}</p>
           ) : (
             <ul>
               {contacts.map((c) => {
