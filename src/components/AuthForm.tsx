@@ -63,7 +63,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("Please fill in all fields");
+      toast.error(t("auth_fill_all_fields"));
       return;
     }
     setBusy(true);
