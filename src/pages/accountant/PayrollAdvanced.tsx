@@ -443,7 +443,7 @@ const AddEmployeeDialog = ({
         <div className="grid md:grid-cols-2 gap-4">
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <Field label={`${t("pay_employee")} *`} value={name} onChange={setName} placeholder="Karim B." />
+              <Field label={`${t("pay_employee")} *`} value={name} onChange={setName} placeholder={t("ph_employee_name")} />
               <Field label={t("payx_nss")} value={nss} onChange={setNss} placeholder="123456789012" />
             </div>
             <Field label={t("pay_position")} value={position} onChange={setPosition} placeholder="Comptable" />
