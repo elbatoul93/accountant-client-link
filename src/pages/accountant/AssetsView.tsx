@@ -173,9 +173,9 @@ const ScheduleTable = ({ asset, t }: { asset: FixedAsset; t: (k: string) => stri
       <table className="w-full text-xs">
         <thead>
           <tr className="border-b border-border/60 text-muted-foreground uppercase">
-            <th className="text-start py-1.5">Année</th>
-            <th className="text-end py-1.5">Annuité</th>
-            <th className="text-end py-1.5">Cumul amort.</th>
+            <th className="text-start py-1.5">{t("asset_year")}</th>
+            <th className="text-end py-1.5">{t("asset_annuity")}</th>
+            <th className="text-end py-1.5">{t("asset_cumul_amort")}</th>
             <th className="text-end py-1.5">VNC</th>
           </tr>
         </thead>
