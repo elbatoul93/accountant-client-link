@@ -1901,17 +1901,24 @@ const AddDeclarationDialog = ({
   );
 };
 
-const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview }: {
+const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, onRegenerate }: {
   items: Decl[]; onDelete: (id: string) => void; t: (k: string) => string;
   showType?: boolean; onSend?: (d: Decl) => void;
   sharedDocs?: SharedDoc[]; onReview?: (s: SharedDoc) => void;
+  onRegenerate?: (d: Decl, format: "pdf" | "xlsx") => void | Promise<void>;
 }) => {
+  const [busyId, setBusyId] = useState<string | null>(null);
   if (items.length === 0) return <EmptyState label={t("empty_no_decls")} />;
   const findShared = (d: Decl): SharedDoc | undefined => {
     if (!sharedDocs) return undefined;
     const period = d.due.slice(0, 7);
     return sharedDocs.find((s) => s.clientId === d.clientId && s.type === d.type && s.label.includes(period))
       || sharedDocs.find((s) => s.clientId === d.clientId && s.type === d.type);
+  };
+  const handleRegen = async (d: Decl, fmt: "pdf" | "xlsx") => {
+    if (!onRegenerate) return;
+    setBusyId(d.id + fmt);
+    try { await onRegenerate(d, fmt); } finally { setBusyId(null); }
   };
   return (
     <div className="space-y-2">
@@ -1931,6 +1938,24 @@ const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview }
               <div className="font-bold text-sm text-gold-deep">{fmtDZD(d.amount)}</div>
               <Badge variant="outline" className="text-[10px]">{t(`dash_${d.status}`)}</Badge>
             </div>
+            {onRegenerate && d.type === "G50" && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outlineGold" disabled={!!busyId && busyId.startsWith(d.id)}>
+                    <Download className="h-3.5 w-3.5" />
+                    {busyId && busyId.startsWith(d.id) ? t("tools_g50_generating") : t("tools_g50_generate_pdf").replace(/^G[ée]n[ée]rer\s+|^Generate\s+|^إنشاء\s+/i, "") || "Regenerate"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleRegen(d, "pdf")}>
+                    {t("tools_g50_generate_pdf")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleRegen(d, "xlsx")}>
+                    {t("tools_g50_generate_excel")}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             {shared && onReview && (
               <Button size="sm" variant="outline" onClick={() => onReview(shared)} title={t("wf_review_edit")}>
                 <Pencil className="h-3.5 w-3.5" /> {t("wf_review_edit")}
