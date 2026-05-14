@@ -60,7 +60,7 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
           if (cancelled) return;
           const list: Contact[] = (data || []).map((row: any) => ({
             user_id: row.id,
-            name: row.full_name || "",
+            name: (row.full_name && row.full_name.trim()) || "Unknown",
             email: "",
             company: null,
           }));
@@ -76,7 +76,7 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
           if (cancelled) return;
           const list: Contact[] = (data || []).map((row: any) => ({
             user_id: row.id,
-            name: row.full_name || "",
+            name: (row.full_name && row.full_name.trim()) || "Unknown",
             email: "",
             company: null,
           }));
