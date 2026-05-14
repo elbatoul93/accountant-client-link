@@ -168,9 +168,9 @@ const Landing = () => {
         <div className="container flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
           <div>© 2026 Managementik — {t("brand_tagline")}</div>
           <div className="flex gap-5">
-            <a href="#" className="hover:text-primary transition-smooth">Privacy</a>
-            <a href="#" className="hover:text-primary transition-smooth">Terms</a>
-            <a href="#" className="hover:text-primary transition-smooth">Contact</a>
+            <a href="#" className="hover:text-primary transition-smooth">{t("landing_privacy")}</a>
+            <a href="#" className="hover:text-primary transition-smooth">{t("landing_terms")}</a>
+            <a href="#" className="hover:text-primary transition-smooth">{t("landing_contact")}</a>
           </div>
         </div>
       </footer>
