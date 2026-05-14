@@ -180,16 +180,18 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === "signup" && (
+              {mode === "signup" && !isInvite && (
                 <div className="space-y-1.5">
                   <Label htmlFor="name">{t("auth_full_name")}</Label>
                   <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Sarah Bennani" />
                 </div>
               )}
-              {mode === "signup" && isInvite && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="company">{t("auth_company")}</Label>
-                  <Input id="company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Acme SARL" />
+              {isInvite && prefillName && (
+                <div className="rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-sm">
+                  <div className="font-semibold text-primary">{prefillName}</div>
+                  {prefillCompany && (
+                    <div className="text-xs text-muted-foreground">{prefillCompany}</div>
+                  )}
                 </div>
               )}
               <div className="space-y-1.5">
