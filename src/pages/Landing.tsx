@@ -131,19 +131,19 @@ const Landing = () => {
           <div className="grid grid-cols-2 gap-3">
             <Card className="p-5 shadow-card hover:shadow-elegant transition-smooth">
               <div className="text-3xl font-bold text-primary">10k+</div>
-              <div className="text-xs text-muted-foreground mt-1">Businesses</div>
+              <div className="text-xs text-muted-foreground mt-1">{t("landing_businesses")}</div>
             </Card>
             <Card className="p-5 shadow-card mt-6 hover:shadow-elegant transition-smooth">
               <div className="text-3xl font-bold text-gold-deep">99.9%</div>
-              <div className="text-xs text-muted-foreground mt-1">Uptime</div>
+              <div className="text-xs text-muted-foreground mt-1">{t("landing_uptime")}</div>
             </Card>
             <Card className="p-5 shadow-card hover:shadow-elegant transition-smooth">
               <div className="text-3xl font-bold text-gold-deep">DZD</div>
-              <div className="text-xs text-muted-foreground mt-1">Devise locale (Dinar Algérien)</div>
+              <div className="text-xs text-muted-foreground mt-1">{t("landing_local_currency")}</div>
             </Card>
             <Card className="p-5 shadow-card mt-6 hover:shadow-elegant transition-smooth">
               <div className="text-3xl font-bold text-primary">3</div>
-              <div className="text-xs text-muted-foreground mt-1">Languages • RTL ready</div>
+              <div className="text-xs text-muted-foreground mt-1">{t("landing_languages_rtl")}</div>
             </Card>
           </div>
         </div>
