@@ -281,6 +281,39 @@ export type Database = {
         }
         Relationships: []
       }
+      g50_declarations: {
+        Row: {
+          accountant_id: string
+          client_id: string
+          created_at: string
+          form_data: Json
+          generated_at: string
+          id: string
+          month: number
+          year: number
+        }
+        Insert: {
+          accountant_id: string
+          client_id: string
+          created_at?: string
+          form_data: Json
+          generated_at?: string
+          id?: string
+          month: number
+          year: number
+        }
+        Update: {
+          accountant_id?: string
+          client_id?: string
+          created_at?: string
+          form_data?: Json
+          generated_at?: string
+          id?: string
+          month?: number
+          year?: number
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           accountant_id: string
