@@ -61,6 +61,11 @@ export type Database = {
           expires_at: string
           id: string
           is_used: boolean
+          prefill_bp: string | null
+          prefill_commune: string | null
+          prefill_company: string | null
+          prefill_direction: string | null
+          prefill_name: string | null
           token: string
           used: boolean
           used_at: string | null
@@ -73,6 +78,11 @@ export type Database = {
           expires_at?: string
           id?: string
           is_used?: boolean
+          prefill_bp?: string | null
+          prefill_commune?: string | null
+          prefill_company?: string | null
+          prefill_direction?: string | null
+          prefill_name?: string | null
           token: string
           used?: boolean
           used_at?: string | null
@@ -85,6 +95,11 @@ export type Database = {
           expires_at?: string
           id?: string
           is_used?: boolean
+          prefill_bp?: string | null
+          prefill_commune?: string | null
+          prefill_company?: string | null
+          prefill_direction?: string | null
+          prefill_name?: string | null
           token?: string
           used?: boolean
           used_at?: string | null
