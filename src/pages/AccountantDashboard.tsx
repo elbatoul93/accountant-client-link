@@ -1228,6 +1228,7 @@ const ClientProfileView = ({
             <KPI icon={FileCheck2} label={t("profile_filed")} value={String(filed)} tone="primary" />
             <KPI icon={Receipt} label={t("profile_pending")} value={String(pending)} tone="gold" />
           </div>
+          <ClientDocumentsSection clientId={client.id} t={t} />
           <Card className="p-5 shadow-card">
             <h3 className="font-semibold text-primary mb-3">{t("dash_recent_invoices")}</h3>
             {invoices.length === 0 ? <EmptyState label={t("empty_no_invoices")} /> : (
