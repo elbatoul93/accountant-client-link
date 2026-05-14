@@ -197,7 +197,7 @@ function arrayBufferToBase64(buf: ArrayBuffer): string {
 }
 
 export async function generateG50Pdf(input: G50ExportInput) {
-  const xlsxBuf = await buildG50Buffer(input);
+  const xlsxBuf = await buildG50Buffer(input, true);
   const xlsxBase64 = arrayBufferToBase64(xlsxBuf);
   const xlsxName = input.fileName.replace(/\.pdf$/i, ".xlsx");
   const pdfName = input.fileName.replace(/\.xlsx$/i, ".pdf");
