@@ -1933,11 +1933,12 @@ const AddDeclarationDialog = ({
   );
 };
 
-const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, onRegenerate }: {
+const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, onRegenerate, onEditG50 }: {
   items: Decl[]; onDelete: (id: string) => void; t: (k: string) => string;
   showType?: boolean; onSend?: (d: Decl) => void;
   sharedDocs?: SharedDoc[]; onReview?: (s: SharedDoc) => void;
   onRegenerate?: (d: Decl, format: "pdf" | "xlsx") => void | Promise<void>;
+  onEditG50?: (d: Decl) => void | Promise<void>;
 }) => {
   const [busyId, setBusyId] = useState<string | null>(null);
   if (items.length === 0) return <EmptyState label={t("empty_no_decls")} />;
@@ -1975,7 +1976,7 @@ const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, 
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" variant="outlineGold" disabled={!!busyId && busyId.startsWith(d.id)}>
                     <Download className="h-3.5 w-3.5" />
-                    {busyId && busyId.startsWith(d.id) ? t("tools_g50_generating") : t("tools_g50_generate")}
+                    {busyId && busyId.startsWith(d.id) ? t("tools_g50_generating") : t("tools_g50_regenerate")}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -1987,6 +1988,11 @@ const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, 
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            )}
+            {onEditG50 && d.type === "G50" && (
+              <Button size="sm" variant="outline" onClick={() => onEditG50(d)} title={t("tools_g50_edit")}>
+                <Pencil className="h-3.5 w-3.5" /> {t("tools_g50_edit")}
+              </Button>
             )}
             {shared && onReview && (
               <Button size="sm" variant="outline" onClick={() => onReview(shared)} title={t("wf_review_edit")}>
