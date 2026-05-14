@@ -2,19 +2,46 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const CC_API = "https://api.cloudconvert.com/v2";
 
+function jsonResponse(body: unknown, status: number) {
+  return new Response(JSON.stringify(body), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status,
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
     const apiKey = Deno.env.get("CLOUDCONVERT_API_KEY");
-    if (!apiKey) throw new Error("CLOUDCONVERT_API_KEY not configured");
+    if (!apiKey || apiKey.trim().length === 0) {
+      console.error("[g50-pdf] CLOUDCONVERT_API_KEY missing or empty");
+      return jsonResponse(
+        { error: "CLOUDCONVERT_API_KEY is not configured in edge function secrets", stage: "config" },
+        200,
+      );
+    }
+    console.log(`[g50-pdf] API key loaded (length=${apiKey.length})`);
 
-    const { xlsxBase64, fileName } = await req.json();
-    if (!xlsxBase64 || !fileName) throw new Error("xlsxBase64 and fileName required");
+    let payload: { xlsxBase64?: string; fileName?: string };
+    try {
+      payload = await req.json();
+    } catch (e) {
+      return jsonResponse({ error: "Invalid JSON body", stage: "parse" }, 200);
+    }
+    const { xlsxBase64, fileName } = payload;
+    if (!xlsxBase64 || !fileName) {
+      return jsonResponse(
+        { error: "xlsxBase64 and fileName are required", stage: "validate" },
+        200,
+      );
+    }
+    console.log(`[g50-pdf] Received file=${fileName}, base64Length=${xlsxBase64.length}`);
 
     const auth = { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" };
 
-    // Create job: import base64 -> convert xlsx->pdf -> export url
+    // Step 1: create job
+    console.log("[g50-pdf] Creating CloudConvert job...");
     const jobRes = await fetch(`${CC_API}/jobs`, {
       method: "POST",
       headers: auth,
@@ -39,35 +66,85 @@ Deno.serve(async (req) => {
         },
       }),
     });
+    const jobText = await jobRes.text();
     if (!jobRes.ok) {
-      const txt = await jobRes.text();
-      throw new Error(`CloudConvert job create failed [${jobRes.status}]: ${txt}`);
+      console.error(`[g50-pdf] Job create failed [${jobRes.status}]: ${jobText}`);
+      return jsonResponse(
+        {
+          error: `CloudConvert job creation failed (HTTP ${jobRes.status})`,
+          stage: "job-create",
+          details: jobText,
+          hint: jobRes.status === 401 || jobRes.status === 403
+            ? "Check that CLOUDCONVERT_API_KEY is valid and has scopes: user.read, task.read, task.write"
+            : undefined,
+        },
+        200,
+      );
     }
-    const job = await jobRes.json();
-    const jobId = job.data.id;
+    const job = JSON.parse(jobText);
+    const jobId = job.data?.id;
+    console.log(`[g50-pdf] Job created id=${jobId}`);
 
-    // Wait for completion
+    // Step 2: wait for completion
+    console.log("[g50-pdf] Waiting for job completion...");
     const waitRes = await fetch(`${CC_API}/jobs/${jobId}/wait`, { headers: auth });
+    const waitText = await waitRes.text();
     if (!waitRes.ok) {
-      const txt = await waitRes.text();
-      throw new Error(`CloudConvert wait failed [${waitRes.status}]: ${txt}`);
+      console.error(`[g50-pdf] Wait failed [${waitRes.status}]: ${waitText}`);
+      return jsonResponse(
+        {
+          error: `CloudConvert wait failed (HTTP ${waitRes.status})`,
+          stage: "job-wait",
+          details: waitText,
+          hint: waitRes.status === 401 || waitRes.status === 403
+            ? "Your CloudConvert API key is missing required scopes. Edit the key at https://cloudconvert.com/dashboard/api/v2/keys and enable: user.read, task.read, task.write"
+            : undefined,
+        },
+        200,
+      );
     }
-    const waited = await waitRes.json();
-    if (waited.data.status !== "finished") {
-      throw new Error(`CloudConvert job status: ${waited.data.status}`);
+    const waited = JSON.parse(waitText);
+    const status = waited.data?.status;
+    console.log(`[g50-pdf] Job finished with status=${status}`);
+
+    if (status !== "finished") {
+      const failedTask = waited.data?.tasks?.find((t: { status: string }) => t.status === "error");
+      return jsonResponse(
+        {
+          error: `CloudConvert job did not finish (status=${status})`,
+          stage: "job-status",
+          failedTask: failedTask?.name,
+          taskMessage: failedTask?.message,
+          details: waited.data,
+        },
+        200,
+      );
     }
 
     const exportTask = waited.data.tasks.find(
       (t: { name: string }) => t.name === "export-1",
     );
     const fileUrl = exportTask?.result?.files?.[0]?.url;
-    if (!fileUrl) throw new Error("No PDF URL returned");
+    if (!fileUrl) {
+      console.error("[g50-pdf] No PDF URL in export task", JSON.stringify(exportTask));
+      return jsonResponse(
+        { error: "CloudConvert returned no PDF URL", stage: "export", details: exportTask },
+        200,
+      );
+    }
 
+    console.log(`[g50-pdf] Downloading PDF from ${fileUrl}`);
     const pdfRes = await fetch(fileUrl);
-    if (!pdfRes.ok) throw new Error(`PDF download failed [${pdfRes.status}]`);
+    if (!pdfRes.ok) {
+      const errText = await pdfRes.text();
+      return jsonResponse(
+        { error: `PDF download failed (HTTP ${pdfRes.status})`, stage: "download", details: errText },
+        200,
+      );
+    }
     const pdfBuf = new Uint8Array(await pdfRes.arrayBuffer());
+    console.log(`[g50-pdf] PDF downloaded, size=${pdfBuf.length}`);
 
-    // base64 encode
     let binary = "";
     const chunk = 0x8000;
     for (let i = 0; i < pdfBuf.length; i += chunk) {
@@ -75,16 +152,11 @@ Deno.serve(async (req) => {
     }
     const pdfBase64 = btoa(binary);
 
-    return new Response(JSON.stringify({ pdfBase64 }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return jsonResponse({ pdfBase64 }, 200);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.error("g50-pdf error:", msg);
-    return new Response(JSON.stringify({ error: msg }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    const stack = e instanceof Error ? e.stack : undefined;
+    console.error("[g50-pdf] Unexpected error:", msg, stack);
+    return jsonResponse({ error: msg, stage: "exception", stack }, 200);
   }
 });
