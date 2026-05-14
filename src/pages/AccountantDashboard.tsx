@@ -1394,6 +1394,24 @@ const ClientProfileView = ({
                   toast.error(fmt === "pdf" ? "Export PDF échoué" : "Export G50 échoué");
                 }
               }}
+              onEditG50={async (d) => {
+                const period = d.due.slice(0, 7);
+                const [yyyy, mm] = period.split("-");
+                const { data, error } = await supabase
+                  .from("g50_declarations")
+                  .select("id, form_data")
+                  .eq("client_id", client.id)
+                  .eq("year", Number(yyyy))
+                  .eq("month", Number(mm))
+                  .order("generated_at", { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                if (error || !data?.form_data) {
+                  toast.error("Aucune donnée G50 enregistrée pour cette période");
+                  return;
+                }
+                onEditG50({ id: data.id, formData: data.form_data });
+              }}
             />
           </Card>
         </TabsContent>
