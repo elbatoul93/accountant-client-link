@@ -1361,7 +1361,39 @@ const ClientProfileView = ({
               </div>
             )}
 
-            <DeclList items={obligations} t={t} onDelete={() => {}} showType />
+            <DeclList
+              items={obligations}
+              t={t}
+              onDelete={() => {}}
+              showType
+              onRegenerate={async (d, fmt) => {
+                const period = d.due.slice(0, 7);
+                const [yyyy, mm] = period.split("-");
+                const { data, error } = await supabase
+                  .from("g50_declarations")
+                  .select("form_data")
+                  .eq("client_id", client.id)
+                  .eq("year", Number(yyyy))
+                  .eq("month", Number(mm))
+                  .order("generated_at", { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                if (error || !data?.form_data) {
+                  toast.error("Aucune donnée G50 enregistrée pour cette période");
+                  return;
+                }
+                const payload = data.form_data as any;
+                const ext = fmt === "pdf" ? "pdf" : "xlsx";
+                const fileName = `G50_${payload.nif || "NIF"}_${yyyy}_${mm}.${ext}`;
+                try {
+                  if (fmt === "pdf") await generateG50Pdf({ ...payload, fileName });
+                  else await generateG50Xlsx({ ...payload, fileName });
+                } catch (e) {
+                  console.error(e);
+                  toast.error(fmt === "pdf" ? "Export PDF échoué" : "Export G50 échoué");
+                }
+              }}
+            />
           </Card>
         </TabsContent>
 
