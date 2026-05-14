@@ -323,6 +323,40 @@ export const syncLegal = async (
   return next.map((x) => replaced.get(x.id) ?? x);
 };
 
+// ============ CLIENT-SIDE READ (relies on RLS for client visibility) ============
+
+export const loadSharedDocsForClient = async (): Promise<SharedDoc[]> => {
+  const { data, error } = await supabase.from("acc_shared_documents")
+    .select("*").order("created_at", { ascending: false });
+  if (error || !data) return [];
+  const rows: SharedDoc[] = [];
+  for (const r of data) {
+    const fileData = r.file_path ? await signedUrl(r.file_path) : undefined;
+    rows.push({
+      id: r.id, clientId: r.client_ref, clientName: r.client_name, clientEmail: r.client_email ?? "",
+      type: r.doc_type as SharedDoc["type"], label: r.label, date: r.doc_date ?? r.created_at,
+      payload: r.payload ?? undefined, fileName: r.file_name ?? undefined,
+      mimeType: r.mime_type ?? undefined, fileData,
+      signedAt: r.signed_at ?? undefined, signedBy: r.signed_by ?? undefined,
+      signatureDataUrl: r.signature_data_url ?? undefined,
+      workflow: (r.workflow as WorkflowStatus | null) ?? undefined,
+      filePath: r.file_path ?? undefined,
+    });
+  }
+  return rows;
+};
+
+export const signSharedDocDb = async (
+  id: string, patch: { signatureDataUrl: string; signedAt: string; signedBy: string },
+): Promise<void> => {
+  const { error } = await supabase.from("acc_shared_documents").update({
+    signature_data_url: patch.signatureDataUrl,
+    signed_at: patch.signedAt,
+    signed_by: patch.signedBy,
+  }).eq("id", id);
+  if (error) console.error("[accountantStore] sign update failed", error);
+};
+
 // ============ ONE-TIME MIGRATION FROM LOCALSTORAGE ============
 
 const readLocal = <T,>(k: string): T[] => {
