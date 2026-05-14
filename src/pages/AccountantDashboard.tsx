@@ -469,7 +469,14 @@ const AccountantDashboard = () => {
                         crypto.getRandomValues(arr);
                         const newToken = Array.from(arr, (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 24);
                         const { error } = await supabase.from("invitations").insert({
-                          token: newToken, accountant_id: au.id, email: targetEmail,
+                          token: newToken,
+                          accountant_id: au.id,
+                          email: targetEmail,
+                          prefill_name: c.name?.trim() || null,
+                          prefill_company: c.company?.trim() || null,
+                          prefill_commune: c.commune?.trim() || null,
+                          prefill_direction: c.direction?.trim() || null,
+                          prefill_bp: c.bp?.trim() || null,
                         });
                         if (error) { toast.error(error.message); return; }
                         token = newToken;
