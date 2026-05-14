@@ -593,13 +593,14 @@ const ClientDashboard = () => {
       <SignDialog
         doc={signing}
         onClose={() => setSigning(null)}
-        onSigned={(id, sig) => {
+        onSigned={async (id, sig) => {
           if (!user) return;
-          signSharedDoc(id, {
+          await signSharedDocDb(id, {
             signatureDataUrl: sig,
             signedAt: new Date().toISOString(),
             signedBy: user.name,
           });
+          await refreshSharedDocs();
           pushNotification({
             forRole: "accountant",
             title: t("notif_doc_signed_title"),
