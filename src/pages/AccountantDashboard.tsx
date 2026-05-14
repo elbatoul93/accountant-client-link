@@ -683,6 +683,7 @@ const AccountantDashboard = () => {
                 onAddLegal={(doc) => setLegalDocs((p) => [doc, ...p])}
                 onDeleteLegal={(id) => setLegalDocs((p) => p.filter((x) => x.id !== id))}
                 onAddDecl={(d) => setDecls((p) => [d, ...p])}
+                onDeleteDecl={(id) => setDecls((p) => p.filter((x) => x.id !== id))}
                 onExtract={() => setObligationsClient(activeClient)}
                 onEdit={(c) => setEditingClient(c)}
                 onEditG50={(d) => { setEditG50(d); setOpenTool("g50"); }}
