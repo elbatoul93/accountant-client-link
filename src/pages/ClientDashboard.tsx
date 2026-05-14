@@ -747,7 +747,7 @@ const SignDialog = ({
               <CheckCircle2 className="h-3 w-3 me-1" /> {t("sig_signed_stamp")}
             </Badge>
             {doc.signatureDataUrl && (
-              <img src={doc.signatureDataUrl} alt="signature" className="mx-auto h-20 object-contain" />
+              <img src={doc.signatureDataUrl} alt={t("i18n_signature")} className="mx-auto h-20 object-contain" />
             )}
             <div className="text-xs text-muted-foreground">
               {doc.signedBy} • {doc.signedAt && new Date(doc.signedAt).toLocaleString("fr-DZ")}
