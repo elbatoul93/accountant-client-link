@@ -31,6 +31,8 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
   const [busy, setBusy] = useState(false);
   const [inviteValid, setInviteValid] = useState<null | boolean>(isInvite ? null : true);
   const [accountantName, setAccountantName] = useState<string>("");
+  const [prefillName, setPrefillName] = useState<string>("");
+  const [prefillCompany, setPrefillCompany] = useState<string>("");
 
   // Validate invite token on mount
   useEffect(() => {
@@ -38,7 +40,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
     (async () => {
       const { data, error } = await supabase
         .from("invitations")
-        .select("accountant_id, is_used, expires_at")
+        .select("accountant_id, is_used, expires_at, email, prefill_name, prefill_company")
         .eq("token", token)
         .maybeSingle();
       if (error || !data || data.is_used || new Date(data.expires_at) < new Date()) {
@@ -46,6 +48,9 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
         return;
       }
       setInviteValid(true);
+      setPrefillName(data.prefill_name || "");
+      setPrefillCompany(data.prefill_company || "");
+      if (data.email) setEmail(data.email);
       const { data: prof } = await supabase
         .from("profiles")
         .select("name, company")
@@ -66,14 +71,20 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
       if (mode === "signup") {
         const role = isInvite ? "client" : "accountant";
         const redirectUrl = `${window.location.origin}/`;
+        const resolvedName = isInvite
+          ? (prefillName || email.split("@")[0])
+          : (name || email.split("@")[0]);
+        const resolvedCompany = isInvite
+          ? (prefillCompany || "My Business")
+          : (company || "Managementik & Co.");
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: redirectUrl,
             data: {
-              name: name || email.split("@")[0],
-              company: company || (role === "accountant" ? "Managementik & Co." : "My Business"),
+              name: resolvedName,
+              company: resolvedCompany,
               role,
               user_type: role,
               ...(isInvite ? { invite_token: token } : {}),
@@ -169,16 +180,18 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === "signup" && (
+              {mode === "signup" && !isInvite && (
                 <div className="space-y-1.5">
                   <Label htmlFor="name">{t("auth_full_name")}</Label>
                   <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Sarah Bennani" />
                 </div>
               )}
-              {mode === "signup" && isInvite && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="company">{t("auth_company")}</Label>
-                  <Input id="company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Acme SARL" />
+              {isInvite && prefillName && (
+                <div className="rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-sm">
+                  <div className="font-semibold text-primary">{prefillName}</div>
+                  {prefillCompany && (
+                    <div className="text-xs text-muted-foreground">{prefillCompany}</div>
+                  )}
                 </div>
               )}
               <div className="space-y-1.5">
