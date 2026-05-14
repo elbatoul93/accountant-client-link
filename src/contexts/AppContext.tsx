@@ -54,16 +54,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     // Defer DB calls outside the auth callback to avoid deadlocks
     setTimeout(async () => {
       const uid = session.user.id;
+      const meta2 = (session.user.user_metadata ?? {}) as { name?: string; company?: string };
       const { data: profile } = await supabase
         .from("profiles")
         .select("name,email,company")
         .eq("user_id", uid)
         .maybeSingle();
+      // eslint-disable-next-line no-console
+      console.log("[AppContext] self profile fetch", { profile, meta: session.user.user_metadata });
+      const resolvedName =
+        (profile?.name && profile.name.trim()) ||
+        (meta2.name && meta2.name.trim()) ||
+        "Unknown";
       setUser({
-        name: profile?.name?.trim() || "Unknown",
+        name: resolvedName,
         email: profile?.email || session.user.email || "",
         role,
-        company: profile?.company ?? undefined,
+        company: profile?.company ?? meta2.company ?? undefined,
       });
       setLoading(false);
     }, 0);
