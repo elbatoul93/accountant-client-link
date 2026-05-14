@@ -2111,6 +2111,22 @@ const G50GeneratorDialog = ({
       } else {
         await generateG50Xlsx(payload);
       }
+      // Persist form inputs so this G50 can be regenerated later
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        const accountantId = auth?.user?.id;
+        if (accountantId) {
+          await supabase.from("g50_declarations").insert({
+            accountant_id: accountantId,
+            client_id: c.id,
+            month: Number(mm),
+            year: Number(yyyy),
+            form_data: payload as any,
+          });
+        }
+      } catch (saveErr) {
+        console.error("Failed to save G50 declaration", saveErr);
+      }
     } catch (e) {
       console.error(e);
       toast.error(format === "pdf" ? "Export PDF échoué" : "Export G50 échoué");
