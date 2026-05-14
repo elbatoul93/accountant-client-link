@@ -287,19 +287,21 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
             contact={activeContact}
             loading={loadingContacts}
             onBack={isMobile ? () => setShowThreadOnMobile(false) : undefined}
+            t={t}
           />
           <ChatThread
             ref={scrollerRef}
             loading={loadingMessages}
             messages={messages}
             selfId={selfId}
-            empty={!activeContact ? "Select a client to start chatting." : "No messages yet."}
+            empty={!activeContact ? t("chat_select_to_start") : t("chat_no_messages_yet")}
           />
           <ChatComposer
             draft={draft}
             setDraft={setDraft}
             send={send}
             disabled={!activeContact || sending}
+            t={t}
           />
         </section>
       )}
