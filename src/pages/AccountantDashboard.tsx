@@ -1623,7 +1623,7 @@ const AddClientDialog = ({
             </div>
           </Section>
         </div>
-        <DialogFooter><Button onClick={submit} variant="hero">{t("acc_save")}</Button></DialogFooter>
+        <DialogFooter><Button onClick={submit} variant="hero">{mode === "edit" ? "Save Changes" : t("acc_save")}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
