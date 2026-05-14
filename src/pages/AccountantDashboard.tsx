@@ -655,6 +655,7 @@ const AccountantDashboard = () => {
                 onDeleteLegal={(id) => setLegalDocs((p) => p.filter((x) => x.id !== id))}
                 onAddDecl={(d) => setDecls((p) => [d, ...p])}
                 onExtract={() => setObligationsClient(activeClient)}
+                onEdit={(c) => setPendingEditClient(c)}
                 onMessage={async () => {
                   try {
                     const { data: auth } = await supabase.auth.getUser();
@@ -1192,6 +1193,9 @@ const ClientProfileView = ({
           <div className="flex flex-col sm:flex-row gap-2">
             <Button variant="outline" size="sm" onClick={onMessage}>
               <MessageCircle className="h-4 w-4" /> Message
+            </Button>
+            <Button variant="outlineGold" size="sm" onClick={() => onEdit(client)}>
+              <Pencil className="h-4 w-4" /> Edit
             </Button>
             <Button variant="gold" size="sm" onClick={onExtract}>
               <FileDown className="h-4 w-4" /> {t("acc_extract")}
