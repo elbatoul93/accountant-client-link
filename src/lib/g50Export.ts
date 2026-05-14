@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface G50ExportInput {
   companyName: string;
@@ -22,7 +23,7 @@ const replaceDots = (existing: unknown, value: string): string => {
   return value;
 };
 
-export async function generateG50Xlsx(input: G50ExportInput) {
+async function buildG50Buffer(input: G50ExportInput): Promise<ArrayBuffer> {
   const res = await fetch("/templates/G50_template.xlsx");
   if (!res.ok) throw new Error("G50 template not found");
   const buf = await res.arrayBuffer();
@@ -49,14 +50,12 @@ export async function generateG50Xlsx(input: G50ExportInput) {
     if (input.direction) set("I7", input.direction);
     if (input.commune) set("H16", input.commune);
 
-    // NIF — one digit per cell D22..R22 (15 cells)
     const cols = ["D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R"];
     const nif = (input.nif || "").replace(/\D/g, "").slice(0, 15);
     cols.forEach((c, i) => {
       ibs.getCell(`${c}22`).value = nif[i] ?? null;
     });
 
-    // BP — append to existing "BP : "
     if (input.bp) {
       const bpCell = ibs.getCell("BW23");
       const cur = typeof bpCell.value === "string" ? bpCell.value : "BP : ";
@@ -70,16 +69,55 @@ export async function generateG50Xlsx(input: G50ExportInput) {
     if (input.caHtImposable > 0) tva.getCell("BQ22").value = input.caHtImposable;
   }
 
-  const out = await wb.xlsx.writeBuffer();
-  const blob = new Blob([out], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
+  return await wb.xlsx.writeBuffer() as ArrayBuffer;
+}
+
+function downloadBlob(blob: Blob, fileName: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = input.fileName;
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export async function generateG50Xlsx(input: G50ExportInput) {
+  const out = await buildG50Buffer(input);
+  const blob = new Blob([out], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  downloadBlob(blob, input.fileName);
+}
+
+function arrayBufferToBase64(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(
+      null,
+      Array.from(bytes.subarray(i, i + chunk)) as unknown as number[],
+    );
+  }
+  return btoa(binary);
+}
+
+export async function generateG50Pdf(input: G50ExportInput) {
+  const xlsxBuf = await buildG50Buffer(input);
+  const xlsxBase64 = arrayBufferToBase64(xlsxBuf);
+  const xlsxName = input.fileName.replace(/\.pdf$/i, ".xlsx");
+  const pdfName = input.fileName.replace(/\.xlsx$/i, ".pdf");
+
+  const { data, error } = await supabase.functions.invoke("g50-pdf", {
+    body: { xlsxBase64, fileName: xlsxName },
+  });
+  if (error) throw error;
+  if (!data?.pdfBase64) throw new Error("PDF conversion failed");
+
+  const bin = atob(data.pdfBase64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  downloadBlob(new Blob([bytes], { type: "application/pdf" }), pdfName);
 }

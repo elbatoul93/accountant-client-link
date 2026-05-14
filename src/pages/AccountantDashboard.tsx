@@ -49,7 +49,9 @@ import { ClientInviteManager } from "@/components/ClientInviteManager";
 import { ClientFilesSection } from "@/components/ClientFilesSection";
 import { IncomingDocumentsLive } from "@/components/IncomingDocumentsLive";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
-import { generateG50Xlsx } from "@/lib/g50Export";
+import { generateG50Xlsx, generateG50Pdf } from "@/lib/g50Export";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ChevronDown } from "lucide-react";
 
 const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
@@ -1850,6 +1852,8 @@ const G50GeneratorDialog = ({
   const [trimestre, setTrimestre] = useState("");
   const [caHtImposable, setCaHtImposable] = useState("");
   const [synced, setSynced] = useState(false);
+  const [format, setFormat] = useState<"pdf" | "xlsx">("pdf");
+  const [generating, setGenerating] = useState(false);
 
   // Auto-fill from live journal aggregates when client/period changes
   useEffect(() => {
@@ -1886,8 +1890,10 @@ const G50GeneratorDialog = ({
     if (!c || !period || total <= 0) { toast.error("Champs requis"); return; }
     const declId = crypto.randomUUID();
     const [yyyy, mm] = period.split("-");
+    const ext = format === "pdf" ? "pdf" : "xlsx";
+    setGenerating(true);
     try {
-      await generateG50Xlsx({
+      const payload = {
         companyName: c.company || c.name,
         activity: c.activity,
         address: c.address,
@@ -1900,12 +1906,20 @@ const G50GeneratorDialog = ({
         bp: c.bp,
         caHtTotal: Number(caHt || 0),
         caHtImposable: Number(caHtImposable || caHt || 0),
-        fileName: `G50_${c.taxId || "NIF"}_${yyyy}_${mm}.xlsx`,
-      });
+        fileName: `G50_${c.taxId || "NIF"}_${yyyy}_${mm}.${ext}`,
+      };
+      if (format === "pdf") {
+        await generateG50Pdf(payload);
+      } else {
+        await generateG50Xlsx(payload);
+      }
     } catch (e) {
       console.error(e);
-      toast.error("Export G50 échoué");
+      toast.error(format === "pdf" ? "Export PDF échoué" : "Export G50 échoué");
+      setGenerating(false);
+      return;
     }
+    setGenerating(false);
     const decl: Decl = {
       id: declId, clientId: c.id, clientName: c.name,
       type: "G50", amount: Math.round(total), due: `${period}-20`, status: "filed",
@@ -2009,7 +2023,42 @@ const G50GeneratorDialog = ({
             <span className="text-2xl font-bold text-gold-deep">{fmtDZD(total)}</span>
           </div>
         </div>
-        <DialogFooter><Button onClick={submit} variant="gold">{t("tools_g50_generate")}</Button></DialogFooter>
+        <DialogFooter>
+          <div className="inline-flex rounded-md shadow-sm">
+            <Button
+              onClick={submit}
+              variant="gold"
+              disabled={generating}
+              className="rounded-r-none"
+            >
+              {generating
+                ? "…"
+                : format === "pdf"
+                  ? "Generate PDF"
+                  : "Generate Excel"}
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="gold"
+                  disabled={generating}
+                  className="rounded-l-none border-l border-gold-foreground/20 px-2"
+                  aria-label="Choose format"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setFormat("pdf")}>
+                  PDF {format === "pdf" && "✓"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFormat("xlsx")}>
+                  Excel {format === "xlsx" && "✓"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
