@@ -113,8 +113,17 @@ export async function generateG50Pdf(input: G50ExportInput) {
   const { data, error } = await supabase.functions.invoke("g50-pdf", {
     body: { xlsxBase64, fileName: xlsxName },
   });
-  if (error) throw error;
-  if (!data?.pdfBase64) throw new Error("PDF conversion failed");
+  if (error) {
+    console.error("g50-pdf invoke error:", error, "data:", data);
+    const detail = data?.error || data?.details || error.message;
+    const hint = data?.hint ? ` (${data.hint})` : "";
+    throw new Error(`PDF conversion failed: ${detail}${hint}`);
+  }
+  if (data?.error) {
+    console.error("g50-pdf returned error:", data);
+    throw new Error(`PDF conversion failed: ${data.error}${data.hint ? ` — ${data.hint}` : ""}`);
+  }
+  if (!data?.pdfBase64) throw new Error("PDF conversion failed: no PDF returned");
 
   const bin = atob(data.pdfBase64);
   const bytes = new Uint8Array(bin.length);
