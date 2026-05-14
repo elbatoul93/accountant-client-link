@@ -43,9 +43,9 @@ export async function generateG50Xlsx(input: G50ExportInput) {
     setDots("AK14", input.companyName || "");
     if (input.activity) setDots("AS20", input.activity);
     if (input.address) setDots("AN22", input.address);
-    if (input.month) set("U6", input.month);
+    if (input.month) set("Y6", input.month);
     if (input.trimestre) set("U7", input.trimestre);
-    if (input.year) set("U9", input.year);
+    if (input.year) set("Y9", input.year);
     if (input.direction) set("I7", input.direction);
     if (input.commune) set("H16", input.commune);
 
