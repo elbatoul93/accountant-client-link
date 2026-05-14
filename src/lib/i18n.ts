@@ -174,6 +174,8 @@ const en = {
   tools_g50_ibs: "IBS instalment",
   tools_g50_total: "Total G50",
   tools_g50_generate: "Generate G50",
+  tools_g50_regenerate: "Regenerate",
+  tools_g50_edit: "Edit",
   tools_g50_generate_pdf: "Generate PDF",
   tools_g50_generate_excel: "Generate Excel",
   tools_g50_generating: "Generating…",
