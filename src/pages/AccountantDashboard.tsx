@@ -1615,7 +1615,9 @@ const AddClientDialog = ({
 
           <Section title={t("client_section_contact")} icon={Mail}>
             <div className="grid sm:grid-cols-2 gap-3">
-              <Field label={t("client_email")}><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contact@acme.dz" /></Field>
+              {mode !== "edit" && (
+                <Field label={t("client_email")}><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contact@acme.dz" /></Field>
+              )}
               <Field label={t("client_phone")}><Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+213 555 12 34 56" /></Field>
               <Field label={t("client_address")} full><Textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Rue, ville, wilaya" rows={2} /></Field>
             </div>
