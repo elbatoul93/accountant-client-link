@@ -887,6 +887,8 @@ const fr: typeof en = {
   tools_g50_ibs: "IBS acompte",
   tools_g50_total: "Total G50",
   tools_g50_generate: "Générer G50",
+  tools_g50_regenerate: "Regénérer",
+  tools_g50_edit: "Modifier",
   tools_g50_generate_pdf: "Générer PDF",
   tools_g50_generate_excel: "Générer Excel",
   tools_g50_generating: "Génération…",
