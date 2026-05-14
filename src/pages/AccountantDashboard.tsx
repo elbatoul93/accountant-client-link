@@ -587,7 +587,35 @@ const AccountantDashboard = () => {
                   empCountByClient={empCountByClient}
                   onOpen={openProfile}
                   onAdd={() => setOpenAdd(true)}
-                  onEdit={(c) => setPendingEditClient(c)}
+                  onEdit={(c) => setEditingClient(c)}
+                  onMessage={async (c) => {
+                    try {
+                      const { data: auth } = await supabase.auth.getUser();
+                      const accId = auth.user?.id;
+                      if (!accId) return;
+                      const targetEmail = (c.email || c.contact || "").toLowerCase();
+                      let clientUserId: string | null = null;
+                      const dbMatch = dbLinkedClients.find((d) => d.id === c.id);
+                      if (dbMatch) clientUserId = dbMatch.id;
+                      if (!clientUserId && targetEmail) {
+                        const { data } = await supabase
+                          .from("profiles")
+                          .select("user_id")
+                          .eq("email", targetEmail)
+                          .eq("linked_accountant_id", accId)
+                          .maybeSingle();
+                        if (data?.user_id) clientUserId = data.user_id;
+                      }
+                      if (!clientUserId) {
+                        toast.error("Ce client n'a pas encore activé son compte.");
+                        return;
+                      }
+                      setChatPreselectId(clientUserId);
+                      setView("chat");
+                    } catch (e: any) {
+                      toast.error(e?.message || "Erreur");
+                    }
+                  }}
                   onDelete={(id) => {
                     setClients((p) => p.filter((x) => x.id !== id));
                     setInvoices((p) => p.filter((x) => x.clientId !== id));
@@ -1050,13 +1078,14 @@ const DashboardView = ({
 );
 
 const ClientsListView = ({
-  t, clients, totalCount, search, setSearch, empCountByClient, onOpen, onAdd, onEdit, onDelete, onExtract, onViewG50, onCopyInvite,
+  t, clients, totalCount, search, setSearch, empCountByClient, onOpen, onAdd, onEdit, onDelete, onExtract, onViewG50, onCopyInvite, onMessage,
 }: {
   t: (k: string) => string; clients: Client[]; totalCount: number; search: string; setSearch: (v: string) => void;
   empCountByClient: Record<string, number>;
   onOpen: (c: Client) => void; onAdd: () => void; onEdit: (c: Client) => void; onDelete: (id: string) => void; onExtract: (c: Client) => void;
   onViewG50: (c: Client) => void;
   onCopyInvite: (c: Client) => void;
+  onMessage: (c: Client) => void;
 }) => (
   <>
     <div className="flex items-center justify-between flex-wrap gap-3">
@@ -1124,8 +1153,10 @@ const ClientsListView = ({
                       <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => onExtract(c)}>
                         <FileDown className="h-3.5 w-3.5" /> {t("acc_extract")}
                       </Button>
+                      <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => onMessage(c)} title="Message">
+                        <MessageCircle className="h-3.5 w-3.5" /> Message
+                      </Button>
                       <Button size="sm" variant="outlineGold" className="h-7 gap-1.5 text-xs" onClick={() => onEdit(c)}>
-                        <Lock className="h-3 w-3" />
                         <Pencil className="h-3.5 w-3.5" /> {t("acc_edit")}
                       </Button>
                       <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => onOpen(c)}>
