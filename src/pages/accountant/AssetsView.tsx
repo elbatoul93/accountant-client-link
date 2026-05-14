@@ -230,7 +230,7 @@ const AddAssetDialog = ({ open, onOpenChange, clients, onAdd, t }: {
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label className="text-xs">{t("assets_label")} *</Label>
-            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Serveur Dell PowerEdge" />
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t("ph_asset_example")} />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">{t("assets_category")} *</Label>
