@@ -216,19 +216,20 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
   if (role === "client") {
     return (
       <Card className="flex flex-col h-[70vh] shadow-card overflow-hidden">
-        <ChatHeader contact={activeContact} loading={loadingContacts} showAccountantBadge />
+        <ChatHeader contact={activeContact} loading={loadingContacts} showAccountantBadge t={t} />
         <ChatThread
           ref={scrollerRef}
           loading={loadingMessages}
           messages={messages}
           selfId={selfId}
-          empty={!activeContact && !loadingContacts ? "No accountant linked yet." : "No messages yet."}
+          empty={!activeContact && !loadingContacts ? t("chat_no_linked_clients") : t("chat_no_messages_yet")}
         />
         <ChatComposer
           draft={draft}
           setDraft={setDraft}
           send={send}
           disabled={!activeContact || sending}
+          t={t}
         />
       </Card>
     );
