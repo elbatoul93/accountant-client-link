@@ -686,27 +686,15 @@ const AccountantDashboard = () => {
                 onExtract={() => setObligationsClient(activeClient)}
                 onEdit={(c) => setEditingClient(c)}
                 onEditG50={(d) => { setEditG50(d); setOpenTool("g50"); }}
-                onMessage={async () => {
-                  try {
-                    const { data: auth } = await supabase.auth.getUser();
-                    const accId = auth.user?.id;
-                    if (!accId) return;
-                    const { data, error } = await supabase
-                      .from("profiles")
-                      .select("user_id")
-                      .eq("email", activeClient.contact)
-                      .eq("linked_accountant_id", accId)
-                      .maybeSingle();
-                    if (error) throw error;
-                    if (!data?.user_id) {
-                      toast.error(t("acc_client_inactive"));
-                      return;
-                    }
-                    setChatPreselectId(data.user_id);
-                    setView("chat");
-                  } catch (e: any) {
-                    toast.error(e.message || t("i18n_error_generic"));
+                onMessage={() => {
+                  // activeClient.id is the client's auth user_id (from get_linked_client_names RPC).
+                  // Avoid querying profiles directly — that triggers RLS recursion.
+                  if (!activeClient.id) {
+                    toast.error(t("acc_client_inactive"));
+                    return;
                   }
+                  setChatPreselectId(activeClient.id);
+                  setView("chat");
                 }}
               />
             )}
