@@ -218,22 +218,13 @@ const AccountantDashboard = () => {
   }, []);
 
   // Merge DB-linked clients with local client metadata by name match.
-  // Direction / Commune / BP are sourced from the DB profile (authoritative).
+  // All profile fields (direction, commune, bp, NIF, NIS, RC, regime, etc.) are sourced from the DB profile (authoritative).
   const g50Clients = useMemo<Client[]>(() => {
     if (dbLinkedClients.length === 0) return clients;
     const byName = new Map(clients.map((c) => [c.name.trim().toLowerCase(), c]));
-    const merged: Client[] = dbLinkedClients.map((d) => {
-      const local = byName.get(d.full_name.trim().toLowerCase());
-      const base: Client = local
-        ? { ...local, id: d.id }
-        : { id: d.id, name: (d.full_name && d.full_name.trim()) || "Unknown", taxId: "", contact: "", status: "active" };
-      return {
-        ...base,
-        direction: d.direction ?? base.direction,
-        commune: d.commune ?? base.commune,
-        bp: d.bp ?? base.bp,
-      };
-    });
+    const merged: Client[] = dbLinkedClients.map((d) =>
+      dbToClient(d, byName.get(d.full_name.trim().toLowerCase())),
+    );
     const dbNames = new Set(dbLinkedClients.map((d) => d.full_name.trim().toLowerCase()));
     for (const c of clients) {
       if (!dbNames.has(c.name.trim().toLowerCase())) merged.push(c);
@@ -241,7 +232,7 @@ const AccountantDashboard = () => {
     return merged;
   }, [dbLinkedClients, clients]);
 
-  // Persist Direction / Commune / BP to the linked client's profile (if matched in DB).
+  // Persist all editable client business fields to the linked client's profile (if matched in DB).
   const persistClientProfileFields = async (c: Client) => {
     const match = dbLinkedClients.find(
       (d) => d.full_name.trim().toLowerCase() === c.name.trim().toLowerCase(),
@@ -253,6 +244,18 @@ const AccountantDashboard = () => {
         direction: c.direction ?? null,
         commune: c.commune ?? null,
         bp: c.bp ?? null,
+        company: c.company ?? null,
+        phone: c.phone ?? null,
+        address: c.address ?? null,
+        legal_form: c.legalForm ?? null,
+        activity: c.activity ?? null,
+        tax_regime: c.taxRegime ?? null,
+        tax_id: c.taxId || null,
+        nis: c.nis ?? null,
+        rc: c.rc ?? null,
+        cnas_no: c.cnasNo ?? null,
+        casnos_no: c.casnosNo ?? null,
+        has_cacobatph: !!c.hasCacobatph,
       })
       .eq("user_id", match.id);
     if (!error) await refetchLinkedClients();
