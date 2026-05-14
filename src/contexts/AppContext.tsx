@@ -60,7 +60,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         .eq("user_id", uid)
         .maybeSingle();
       setUser({
-        name: profile?.name || session.user.email?.split("@")[0] || "User",
+        name: profile?.name?.trim() || "Unknown",
         email: profile?.email || session.user.email || "",
         role,
         company: profile?.company ?? undefined,

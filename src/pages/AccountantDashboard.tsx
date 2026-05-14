@@ -162,7 +162,7 @@ const AccountantDashboard = () => {
       const local = byName.get(d.full_name.trim().toLowerCase());
       const base: Client = local
         ? { ...local, id: d.id }
-        : { id: d.id, name: d.full_name, taxId: "", contact: "", status: "active" };
+        : { id: d.id, name: (d.full_name && d.full_name.trim()) || "Unknown", taxId: "", contact: "", status: "active" };
       return {
         ...base,
         direction: d.direction ?? base.direction,
