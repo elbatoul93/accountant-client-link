@@ -148,7 +148,7 @@ const ClientDashboard = () => {
   const confirmUpload = useCallback(async () => {
     if (!user || !pendingFile) return;
     if (!uploadTitle.trim()) {
-      toast.error("Le titre est requis");
+      toast.error(t("title_required"));
       return;
     }
     setUploading(true);
