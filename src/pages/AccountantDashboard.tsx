@@ -236,7 +236,7 @@ const AccountantDashboard = () => {
   // Persist all editable client business fields to the linked client's profile (if matched in DB).
   const persistClientProfileFields = async (c: Client) => {
     const match = dbLinkedClients.find(
-      (d) => d.full_name.trim().toLowerCase() === c.name.trim().toLowerCase(),
+      (d) => d.id === c.id || d.full_name.trim().toLowerCase() === c.name.trim().toLowerCase(),
     );
     if (!match) return;
     const { error } = await supabase
