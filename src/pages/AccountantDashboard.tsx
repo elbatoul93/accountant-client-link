@@ -235,13 +235,99 @@ const AccountantDashboard = () => {
   };
 
   useEffect(() => { localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients)); }, [clients]);
-  useEffect(() => { localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices)); }, [invoices]);
-  useEffect(() => { localStorage.setItem(KEY_DECLS, JSON.stringify(decls)); }, [decls]);
-  useEffect(() => { localStorage.setItem(KEY_FS, JSON.stringify(fsList)); }, [fsList]);
-  useEffect(() => { localStorage.setItem(KEY_SHARED, JSON.stringify(sharedDocs)); }, [sharedDocs]);
-  useEffect(() => { localStorage.setItem(KEY_LEGAL, JSON.stringify(legalDocs)); }, [legalDocs]);
 
-  // Auth/role guard handled by ProtectedRoute wrapper — keep all hooks unconditional below.
+  // === DB persistence: load on mount + diff-sync on every change ===
+  const accIdRef = useRef<string | null>(null);
+  const dbReadyRef = useRef(false);
+  const prevInvoicesRef = useRef<typeof invoices>([]);
+  const prevDeclsRef = useRef<typeof decls>([]);
+  const prevFsRef = useRef<typeof fsList>([]);
+  const prevSharedRef = useRef<typeof sharedDocs>([]);
+  const prevLegalRef = useRef<typeof legalDocs>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const { data } = await supabase.auth.getUser();
+      const accId = data.user?.id;
+      if (!accId || cancelled) return;
+      accIdRef.current = accId;
+      await migrateLocalToDb(accId);
+      const [inv, dec, fs, sh, lg] = await Promise.all([
+        loadInvoices(accId), loadDecls(accId), loadFsList(accId),
+        loadSharedDocs(accId), loadLegalDocs(accId),
+      ]);
+      if (cancelled) return;
+      prevInvoicesRef.current = inv; prevDeclsRef.current = dec; prevFsRef.current = fs;
+      prevSharedRef.current = sh as typeof sharedDocs; prevLegalRef.current = lg as typeof legalDocs;
+      setInvoices(inv); setDecls(dec); setFsList(fs);
+      setSharedDocs(sh as typeof sharedDocs); setLegalDocs(lg as typeof legalDocs);
+      dbReadyRef.current = true;
+    };
+    run();
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (session?.user) run();
+    });
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
+    if (!dbReadyRef.current || !accIdRef.current) return;
+    const prev = prevInvoicesRef.current;
+    prevInvoicesRef.current = invoices;
+    localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices));
+    syncInvoices(prev, invoices, accIdRef.current).catch((e) => console.error("[sync invoices]", e));
+  }, [invoices]);
+
+  useEffect(() => {
+    if (!dbReadyRef.current || !accIdRef.current) return;
+    const prev = prevDeclsRef.current;
+    prevDeclsRef.current = decls;
+    localStorage.setItem(KEY_DECLS, JSON.stringify(decls));
+    syncDecls(prev, decls, accIdRef.current).catch((e) => console.error("[sync decls]", e));
+  }, [decls]);
+
+  useEffect(() => {
+    if (!dbReadyRef.current || !accIdRef.current) return;
+    const prev = prevFsRef.current;
+    prevFsRef.current = fsList;
+    localStorage.setItem(KEY_FS, JSON.stringify(fsList));
+    syncFs(prev, fsList, accIdRef.current).catch((e) => console.error("[sync fs]", e));
+  }, [fsList]);
+
+  useEffect(() => {
+    if (!dbReadyRef.current || !accIdRef.current) return;
+    const prev = prevSharedRef.current;
+    prevSharedRef.current = sharedDocs;
+    localStorage.setItem(KEY_SHARED, JSON.stringify(sharedDocs));
+    syncShared(prev, sharedDocs, accIdRef.current)
+      .then((updated) => {
+        // Replace any data: URLs with signed URLs after upload, without retriggering DB writes.
+        const changed = updated.some((u, i) => u.fileData !== sharedDocs[i]?.fileData || u.filePath !== (sharedDocs[i] as any)?.filePath);
+        if (changed) {
+          prevSharedRef.current = updated as typeof sharedDocs;
+          setSharedDocs(updated as typeof sharedDocs);
+        }
+      })
+      .catch((e) => console.error("[sync shared]", e));
+  }, [sharedDocs]);
+
+  useEffect(() => {
+    if (!dbReadyRef.current || !accIdRef.current) return;
+    const prev = prevLegalRef.current;
+    prevLegalRef.current = legalDocs;
+    localStorage.setItem(KEY_LEGAL, JSON.stringify(legalDocs));
+    syncLegal(prev, legalDocs, accIdRef.current)
+      .then((updated) => {
+        const changed = updated.some((u, i) => u.fileData !== legalDocs[i]?.fileData || u.filePath !== (legalDocs[i] as any)?.filePath);
+        if (changed) {
+          prevLegalRef.current = updated as typeof legalDocs;
+          setLegalDocs(updated as typeof legalDocs);
+        }
+      })
+      .catch((e) => console.error("[sync legal]", e));
+  }, [legalDocs]);
+
 
   const totalRevenue = invoices.reduce((s, i) => s + (i.status === "processed" ? i.amount : 0), 0);
   const pendingInvoices = invoices.filter((i) => i.status === "pending").length;
