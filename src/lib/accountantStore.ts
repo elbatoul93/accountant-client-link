@@ -248,15 +248,15 @@ export const syncShared = async (
     }
     const updated = { ...x, filePath, fileData };
     replaced.set(x.id, updated);
-    await supabase.from("acc_shared_documents").insert({
+    await supabase.from("acc_shared_documents").insert([{
       id: x.id, accountant_id: accId, client_ref: x.clientId, client_name: x.clientName,
       client_email: x.clientEmail || null, doc_type: x.type, label: x.label,
       doc_date: x.date && x.date.length >= 10 ? x.date.slice(0, 10) : null,
       payload: x.payload ?? null, file_name: x.fileName ?? null, mime_type: x.mimeType ?? null,
       file_path: filePath ?? null, signed_at: x.signedAt ?? null, signed_by: x.signedBy ?? null,
       signature_data_url: x.signatureDataUrl ?? null,
-      workflow: (x.workflow ?? null) as unknown as object | null,
-    });
+      workflow: (x.workflow ?? null) as never,
+    }] as never);
   }
   for (const x of updates) {
     let filePath = x.filePath;
