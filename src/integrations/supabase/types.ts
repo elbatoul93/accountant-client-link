@@ -14,6 +14,234 @@ export type Database = {
   }
   public: {
     Tables: {
+      acc_declarations: {
+        Row: {
+          accountant_id: string
+          amount: number
+          client_name: string
+          client_ref: string
+          created_at: string
+          decl_type: string
+          due_date: string | null
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accountant_id: string
+          amount?: number
+          client_name: string
+          client_ref: string
+          created_at?: string
+          decl_type: string
+          due_date?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accountant_id?: string
+          amount?: number
+          client_name?: string
+          client_ref?: string
+          created_at?: string
+          decl_type?: string
+          due_date?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      acc_financial_statements: {
+        Row: {
+          accountant_id: string
+          assets: number
+          client_name: string
+          client_ref: string
+          created_at: string
+          equity: number
+          fiscal_year: string
+          id: string
+          liabilities: number
+          net_result: number
+          revenue: number
+          updated_at: string
+        }
+        Insert: {
+          accountant_id: string
+          assets?: number
+          client_name: string
+          client_ref: string
+          created_at?: string
+          equity?: number
+          fiscal_year: string
+          id?: string
+          liabilities?: number
+          net_result?: number
+          revenue?: number
+          updated_at?: string
+        }
+        Update: {
+          accountant_id?: string
+          assets?: number
+          client_name?: string
+          client_ref?: string
+          created_at?: string
+          equity?: number
+          fiscal_year?: string
+          id?: string
+          liabilities?: number
+          net_result?: number
+          revenue?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      acc_invoices: {
+        Row: {
+          accountant_id: string
+          amount: number
+          client_name: string
+          client_ref: string
+          created_at: string
+          id: string
+          invoice_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accountant_id: string
+          amount?: number
+          client_name: string
+          client_ref: string
+          created_at?: string
+          id?: string
+          invoice_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accountant_id?: string
+          amount?: number
+          client_name?: string
+          client_ref?: string
+          created_at?: string
+          id?: string
+          invoice_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      acc_legal_documents: {
+        Row: {
+          accountant_id: string
+          client_ref: string
+          created_at: string
+          doc_date: string | null
+          file_name: string | null
+          file_path: string | null
+          id: string
+          kind: string
+          label: string
+          mime_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          accountant_id: string
+          client_ref: string
+          created_at?: string
+          doc_date?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          kind: string
+          label: string
+          mime_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accountant_id?: string
+          client_ref?: string
+          created_at?: string
+          doc_date?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          kind?: string
+          label?: string
+          mime_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      acc_shared_documents: {
+        Row: {
+          accountant_id: string
+          client_email: string | null
+          client_name: string
+          client_ref: string
+          client_user_id: string | null
+          created_at: string
+          doc_date: string | null
+          doc_type: string
+          file_name: string | null
+          file_path: string | null
+          id: string
+          label: string
+          mime_type: string | null
+          payload: string | null
+          signature_data_url: string | null
+          signed_at: string | null
+          signed_by: string | null
+          updated_at: string
+          workflow: Json | null
+        }
+        Insert: {
+          accountant_id: string
+          client_email?: string | null
+          client_name: string
+          client_ref: string
+          client_user_id?: string | null
+          created_at?: string
+          doc_date?: string | null
+          doc_type: string
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          label: string
+          mime_type?: string | null
+          payload?: string | null
+          signature_data_url?: string | null
+          signed_at?: string | null
+          signed_by?: string | null
+          updated_at?: string
+          workflow?: Json | null
+        }
+        Update: {
+          accountant_id?: string
+          client_email?: string | null
+          client_name?: string
+          client_ref?: string
+          client_user_id?: string | null
+          created_at?: string
+          doc_date?: string | null
+          doc_type?: string
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          label?: string
+          mime_type?: string | null
+          payload?: string | null
+          signature_data_url?: string | null
+          signed_at?: string | null
+          signed_by?: string | null
+          updated_at?: string
+          workflow?: Json | null
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           created_at: string
