@@ -2140,8 +2140,35 @@ const G50GeneratorDialog = ({
   const [format, setFormat] = useState<"pdf" | "xlsx">("pdf");
   const [generating, setGenerating] = useState(false);
 
+  // Prefill from editing row when opened in edit mode
+  useEffect(() => {
+    if (!open) return;
+    if (editing?.formData) {
+      const f = editing.formData;
+      const cid = f.clientId || clients.find((c) => c.taxId && c.taxId === f.nif)?.id || "";
+      if (cid) setClientId(cid);
+      if (f.year && f.month) setPeriod(`${f.year}-${String(f.month).padStart(2, "0")}`);
+      setCaHt(f.caHt != null ? String(f.caHt) : (f.caHtTotal != null ? String(f.caHtTotal) : ""));
+      setSalaries(f.salaries != null ? String(f.salaries) : "");
+      setBenefice(f.benefice != null ? String(f.benefice) : "");
+      setRTap(f.rTap != null ? String(f.rTap) : "2");
+      setRTva(f.rTva != null ? String(f.rTva) : "19");
+      setRIrg(f.rIrg != null ? String(f.rIrg) : "10");
+      setRIbs(f.rIbs != null ? String(f.rIbs) : "23");
+      setTrimestre(f.trimestre ? String(f.trimestre) : "");
+      setCaHtImposable(f.caHtImposable != null ? String(f.caHtImposable) : "");
+      setSynced(false);
+    } else {
+      // reset on open in create mode
+      setClientId(""); setCaHt(""); setSalaries(""); setBenefice("");
+      setCaHtImposable(""); setTrimestre("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editing?.id]);
+
   // Auto-fill from live journal aggregates when client/period changes
   useEffect(() => {
+    if (editing) return; // don't override edit prefill
     if (!clientId) { setSynced(false); return; }
     if (getLiveG50) {
       const live = getLiveG50(clientId, period);
@@ -2162,7 +2189,7 @@ const G50GeneratorDialog = ({
       }
     }
     setSynced(false);
-  }, [clientId, period, getLiveG50, getAggregates]);
+  }, [clientId, period, getLiveG50, getAggregates, editing]);
 
   const tap = (Number(caHt || 0) * Number(rTap || 0)) / 100;
   const tva = (Number(caHt || 0) * Number(rTva || 0)) / 100;
