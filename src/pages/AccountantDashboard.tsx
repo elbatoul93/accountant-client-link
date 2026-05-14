@@ -1170,11 +1170,12 @@ const ClientsListView = ({
 );
 
 const ClientProfileView = ({
-  t, client, decls, invoices, legalDocs, onBack, onAddLegal, onDeleteLegal, onAddDecl, onExtract, onMessage, onEdit, onEditG50,
+  t, client, decls, invoices, legalDocs, onBack, onAddLegal, onDeleteLegal, onAddDecl, onDeleteDecl, onExtract, onMessage, onEdit, onEditG50,
 }: {
   t: (k: string) => string; client: Client; decls: Decl[]; invoices: Invoice[]; legalDocs: LegalDoc[];
   onBack: () => void; onAddLegal: (d: LegalDoc) => void; onDeleteLegal: (id: string) => void;
-  onAddDecl: (d: Decl) => void; onExtract: () => void; onMessage: () => void; onEdit: (c: Client) => void;
+  onAddDecl: (d: Decl) => void; onDeleteDecl: (id: string) => void;
+  onExtract: () => void; onMessage: () => void; onEdit: (c: Client) => void;
   onEditG50: (data: { id: string; formData: any }) => void;
 }) => {
   const totalDue = decls.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
