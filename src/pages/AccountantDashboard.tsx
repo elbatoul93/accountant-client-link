@@ -143,24 +143,48 @@ const AccountantDashboard = () => {
   const [trackingClientId, setTrackingClientId] = useState<string>("");
   const [viewG50Client, setViewG50Client] = useState<Client | null>(null);
   const [chatPreselectId, setChatPreselectId] = useState<string | null>(null);
-  const [dbLinkedClients, setDbLinkedClients] = useState<{ id: string; full_name: string; direction: string | null; commune: string | null; bp: string | null }[]>([]);
+  type DbLinkedClient = {
+    id: string; full_name: string;
+    direction: string | null; commune: string | null; bp: string | null;
+    company: string | null; email: string | null; phone: string | null; address: string | null;
+    legal_form: string | null; activity: string | null; tax_regime: string | null;
+    tax_id: string | null; nis: string | null; rc: string | null;
+    cnas_no: string | null; casnos_no: string | null; has_cacobatph: boolean | null;
+  };
+  const [dbLinkedClients, setDbLinkedClients] = useState<DbLinkedClient[]>([]);
+
+  const dbToClient = (d: DbLinkedClient, base?: Client): Client => {
+    const seed: Client = base
+      ? { ...base, id: d.id }
+      : { id: d.id, name: (d.full_name && d.full_name.trim()) || "Unknown", taxId: "", contact: "", status: "active" };
+    return {
+      ...seed,
+      name: (d.full_name && d.full_name.trim()) || seed.name,
+      direction: d.direction ?? seed.direction,
+      commune: d.commune ?? seed.commune,
+      bp: d.bp ?? seed.bp,
+      company: d.company ?? seed.company,
+      email: d.email ?? seed.email,
+      phone: d.phone ?? seed.phone,
+      address: d.address ?? seed.address,
+      legalForm: d.legal_form ?? seed.legalForm,
+      activity: d.activity ?? seed.activity,
+      taxRegime: (d.tax_regime as TaxRegime) ?? seed.taxRegime,
+      taxId: d.tax_id ?? seed.taxId,
+      nis: d.nis ?? seed.nis,
+      rc: d.rc ?? seed.rc,
+      cnasNo: d.cnas_no ?? seed.cnasNo,
+      casnosNo: d.casnos_no ?? seed.casnosNo,
+      hasCacobatph: d.has_cacobatph ?? seed.hasCacobatph,
+      contact: d.email ?? seed.contact,
+    };
+  };
 
   // Fetch live linked clients from DB. Authoritative source — always refreshed on mount/login.
-  const mergeDbIntoClients = (db: typeof dbLinkedClients) => {
+  const mergeDbIntoClients = (db: DbLinkedClient[]) => {
     setClients((prev) => {
       const byName = new Map(prev.map((c) => [c.name.trim().toLowerCase(), c]));
-      const merged: Client[] = db.map((d) => {
-        const local = byName.get((d.full_name || "").trim().toLowerCase());
-        const base: Client = local
-          ? { ...local, id: d.id }
-          : { id: d.id, name: (d.full_name && d.full_name.trim()) || "Unknown", taxId: "", contact: "", status: "active" };
-        return {
-          ...base,
-          direction: d.direction ?? base.direction,
-          commune: d.commune ?? base.commune,
-          bp: d.bp ?? base.bp,
-        };
-      });
+      const merged: Client[] = db.map((d) => dbToClient(d, byName.get((d.full_name || "").trim().toLowerCase())));
       const dbNames = new Set(db.map((d) => (d.full_name || "").trim().toLowerCase()));
       for (const c of prev) {
         if (!dbNames.has(c.name.trim().toLowerCase())) merged.push(c);
