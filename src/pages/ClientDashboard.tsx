@@ -68,6 +68,14 @@ const ClientDashboard = () => {
   const [tick, setTick] = useState(0);
   const [signing, setSigning] = useState<SharedDoc | null>(null);
   const [previewDoc, setPreviewDoc] = useState<SharedDoc | null>(null);
+  const [dbSharedDocs, setDbSharedDocs] = useState<SharedDoc[]>([]);
+
+  // Load shared documents from the DB (RLS scopes to this client).
+  const refreshSharedDocs = useCallback(async () => {
+    const rows = await loadSharedDocsForClient();
+    setDbSharedDocs(rows as SharedDoc[]);
+  }, []);
+  useEffect(() => { refreshSharedDocs(); }, [refreshSharedDocs]);
 
   // ── Upload confirmation modal state ──
   const [pendingFile, setPendingFile] = useState<File | null>(null);
