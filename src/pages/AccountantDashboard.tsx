@@ -236,7 +236,7 @@ const AccountantDashboard = () => {
   // Persist all editable client business fields to the linked client's profile (if matched in DB).
   const persistClientProfileFields = async (c: Client) => {
     const match = dbLinkedClients.find(
-      (d) => d.full_name.trim().toLowerCase() === c.name.trim().toLowerCase(),
+      (d) => d.id === c.id || d.full_name.trim().toLowerCase() === c.name.trim().toLowerCase(),
     );
     if (!match) return;
     const { error } = await supabase
@@ -655,6 +655,7 @@ const AccountantDashboard = () => {
                 onDeleteLegal={(id) => setLegalDocs((p) => p.filter((x) => x.id !== id))}
                 onAddDecl={(d) => setDecls((p) => [d, ...p])}
                 onExtract={() => setObligationsClient(activeClient)}
+                onEdit={(c) => setPendingEditClient(c)}
                 onMessage={async () => {
                   try {
                     const { data: auth } = await supabase.auth.getUser();
@@ -1146,11 +1147,11 @@ const ClientsListView = ({
 );
 
 const ClientProfileView = ({
-  t, client, decls, invoices, legalDocs, onBack, onAddLegal, onDeleteLegal, onAddDecl, onExtract, onMessage,
+  t, client, decls, invoices, legalDocs, onBack, onAddLegal, onDeleteLegal, onAddDecl, onExtract, onMessage, onEdit,
 }: {
   t: (k: string) => string; client: Client; decls: Decl[]; invoices: Invoice[]; legalDocs: LegalDoc[];
   onBack: () => void; onAddLegal: (d: LegalDoc) => void; onDeleteLegal: (id: string) => void;
-  onAddDecl: (d: Decl) => void; onExtract: () => void; onMessage: () => void;
+  onAddDecl: (d: Decl) => void; onExtract: () => void; onMessage: () => void; onEdit: (c: Client) => void;
 }) => {
   const totalDue = decls.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
   const filed = decls.filter((d) => d.status === "filed").length;
@@ -1192,6 +1193,9 @@ const ClientProfileView = ({
           <div className="flex flex-col sm:flex-row gap-2">
             <Button variant="outline" size="sm" onClick={onMessage}>
               <MessageCircle className="h-4 w-4" /> Message
+            </Button>
+            <Button variant="outlineGold" size="sm" onClick={() => onEdit(client)}>
+              <Pencil className="h-4 w-4" /> Edit
             </Button>
             <Button variant="gold" size="sm" onClick={onExtract}>
               <FileDown className="h-4 w-4" /> {t("acc_extract")}
@@ -1488,9 +1492,10 @@ const AddClientDialog = ({
       taxId: taxId.trim(), bp: bp.trim() || undefined, nis: nis.trim() || undefined, rc: rc.trim() || undefined,
       cnasNo: cnasNo.trim() || undefined, casnosNo: casnosNo.trim() || undefined, hasCacobatph,
       taxRegime: taxRegime as TaxRegime,
-      email: email.trim() || undefined, phone: phone.trim() || undefined, address: address.trim() || undefined,
+      email: mode === "edit" && initial ? initial.email : (email.trim() || undefined),
+      phone: phone.trim() || undefined, address: address.trim() || undefined,
       direction: direction.trim() || undefined, commune: commune.trim() || undefined,
-      contact: email.trim() || (initial?.contact ?? ""),
+      contact: mode === "edit" && initial ? initial.contact : (email.trim() || ""),
       status: initial?.status ?? "active",
     };
     if (mode === "edit" && onUpdate) {
@@ -1614,13 +1619,15 @@ const AddClientDialog = ({
 
           <Section title={t("client_section_contact")} icon={Mail}>
             <div className="grid sm:grid-cols-2 gap-3">
-              <Field label={t("client_email")}><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contact@acme.dz" /></Field>
+              {mode !== "edit" && (
+                <Field label={t("client_email")}><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contact@acme.dz" /></Field>
+              )}
               <Field label={t("client_phone")}><Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+213 555 12 34 56" /></Field>
               <Field label={t("client_address")} full><Textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Rue, ville, wilaya" rows={2} /></Field>
             </div>
           </Section>
         </div>
-        <DialogFooter><Button onClick={submit} variant="hero">{t("acc_save")}</Button></DialogFooter>
+        <DialogFooter><Button onClick={submit} variant="hero">{mode === "edit" ? "Save Changes" : t("acc_save")}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
