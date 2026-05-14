@@ -196,7 +196,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
               )}
               <div className="space-y-1.5">
                 <Label htmlFor="email">{t("auth_email")}</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" required />
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth_ph_email")} required />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="password">{t("auth_password")}</Label>
