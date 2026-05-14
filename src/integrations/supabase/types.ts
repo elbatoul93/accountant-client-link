@@ -364,43 +364,76 @@ export type Database = {
       }
       profiles: {
         Row: {
+          activity: string | null
+          address: string | null
           bp: string | null
+          casnos_no: string | null
+          cnas_no: string | null
           commune: string | null
           company: string | null
           created_at: string
           direction: string | null
           email: string
+          has_cacobatph: boolean
           id: string
+          legal_form: string | null
           linked_accountant_id: string | null
           name: string
+          nis: string | null
+          phone: string | null
+          rc: string | null
+          tax_id: string | null
+          tax_regime: string | null
           updated_at: string
           user_id: string
           user_type: Database["public"]["Enums"]["app_role"]
         }
         Insert: {
+          activity?: string | null
+          address?: string | null
           bp?: string | null
+          casnos_no?: string | null
+          cnas_no?: string | null
           commune?: string | null
           company?: string | null
           created_at?: string
           direction?: string | null
           email?: string
+          has_cacobatph?: boolean
           id?: string
+          legal_form?: string | null
           linked_accountant_id?: string | null
           name?: string
+          nis?: string | null
+          phone?: string | null
+          rc?: string | null
+          tax_id?: string | null
+          tax_regime?: string | null
           updated_at?: string
           user_id: string
           user_type?: Database["public"]["Enums"]["app_role"]
         }
         Update: {
+          activity?: string | null
+          address?: string | null
           bp?: string | null
+          casnos_no?: string | null
+          cnas_no?: string | null
           commune?: string | null
           company?: string | null
           created_at?: string
           direction?: string | null
           email?: string
+          has_cacobatph?: boolean
           id?: string
+          legal_form?: string | null
           linked_accountant_id?: string | null
           name?: string
+          nis?: string | null
+          phone?: string | null
+          rc?: string | null
+          tax_id?: string | null
+          tax_regime?: string | null
           updated_at?: string
           user_id?: string
           user_type?: Database["public"]["Enums"]["app_role"]
