@@ -159,6 +159,8 @@ async function buildG50Buffer(input: G50ExportInput, precalcForPdf = false): Pro
     if (input.caHtImposable > 0) tva.getCell("BQ22").value = input.caHtImposable;
   }
 
+  if (precalcForPdf) applyPdfPrecalc(wb);
+
   return await wb.xlsx.writeBuffer() as ArrayBuffer;
 }
 
