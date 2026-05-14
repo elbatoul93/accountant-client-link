@@ -9,10 +9,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
-const labels: Record<Lang, { flag: string; name: string }> = {
-  en: { flag: "🇬🇧", name: "English" },
-  fr: { flag: "🇫🇷", name: "Français" },
-  ar: { flag: "🇩🇿", name: "العربية" },
+// Use flagcdn SVGs — render reliably across all OSes (Windows/Linux lack flag emoji glyphs).
+const Flag = ({ code, alt }: { code: string; alt: string }) => (
+  <img
+    src={`https://flagcdn.com/24x18/${code}.png`}
+    srcSet={`https://flagcdn.com/48x36/${code}.png 2x`}
+    width={20}
+    height={15}
+    alt={alt}
+    className="inline-block rounded-[2px] shadow-sm"
+    loading="lazy"
+  />
+);
+
+const labels: Record<Lang, { code: string; name: string }> = {
+  en: { code: "gb", name: "English" },
+  fr: { code: "fr", name: "Français" },
+  ar: { code: "dz", name: "العربية" },
 };
 
 export const LangSwitcher = () => {
@@ -22,14 +35,19 @@ export const LangSwitcher = () => {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-1.5 font-medium">
           <Globe className="h-4 w-4" />
-          <span className="hidden sm:inline">{labels[lang].flag} {labels[lang].name}</span>
-          <span className="sm:hidden">{labels[lang].flag}</span>
+          <span className="hidden sm:inline-flex items-center gap-1.5">
+            <Flag code={labels[lang].code} alt={labels[lang].name} />
+            {labels[lang].name}
+          </span>
+          <span className="sm:hidden">
+            <Flag code={labels[lang].code} alt={labels[lang].name} />
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-popover">
         {(Object.keys(labels) as Lang[]).map((l) => (
           <DropdownMenuItem key={l} onClick={() => setLang(l)} className="cursor-pointer gap-2">
-            <span>{labels[l].flag}</span>
+            <Flag code={labels[l].code} alt={labels[l].name} />
             <span>{labels[l].name}</span>
           </DropdownMenuItem>
         ))}
