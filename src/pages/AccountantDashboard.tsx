@@ -1943,7 +1943,7 @@ const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, 
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" variant="outlineGold" disabled={!!busyId && busyId.startsWith(d.id)}>
                     <Download className="h-3.5 w-3.5" />
-                    {busyId && busyId.startsWith(d.id) ? t("tools_g50_generating") : t("tools_g50_generate_pdf").replace(/^G[ée]n[ée]rer\s+|^Generate\s+|^إنشاء\s+/i, "") || "Regenerate"}
+                    {busyId && busyId.startsWith(d.id) ? t("tools_g50_generating") : t("tools_g50_generate")}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
