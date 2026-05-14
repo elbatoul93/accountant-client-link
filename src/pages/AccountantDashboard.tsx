@@ -2030,27 +2030,27 @@ const G50GeneratorDialog = ({
             <span className="text-2xl font-bold text-gold-deep">{fmtDZD(total)}</span>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="sm:justify-end">
           <div className="inline-flex rounded-md shadow-sm">
             <Button
               onClick={submit}
               variant="gold"
               disabled={generating}
-              className="rounded-r-none"
+              className="rounded-e-none"
             >
               {generating
-                ? "…"
+                ? t("tools_g50_generating")
                 : format === "pdf"
-                  ? "Generate PDF"
-                  : "Generate Excel"}
+                  ? t("tools_g50_generate_pdf")
+                  : t("tools_g50_generate_excel")}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="gold"
                   disabled={generating}
-                  className="rounded-l-none border-l border-gold-foreground/20 px-2"
-                  aria-label="Choose format"
+                  className="rounded-s-none border-s border-gold-foreground/20 px-2"
+                  aria-label={t("tools_g50_choose_format")}
                 >
                   <ChevronDown className="h-4 w-4" />
                 </Button>
