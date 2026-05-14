@@ -132,6 +132,7 @@ const AccountantDashboard = () => {
   const { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks, precompte, setPrecompte } = useSuiteData();
   const [obligationsClient, setObligationsClient] = useState<Client | null>(null);
   const [openTool, setOpenTool] = useState<null | "fs" | "g50" | "send">(null);
+  const [editG50, setEditG50] = useState<{ id: string; formData: any } | null>(null);
   const [view, setView] = useState<View>("dashboard");
   const [activeClientId, setActiveClientId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
