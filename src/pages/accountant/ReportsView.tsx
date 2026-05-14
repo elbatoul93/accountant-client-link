@@ -106,7 +106,7 @@ export const ReportsView = ({ t, journal, locks, clients }: Props) => {
                     <tr className="text-xs uppercase text-muted-foreground border-b border-border">
                       <th className="text-start py-2 font-medium">{t("rep_account")}</th>
                       <th className="text-start py-2 font-medium">{t("rep_label")}</th>
-                      <th className="text-center py-2 font-medium hidden sm:table-cell">Cl.</th>
+                      <th className="text-center py-2 font-medium hidden sm:table-cell">{t("rep_class_short")}</th>
                       <th className="text-end py-2 font-medium">{t("jrn_debit")}</th>
                       <th className="text-end py-2 font-medium">{t("jrn_credit")}</th>
                       <th className="text-end py-2 font-medium">{t("rep_balance")}</th>
