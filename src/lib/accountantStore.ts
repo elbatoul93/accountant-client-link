@@ -274,7 +274,7 @@ export const syncShared = async (
       payload: x.payload ?? null, file_name: x.fileName ?? null, mime_type: x.mimeType ?? null,
       file_path: filePath ?? null, signed_at: x.signedAt ?? null, signed_by: x.signedBy ?? null,
       signature_data_url: x.signatureDataUrl ?? null,
-      workflow: (x.workflow ?? null) as unknown as object | null,
+      workflow: (x.workflow ?? null) as never,
     }).eq("id", x.id);
   }
   if (deletes.length) await supabase.from("acc_shared_documents").delete().in("id", deletes);
