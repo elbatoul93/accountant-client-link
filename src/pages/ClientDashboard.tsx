@@ -266,11 +266,11 @@ const ClientDashboard = () => {
     const ownDecls = allDecls.filter((d) => ids.has(d.clientId));
     const myD = regime ? ownDecls.filter((d) => requiredSet.has(d.type)) : ownDecls;
     const myI = allInvoices.filter((i) => ids.has(i.clientId));
-    const myS = allShared.filter((s) => ids.has(s.clientId) || s.clientEmail?.toLowerCase() === user.email.toLowerCase());
+    const myS = dbSharedDocs;
     const due = myD.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
     const v = getVault({ clientEmail: user.email });
     return { myDecls: myD, myInvoices: myI, mySharedDocs: myS, totalDue: due, myRegime: regime, requiredTypes: required, vault: v, myEmpCount: empCount, myHasCacobatph: hasCaco };
-  }, [user, docs, tick]);
+  }, [user, docs, tick, dbSharedDocs]);
 
   // Auth/role guard handled by ProtectedRoute wrapper — keep all hooks unconditional below.
 
