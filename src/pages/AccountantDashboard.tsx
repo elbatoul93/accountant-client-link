@@ -1357,7 +1357,39 @@ const ClientProfileView = ({
             <DeclList
               items={obligations}
               t={t}
-              onDelete={() => {}}
+              onDelete={async (declId) => {
+                const item = obligations.find((x) => x.id === declId);
+                if (!item) return;
+                const period = item.due.slice(0, 7);
+                const [yyyy, mm] = period.split("-");
+                const { data: row, error: lookupErr } = await supabase
+                  .from("g50_declarations")
+                  .select("id")
+                  .eq("client_id", client.id)
+                  .eq("year", Number(yyyy))
+                  .eq("month", Number(mm))
+                  .order("generated_at", { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                if (lookupErr) {
+                  toast.error(lookupErr.message || t("i18n_error_generic"));
+                  return;
+                }
+                if (row?.id) {
+                  const { error: delErr } = await supabase
+                    .from("g50_declarations")
+                    .delete()
+                    .eq("id", row.id);
+                  if (delErr) {
+                    toast.error(delErr.message || t("i18n_error_generic"));
+                    return;
+                  }
+                }
+                onDeleteLegal; // no-op: keep prior import shape
+                // Remove the obligation entry from the UI immediately.
+                setDecls((p) => p.filter((x) => x.id !== declId));
+                toast.success(t("acc_deleted"));
+              }}
               showType
               onRegenerate={async (d, fmt) => {
                 const period = d.due.slice(0, 7);
