@@ -267,7 +267,7 @@ const AddEmployeeDialog = ({
       name: name.trim(), position: position.trim() || undefined,
       basic: Number(basic), iew: Number(iew || 0), prc: Number(prc || 0),
     });
-    toast.success("Employé ajouté");
+    toast.success(t("employee_added"));
     setName(""); setPosition(""); setClientId("none"); setBasic(""); setIew(""); setPrc("");
   };
 
@@ -277,16 +277,16 @@ const AddEmployeeDialog = ({
         <DialogHeader><DialogTitle>{t("pay_add_employee")}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label className="text-xs">{t("pay_employee")} *</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Karim B." /></div>
-            <div className="space-y-1.5"><Label className="text-xs">{t("pay_position")}</Label><Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Comptable" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">{t("pay_employee")} *</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("ph_employee_name")} /></div>
+            <div className="space-y-1.5"><Label className="text-xs">{t("pay_position")}</Label><Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder={t("ph_employee_position")} /></div>
           </div>
           {clients.length > 0 && (
             <div className="space-y-1.5">
-              <Label className="text-xs">Client (optionnel)</Label>
+              <Label className="text-xs">{t("client_optional_label")}</Label>
               <Select value={clientId} onValueChange={setClientId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">— Cabinet —</SelectItem>
+                  <SelectItem value="none">{t("ph_cabinet_dash")}</SelectItem>
                   {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -396,7 +396,7 @@ export const BillingView = ({
     }
     setBills((p) => p.filter((x) => x.id !== b.id));
     setJournal((p) => p.filter((l) => l.batchId !== b.postedBatch));
-    toast.success("Facture & écritures supprimées");
+    toast.success(t("invoice_entries_deleted"));
   };
 
   return (
@@ -507,7 +507,7 @@ const AddBillDialog = ({
   const tva = (Number(ht || 0) * Number(rate || 0)) / 100;
   const ttc = Number(ht || 0) + tva;
   const submit = () => {
-    if (!number.trim() || !party.trim() || !ht) { toast.error("Champs requis"); return; }
+    if (!number.trim() || !party.trim() || !ht) { toast.error(t("i18n_required_fields")); return; }
     if (kind === "purchase" && !partyTaxId.trim()) {
       toast.error(t("bill_nif_required"));
       return;
@@ -539,10 +539,10 @@ const AddBillDialog = ({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5"><Label className="text-xs">{t("bill_number")}</Label><Input value={number} onChange={(e) => setNumber(e.target.value)} placeholder="F-2025-001" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">{t("bill_number")}</Label><Input value={number} onChange={(e) => setNumber(e.target.value)} placeholder={t("ph_invoice_number")} /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label className="text-xs">{t("bill_party")}</Label><Input value={party} onChange={(e) => setParty(e.target.value)} placeholder="Fournisseur / Client X" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">{t("bill_party")}</Label><Input value={party} onChange={(e) => setParty(e.target.value)} placeholder={t("ph_supplier_client")} /></div>
             <div className="space-y-1.5">
               <Label className="text-xs">
                 {t("bill_party_nif")} {kind === "purchase" && <span className="text-destructive">*</span>}
@@ -580,9 +580,9 @@ const AddBillDialog = ({
               <Select value={rate} onValueChange={setRate}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">0% — Exonéré</SelectItem>
-                  <SelectItem value="9">9% — Taux réduit</SelectItem>
-                  <SelectItem value="19">19% — Taux normal</SelectItem>
+                  <SelectItem value="0">{t("tva_exonere")}</SelectItem>
+                  <SelectItem value="9">{t("tva_reduit")}</SelectItem>
+                  <SelectItem value="19">{t("tva_normal")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -724,7 +724,7 @@ const AddJournalDialog = ({
     if (periodLocked) { toast.error(t("eng_period_locked_journal")); return; }
     if (!balanced) { toast.error(t("jrn_unbalanced")); return; }
     const valid = rows.filter((r) => r.account && (r.debit || r.credit));
-    if (valid.length === 0) { toast.error("Aucune ligne"); return; }
+    if (valid.length === 0) { toast.error(t("no_lines")); return; }
     const batchId = crypto.randomUUID();
     onAdd(valid.map((r) => ({
       id: crypto.randomUUID(), date, period,
@@ -732,7 +732,7 @@ const AddJournalDialog = ({
       debit: Number(r.debit || 0), credit: Number(r.credit || 0),
       clientId: cid, source: "manual" as const, batchId,
     })));
-    toast.success("Écriture enregistrée");
+    toast.success(t("entry_saved"));
     setRows([{ ...blank }, { ...blank }]); setClientId("none");
   };
 
@@ -767,11 +767,11 @@ const AddJournalDialog = ({
             {rows.map((r, i) => (
               <div key={i} className="grid grid-cols-12 gap-2 items-start">
                 <div className="col-span-4">
-                  <PcnPicker value={r.account} onChange={(c) => update(i, "account", c)} placeholder="Compte PCN" />
+                  <PcnPicker value={r.account} onChange={(c) => update(i, "account", c)} placeholder={t("ph_pcn_account")} />
                 </div>
                 <Input className="col-span-3 h-9" placeholder={t("jrn_label")} value={r.label} onChange={(e) => update(i, "label", e.target.value)} />
-                <Input className="col-span-2 h-9 text-end font-mono text-xs" placeholder="Débit" type="number" value={r.debit} onChange={(e) => update(i, "debit", e.target.value)} />
-                <Input className="col-span-2 h-9 text-end font-mono text-xs" placeholder="Crédit" type="number" value={r.credit} onChange={(e) => update(i, "credit", e.target.value)} />
+                <Input className="col-span-2 h-9 text-end font-mono text-xs" placeholder={t("ph_debit")} type="number" value={r.debit} onChange={(e) => update(i, "debit", e.target.value)} />
+                <Input className="col-span-2 h-9 text-end font-mono text-xs" placeholder={t("ph_credit")} type="number" value={r.credit} onChange={(e) => update(i, "credit", e.target.value)} />
                 <Button variant="ghost" size="icon" className="col-span-1 h-9 w-9" onClick={() => setRows((p) => p.filter((_, idx) => idx !== i))} disabled={rows.length <= 2}>
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
