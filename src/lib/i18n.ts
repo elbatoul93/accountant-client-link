@@ -2316,6 +2316,10 @@ const ar: typeof en = {
   invite_link_expired_title: "انتهت صلاحية رابط الدعوة",
   invite_link_expired_msg: "تم استخدام هذا الرابط من قبل أو انتهت صلاحيته. الرجاء طلب رابط جديد من محاسبك.",
   invite_back_login: "العودة إلى تسجيل الدخول",
+  invite_delete: "حذف",
+  invite_delete_confirm: "حذف الدعوة؟",
+  invite_delete_desc: "يُزيل فقط سجل الدعوة. لا يتأثر الزبائن المسجّلون.",
+  invite_delete_error: "فشل حذف الدعوة",
 
   cf_title: "ملفات الزبون",
   cf_subtitle_with: "وثائق رفعها {name}",
