@@ -1502,6 +1502,10 @@ const fr: typeof en = {
   invite_link_expired_title: "Lien d'invitation expiré",
   invite_link_expired_msg: "Ce lien d'invitation a déjà été utilisé ou a expiré. Veuillez demander un nouveau lien à votre comptable.",
   invite_back_login: "Retour à la connexion",
+  invite_delete: "Supprimer",
+  invite_delete_confirm: "Supprimer l'invitation ?",
+  invite_delete_desc: "Cela supprime uniquement l'invitation. Les clients déjà inscrits ne sont pas affectés.",
+  invite_delete_error: "Échec de la suppression de l'invitation",
 
   cf_title: "Fichiers du client",
   cf_subtitle_with: "Documents téléversés par {name}",
