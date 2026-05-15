@@ -566,6 +566,7 @@ export type Database = {
           tax_regime: string
         }[]
       }
+      get_my_linked_accountant_id: { Args: never; Returns: string }
       get_user_type: { Args: { user_id: string }; Returns: string }
       has_role: {
         Args: {
