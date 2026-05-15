@@ -193,6 +193,12 @@ const en = {
   cli_docs_acc_subtitle: "Files securely shared by your accountant",
   cli_docs_empty: "Your accountant hasn't shared any documents yet.",
   cli_download: "Download",
+  download_pdf: "Download PDF",
+  g50_sent_label: "Sent",
+  g50_sending_label: "Sending…",
+  g50_sent_success: "G50 sent to client",
+  g50_send_failed: "Failed to send G50",
+  g50_send_no_pdf: "Generate the G50 first before sending.",
 
   // ERP Sidebar & Client profile
   side_dashboard: "Dashboard",
