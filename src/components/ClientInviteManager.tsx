@@ -5,7 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Link2, Loader2, Plus } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Copy, Link2, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { copyToClipboard } from "@/lib/clipboard";
 
@@ -30,6 +40,8 @@ export const ClientInviteManager = () => {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [email, setEmail] = useState("");
+  const [inviteToDelete, setInviteToDelete] = useState<Invite | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -72,6 +84,27 @@ export const ClientInviteManager = () => {
     const url = `${window.location.origin}/invite/${token}`;
     copyToClipboard(url);
     toast.success(t("invite_copied"));
+  };
+
+  const confirmDelete = (inv: Invite) => {
+    setInviteToDelete(inv);
+  };
+
+  const doDelete = async () => {
+    if (!inviteToDelete) return;
+    setDeleting(true);
+    const { error } = await supabase
+      .from("invitations")
+      .delete()
+      .eq("id", inviteToDelete.id);
+    if (error) {
+      toast.error(t("invite_delete_error"));
+    } else {
+      setInvites((prev) => prev.filter((i) => i.id !== inviteToDelete.id));
+      toast.success(t("acc_deleted"));
+    }
+    setDeleting(false);
+    setInviteToDelete(null);
   };
 
   if (!user || user.role !== "accountant") return null;
@@ -126,20 +159,45 @@ export const ClientInviteManager = () => {
                   <Badge variant={status === "active" ? "default" : status === "used" ? "secondary" : "outline"}>
                     {status === "active" ? t("invite_status_active") : status === "used" ? t("invite_status_used") : t("invite_status_expired")}
                   </Badge>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => copy(inv.token)}
-                    disabled={status !== "active"}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => copy(inv.token)}
+                      disabled={status !== "active"}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => confirmDelete(inv)}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </li>
               );
             })}
           </ul>
         )}
       </div>
+
+      <AlertDialog open={!!inviteToDelete} onOpenChange={(open) => { if (!open) setInviteToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("invite_delete_confirm")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("invite_delete_desc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{t("i18n_cancel")}</AlertDialogCancel>
+            <AlertDialogAction disabled={deleting} onClick={doDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : t("invite_delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
