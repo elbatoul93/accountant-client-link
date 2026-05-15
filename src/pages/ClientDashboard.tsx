@@ -69,6 +69,8 @@ const ClientDashboard = () => {
   const [signing, setSigning] = useState<SharedDoc | null>(null);
   const [previewDoc, setPreviewDoc] = useState<SharedDoc | null>(null);
   const [dbSharedDocs, setDbSharedDocs] = useState<SharedDoc[]>([]);
+  const [accountantPdfs, setAccountantPdfs] = useState<{ id: string; title: string; file_path: string; created_at: string }[]>([]);
+  const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
 
   // Load shared documents from the DB (RLS scopes to this client).
   const refreshSharedDocs = useCallback(async () => {
@@ -76,6 +78,40 @@ const ClientDashboard = () => {
     setDbSharedDocs(rows as SharedDoc[]);
   }, []);
   useEffect(() => { refreshSharedDocs(); }, [refreshSharedDocs]);
+
+  // Load shared_documents (PDFs sent by the accountant, e.g. G50) — RLS scopes to client_id = auth.uid()
+  const refreshAccountantPdfs = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("shared_documents" as any)
+      .select("id,title,file_path,created_at")
+      .order("created_at", { ascending: false });
+    if (error || !data) return;
+    setAccountantPdfs(data as any);
+  }, []);
+  useEffect(() => { refreshAccountantPdfs(); }, [refreshAccountantPdfs]);
+
+  const downloadAccountantPdf = useCallback(async (id: string, file_path: string, title: string) => {
+    setDownloadingPdf(id);
+    try {
+      const { data, error } = await supabase.storage
+        .from("shared-docs")
+        .createSignedUrl(file_path, 60);
+      if (error || !data?.signedUrl) {
+        toast.error(error?.message || "Failed to generate download link");
+        return;
+      }
+      const a = document.createElement("a");
+      a.href = data.signedUrl;
+      a.download = `${title}.pdf`;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } finally {
+      setDownloadingPdf(null);
+    }
+  }, []);
 
   // ── Upload confirmation modal state ──
   const [pendingFile, setPendingFile] = useState<File | null>(null);
