@@ -663,7 +663,7 @@ const AccountantDashboard = () => {
                         token = newToken;
                       }
                       const url = `${window.location.origin}/invite/${token}`;
-                      await navigator.clipboard.writeText(url).catch(() => {});
+                      copyToClipboard(url);
                       toast.success(t("acc_invite_copied").replace("{name}", c.name));
                     } catch (e: any) {
                       toast.error(e?.message || t("i18n_error_generic"));
