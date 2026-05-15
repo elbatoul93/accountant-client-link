@@ -100,15 +100,19 @@ export const ClientFilesSection = ({ clientId, clientEmail, clientName, t }: Pro
   };
 
   const downloadFile = async (path: string, name: string) => {
-    const { data, error } = await supabase.storage.from(BUCKET).download(path);
-    if (error || !data) {
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 10);
+    if (error || !data?.signedUrl) {
       toast.error(error?.message || t("incoming_download_failed"));
       return;
     }
-    const url = URL.createObjectURL(data);
     const a = document.createElement("a");
-    a.href = url; a.download = name; a.click();
-    URL.revokeObjectURL(url);
+    a.href = data.signedUrl;
+    a.download = name;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   return (
