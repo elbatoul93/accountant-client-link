@@ -684,6 +684,10 @@ const en = {
   invite_link_expired_title: "Invite Link Expired",
   invite_link_expired_msg: "This invitation link has already been used or has expired. Please ask your accountant for a new link.",
   invite_back_login: "Back to sign in",
+  invite_delete: "Delete",
+  invite_delete_confirm: "Delete invitation?",
+  invite_delete_desc: "This only removes the invitation record. Already registered clients are not affected.",
+  invite_delete_error: "Failed to delete invitation",
 
   // Client files (per-client view)
   cf_title: "Client files",
