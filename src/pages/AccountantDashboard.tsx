@@ -55,6 +55,7 @@ import { ClientDocumentsSection } from "@/components/ClientDocumentsSection";
 import { IncomingDocumentsLive } from "@/components/IncomingDocumentsLive";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
 import { generateG50Xlsx, generateG50Pdf } from "@/lib/g50Export";
+import { copyToClipboard } from "@/lib/clipboard";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 
@@ -663,7 +664,7 @@ const AccountantDashboard = () => {
                         token = newToken;
                       }
                       const url = `${window.location.origin}/invite/${token}`;
-                      await navigator.clipboard.writeText(url).catch(() => {});
+                      copyToClipboard(url);
                       toast.success(t("acc_invite_copied").replace("{name}", c.name));
                     } catch (e: any) {
                       toast.error(e?.message || t("i18n_error_generic"));

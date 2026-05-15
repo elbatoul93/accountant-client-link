@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Link2, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/clipboard";
 
 interface Invite {
   id: string;
@@ -58,7 +59,7 @@ export const ClientInviteManager = () => {
       });
       if (error) { toast.error(error.message); return; }
       const url = `${window.location.origin}/invite/${token}`;
-      await navigator.clipboard.writeText(url).catch(() => {});
+      copyToClipboard(url);
       toast.success(t("invite_generated_copied"));
       setEmail("");
       load();
@@ -67,9 +68,9 @@ export const ClientInviteManager = () => {
     }
   };
 
-  const copy = async (token: string) => {
+  const copy = (token: string) => {
     const url = `${window.location.origin}/invite/${token}`;
-    await navigator.clipboard.writeText(url);
+    copyToClipboard(url);
     toast.success(t("invite_copied"));
   };
 
