@@ -54,7 +54,7 @@ import { ClientFilesSection } from "@/components/ClientFilesSection";
 import { ClientDocumentsSection } from "@/components/ClientDocumentsSection";
 import { IncomingDocumentsLive } from "@/components/IncomingDocumentsLive";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
-import { generateG50Xlsx, generateG50Pdf } from "@/lib/g50Export";
+import { generateG50Xlsx, generateG50Pdf, generateG50PdfBytes } from "@/lib/g50Export";
 import { copyToClipboard } from "@/lib/clipboard";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
