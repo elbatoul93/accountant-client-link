@@ -143,7 +143,7 @@ const AccountantDashboard = () => {
   const [previewIncoming, setPreviewIncoming] = useState<IncomingInvoice | null>(null);
   const [editingShared, setEditingShared] = useState<SharedDoc | null>(null);
   const [trackingClientId, setTrackingClientId] = useState<string>("");
-  const [viewG50Client, setViewG50Client] = useState<Client | null>(null);
+  
   const [chatPreselectId, setChatPreselectId] = useState<string | null>(null);
   type DbLinkedClient = {
     id: string; full_name: string;
