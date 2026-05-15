@@ -2029,12 +2029,14 @@ const AddDeclarationDialog = ({
   );
 };
 
-const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, onRegenerate, onEditG50 }: {
+const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, onRegenerate, onEditG50, sentMap, sendingId }: {
   items: Decl[]; onDelete: (id: string) => void; t: (k: string) => string;
   showType?: boolean; onSend?: (d: Decl) => void;
   sharedDocs?: SharedDoc[]; onReview?: (s: SharedDoc) => void;
   onRegenerate?: (d: Decl, format: "pdf" | "xlsx") => void | Promise<void>;
   onEditG50?: (d: Decl) => void | Promise<void>;
+  sentMap?: Record<string, boolean>;
+  sendingId?: string | null;
 }) => {
   const [busyId, setBusyId] = useState<string | null>(null);
   if (items.length === 0) return <EmptyState label={t("empty_no_decls")} />;
