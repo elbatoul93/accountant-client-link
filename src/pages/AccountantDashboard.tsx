@@ -130,6 +130,27 @@ const AccountantDashboard = () => {
   const [fsList, setFsList] = useState<FinStmt[]>(() => load<FinStmt>(KEY_FS));
   const [sharedDocs, setSharedDocs] = useState<SharedDoc[]>(() => load<SharedDoc>(KEY_SHARED));
   const [legalDocs, setLegalDocs] = useState<LegalDoc[]>(() => load<LegalDoc>(KEY_LEGAL));
+  // Map of `${clientId}|YYYY-MM` -> { id, sent, formData } from g50_declarations
+  const [g50Map, setG50Map] = useState<Record<string, { id: string; sent: boolean; formData: any }>>({});
+  const [sendingDeclId, setSendingDeclId] = useState<string | null>(null);
+
+  const refreshG50Map = useCallback(async () => {
+    const { data: au } = await supabase.auth.getUser();
+    const accId = au.user?.id;
+    if (!accId) return;
+    const { data, error } = await supabase
+      .from("g50_declarations")
+      .select("id, client_id, month, year, form_data, sent")
+      .eq("accountant_id", accId);
+    if (error || !data) return;
+    const map: Record<string, { id: string; sent: boolean; formData: any }> = {};
+    for (const r of data as any[]) {
+      const key = `${r.client_id}|${String(r.year).padStart(4, "0")}-${String(r.month).padStart(2, "0")}`;
+      map[key] = { id: r.id, sent: !!r.sent, formData: r.form_data };
+    }
+    setG50Map(map);
+  }, []);
+  useEffect(() => { refreshG50Map(); }, [refreshG50Map]);
   const { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks, precompte, setPrecompte } = useSuiteData();
   const [obligationsClient, setObligationsClient] = useState<Client | null>(null);
   const [openTool, setOpenTool] = useState<null | "fs" | "g50" | "send">(null);
