@@ -2097,11 +2097,22 @@ const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, 
                 <Pencil className="h-3.5 w-3.5" /> {t("wf_review_edit")}
               </Button>
             )}
-            {onSend && (
-              <Button size="sm" variant="outlineGold" onClick={() => onSend(d)} title={t("tools_send_to_client")}>
-                <Send className="h-3.5 w-3.5" />
-              </Button>
-            )}
+            {onSend && (() => {
+              const isSent = !!sentMap?.[d.id];
+              const isSending = sendingId === d.id;
+              return (
+                <Button
+                  size="sm"
+                  variant="outlineGold"
+                  onClick={() => onSend(d)}
+                  disabled={isSent || isSending}
+                  title={isSent ? (t("g50_sent_label") || "Sent") : t("tools_send_to_client")}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  {isSent ? (t("g50_sent_label") || "Sent") : isSending ? (t("g50_sending_label") || "Sending…") : null}
+                </Button>
+              );
+            })()}
             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(d.id)}>
               <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
