@@ -1604,7 +1604,7 @@ const fr: typeof en = {
   acc_direction_label: "Direction",
   acc_commune_label: "Commune",
   acc_ph_full_name: "Amira Benali",
-  acc_ph_company: "Acme SARL",
+  acc_ph_company: "Entreprise SARL",
   acc_ph_activity: "Commerce de gros",
   acc_ph_bp: "16xxxxxxxx",
   acc_ph_direction: "Direction des Impôts",
