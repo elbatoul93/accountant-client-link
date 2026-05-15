@@ -1107,12 +1107,12 @@ const ClientsListView = ({
                   <td className="py-3 hidden md:table-cell">
                     {c.taxRegime ? (
                       <Badge variant="outline" className="text-[10px] border-primary/40 text-primary bg-primary/5 font-mono">
-                        {c.taxRegime === "IFU" ? "IFU" : c.taxRegime === "REEL" ? "Réel" : "Simplifié"}
+                        {c.taxRegime === "IFU" ? "IFU" : c.taxRegime === "REEL" ? t("tax_regime_real_short") : t("tax_regime_flat_short")}
                       </Badge>
                     ) : <span className="text-xs text-muted-foreground">—</span>}
                   </td>
                   <td className="py-3 text-muted-foreground hidden lg:table-cell">{c.phone || c.email || c.contact}</td>
-                  <td className="py-3"><Badge variant="secondary" className="text-[10px] capitalize">{c.status}</Badge></td>
+                  <td className="py-3"><Badge variant="secondary" className="text-[10px] capitalize">{t(`client_status_${c.status}`) !== `client_status_${c.status}` ? t(`client_status_${c.status}`) : c.status}</Badge></td>
                   <td className="py-3">
                     <ClientStatusIcon t={t} regime={c.taxRegime} employeeCount={empCountByClient[c.id] || 0} hasCacobatph={c.hasCacobatph} />
                   </td>
