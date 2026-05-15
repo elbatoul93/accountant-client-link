@@ -989,25 +989,6 @@ const AccountantDashboard = () => {
         t={t}
       />
 
-      {/* View / Edit a client's G50 (interactive preview) */}
-      <ViewG50Dialog
-        client={viewG50Client}
-        onClose={() => setViewG50Client(null)}
-        journal={journal}
-        t={t}
-        onFinalize={(decl, shared) => {
-          setDecls((p) => [decl, ...p]);
-          setSharedDocs((p) => [shared, ...p]);
-          pushNotification({
-            forRole: "client", forEmail: shared.clientEmail,
-            title: t("notif_g50_ready_title"),
-            message: t("notif_g50_ready_msg").replace("{label}", shared.label),
-            type: "g50_ready", link: "/dashboard/client", refId: shared.id,
-          });
-          toast.success(t("g50_finalized_sent"));
-          setViewG50Client(null);
-        }}
-      />
 
     </div>
   );
@@ -1071,12 +1052,11 @@ const DashboardView = ({
 );
 
 const ClientsListView = ({
-  t, clients, totalCount, search, setSearch, empCountByClient, onOpen, onAdd, onEdit, onDelete, onExtract, onViewG50, onCopyInvite, onMessage,
+  t, clients, totalCount, search, setSearch, empCountByClient, onOpen, onAdd, onEdit, onDelete, onExtract, onCopyInvite, onMessage,
 }: {
   t: (k: string) => string; clients: Client[]; totalCount: number; search: string; setSearch: (v: string) => void;
   empCountByClient: Record<string, number>;
   onOpen: (c: Client) => void; onAdd: () => void; onEdit: (c: Client) => void; onDelete: (id: string) => void; onExtract: (c: Client) => void;
-  onViewG50: (c: Client) => void;
   onCopyInvite: (c: Client) => void;
   onMessage: (c: Client) => void;
 }) => (
@@ -1139,9 +1119,6 @@ const ClientsListView = ({
                     <div className="flex items-center justify-end gap-1">
                       <Button size="sm" variant="secondary" className="h-7 gap-1.5 text-xs" onClick={() => onCopyInvite(c)} title={t("acc_copy_invite_title")}>
                         <Link2 className="h-3.5 w-3.5" /> Copier invitation
-                      </Button>
-                      <Button size="sm" variant="gold" className="h-7 gap-1.5 text-xs" onClick={() => onViewG50(c)}>
-                        <Receipt className="h-3.5 w-3.5" /> {t("acc_view_g50")}
                       </Button>
                       <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => onExtract(c)}>
                         <FileDown className="h-3.5 w-3.5" /> {t("acc_extract")}
