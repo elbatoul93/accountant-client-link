@@ -452,6 +452,39 @@ const ClientDashboard = () => {
                   )}
                 </Card>
 
+                {accountantPdfs.length > 0 && (
+                  <Card className="p-5 sm:p-6 shadow-card border-gold/30 bg-gradient-to-br from-card to-gold/5">
+                    <div className="flex items-center justify-between mb-1">
+                      <h2 className="text-lg font-bold text-primary flex items-center gap-2">
+                        <FolderOpen className="h-4 w-4 text-gold-deep" /> {t("cli_docs_acc_title")}
+                      </h2>
+                      <Badge variant="secondary" className="text-xs">{accountantPdfs.length}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-4">{t("cli_docs_acc_subtitle")}</p>
+                    <div className="space-y-2">
+                      {accountantPdfs.map((p) => (
+                        <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/60 bg-card">
+                          <div className="p-2 rounded-md bg-gradient-gold text-gold-foreground shadow-gold">
+                            <FileText className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm truncate">{p.title}</div>
+                            <div className="text-[11px] text-muted-foreground">{new Date(p.created_at).toLocaleString()}</div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outlineGold"
+                            disabled={downloadingPdf === p.id}
+                            onClick={() => downloadAccountantPdf(p.id, p.file_path, p.title)}
+                          >
+                            <Download className="h-3.5 w-3.5" /> {t("download_pdf") || "Download PDF"}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+
                 <Card className="p-5 sm:p-6 shadow-card">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-bold text-primary">{t("dash_my_docs")}</h2>
