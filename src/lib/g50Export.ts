@@ -225,5 +225,5 @@ export async function generateG50PdfBytes(input: G50ExportInput): Promise<Uint8A
 export async function generateG50Pdf(input: G50ExportInput) {
   const bytes = await generateG50PdfBytes(input);
   const pdfName = input.fileName.replace(/\.xlsx$/i, ".pdf");
-  downloadBlob(new Blob([bytes], { type: "application/pdf" }), pdfName);
+  downloadBlob(new Blob([bytes as BlobPart], { type: "application/pdf" }), pdfName);
 }
