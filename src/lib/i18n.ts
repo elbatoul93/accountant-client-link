@@ -684,6 +684,10 @@ const en = {
   invite_link_expired_title: "Invite Link Expired",
   invite_link_expired_msg: "This invitation link has already been used or has expired. Please ask your accountant for a new link.",
   invite_back_login: "Back to sign in",
+  invite_delete: "Delete",
+  invite_delete_confirm: "Delete invitation?",
+  invite_delete_desc: "This only removes the invitation record. Already registered clients are not affected.",
+  invite_delete_error: "Failed to delete invitation",
 
   // Client files (per-client view)
   cf_title: "Client files",
@@ -1498,6 +1502,10 @@ const fr: typeof en = {
   invite_link_expired_title: "Lien d'invitation expiré",
   invite_link_expired_msg: "Ce lien d'invitation a déjà été utilisé ou a expiré. Veuillez demander un nouveau lien à votre comptable.",
   invite_back_login: "Retour à la connexion",
+  invite_delete: "Supprimer",
+  invite_delete_confirm: "Supprimer l'invitation ?",
+  invite_delete_desc: "Cela supprime uniquement l'invitation. Les clients déjà inscrits ne sont pas affectés.",
+  invite_delete_error: "Échec de la suppression de l'invitation",
 
   cf_title: "Fichiers du client",
   cf_subtitle_with: "Documents téléversés par {name}",
@@ -2308,6 +2316,10 @@ const ar: typeof en = {
   invite_link_expired_title: "انتهت صلاحية رابط الدعوة",
   invite_link_expired_msg: "تم استخدام هذا الرابط من قبل أو انتهت صلاحيته. الرجاء طلب رابط جديد من محاسبك.",
   invite_back_login: "العودة إلى تسجيل الدخول",
+  invite_delete: "حذف",
+  invite_delete_confirm: "حذف الدعوة؟",
+  invite_delete_desc: "يُزيل فقط سجل الدعوة. لا يتأثر الزبائن المسجّلون.",
+  invite_delete_error: "فشل حذف الدعوة",
 
   cf_title: "ملفات الزبون",
   cf_subtitle_with: "وثائق رفعها {name}",
