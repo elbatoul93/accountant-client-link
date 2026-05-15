@@ -1859,6 +1859,12 @@ const ar: typeof en = {
   cli_docs_acc_subtitle: "ملفات مشاركة بأمان من طرف محاسبك",
   cli_docs_empty: "لم يقم محاسبك بمشاركة أي وثيقة بعد.",
   cli_download: "تحميل",
+  download_pdf: "تحميل PDF",
+  g50_sent_label: "تم الإرسال",
+  g50_sending_label: "جارٍ الإرسال…",
+  g50_sent_success: "تم إرسال G50 إلى العميل",
+  g50_send_failed: "فشل إرسال G50",
+  g50_send_no_pdf: "قم بإنشاء G50 أولاً قبل الإرسال.",
 
   side_dashboard: "لوحة التحكم",
   side_clients: "قائمة الزبائن",
