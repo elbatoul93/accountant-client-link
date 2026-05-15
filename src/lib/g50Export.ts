@@ -196,11 +196,10 @@ function arrayBufferToBase64(buf: ArrayBuffer): string {
   return btoa(binary);
 }
 
-export async function generateG50Pdf(input: G50ExportInput) {
+export async function generateG50PdfBytes(input: G50ExportInput): Promise<Uint8Array> {
   const xlsxBuf = await buildG50Buffer(input, true);
   const xlsxBase64 = arrayBufferToBase64(xlsxBuf);
   const xlsxName = input.fileName.replace(/\.pdf$/i, ".xlsx");
-  const pdfName = input.fileName.replace(/\.xlsx$/i, ".pdf");
 
   const { data, error } = await supabase.functions.invoke("g50-pdf", {
     body: { xlsxBase64, fileName: xlsxName },
@@ -220,5 +219,11 @@ export async function generateG50Pdf(input: G50ExportInput) {
   const bin = atob(data.pdfBase64);
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+export async function generateG50Pdf(input: G50ExportInput) {
+  const bytes = await generateG50PdfBytes(input);
+  const pdfName = input.fileName.replace(/\.xlsx$/i, ".pdf");
   downloadBlob(new Blob([bytes], { type: "application/pdf" }), pdfName);
 }
