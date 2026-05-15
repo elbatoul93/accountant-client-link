@@ -1196,10 +1196,10 @@ const ClientProfileView = ({
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <Button variant="outline" size="sm" onClick={onMessage}>
-              <MessageCircle className="h-4 w-4" /> Message
+              <MessageCircle className="h-4 w-4" /> {t("i18n_message")}
             </Button>
             <Button variant="outlineGold" size="sm" onClick={() => onEdit(client)}>
-              <Pencil className="h-4 w-4" /> Edit
+              <Pencil className="h-4 w-4" /> {t("acc_edit")}
             </Button>
             <Button variant="gold" size="sm" onClick={onExtract}>
               <FileDown className="h-4 w-4" /> {t("acc_extract")}
