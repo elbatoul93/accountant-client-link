@@ -1107,25 +1107,25 @@ const ClientsListView = ({
                   <td className="py-3 hidden md:table-cell">
                     {c.taxRegime ? (
                       <Badge variant="outline" className="text-[10px] border-primary/40 text-primary bg-primary/5 font-mono">
-                        {c.taxRegime === "IFU" ? "IFU" : c.taxRegime === "REEL" ? "Réel" : "Simplifié"}
+                        {c.taxRegime === "IFU" ? "IFU" : c.taxRegime === "REEL" ? t("tax_regime_real_short") : t("tax_regime_flat_short")}
                       </Badge>
                     ) : <span className="text-xs text-muted-foreground">—</span>}
                   </td>
                   <td className="py-3 text-muted-foreground hidden lg:table-cell">{c.phone || c.email || c.contact}</td>
-                  <td className="py-3"><Badge variant="secondary" className="text-[10px] capitalize">{c.status}</Badge></td>
+                  <td className="py-3"><Badge variant="secondary" className="text-[10px] capitalize">{t(`client_status_${c.status}`) !== `client_status_${c.status}` ? t(`client_status_${c.status}`) : c.status}</Badge></td>
                   <td className="py-3">
                     <ClientStatusIcon t={t} regime={c.taxRegime} employeeCount={empCountByClient[c.id] || 0} hasCacobatph={c.hasCacobatph} />
                   </td>
                   <td className="py-3 text-end" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
                       <Button size="sm" variant="secondary" className="h-7 gap-1.5 text-xs" onClick={() => onCopyInvite(c)} title={t("acc_copy_invite_title")}>
-                        <Link2 className="h-3.5 w-3.5" /> Copier invitation
+                        <Link2 className="h-3.5 w-3.5" /> {t("acc_copy_invite")}
                       </Button>
                       <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => onExtract(c)}>
                         <FileDown className="h-3.5 w-3.5" /> {t("acc_extract")}
                       </Button>
                       <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => onMessage(c)} title={t("i18n_message")}>
-                        <MessageCircle className="h-3.5 w-3.5" /> Message
+                        <MessageCircle className="h-3.5 w-3.5" /> {t("i18n_message")}
                       </Button>
                       <Button size="sm" variant="outlineGold" className="h-7 gap-1.5 text-xs" onClick={() => onEdit(c)}>
                         <Pencil className="h-3.5 w-3.5" /> {t("acc_edit")}
@@ -1196,10 +1196,10 @@ const ClientProfileView = ({
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <Button variant="outline" size="sm" onClick={onMessage}>
-              <MessageCircle className="h-4 w-4" /> Message
+              <MessageCircle className="h-4 w-4" /> {t("i18n_message")}
             </Button>
             <Button variant="outlineGold" size="sm" onClick={() => onEdit(client)}>
-              <Pencil className="h-4 w-4" /> Edit
+              <Pencil className="h-4 w-4" /> {t("acc_edit")}
             </Button>
             <Button variant="gold" size="sm" onClick={onExtract}>
               <FileDown className="h-4 w-4" /> {t("acc_extract")}
