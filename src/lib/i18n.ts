@@ -1033,6 +1033,12 @@ const fr: typeof en = {
   cli_docs_acc_subtitle: "Fichiers partagés par votre comptable en toute sécurité",
   cli_docs_empty: "Votre comptable n'a partagé aucun document pour le moment.",
   cli_download: "Télécharger",
+  download_pdf: "Télécharger PDF",
+  g50_sent_label: "Envoyé",
+  g50_sending_label: "Envoi…",
+  g50_sent_success: "G50 envoyé au client",
+  g50_send_failed: "Échec de l'envoi du G50",
+  g50_send_no_pdf: "Générez d'abord le G50 avant l'envoi.",
 
   side_dashboard: "Tableau de bord",
   side_clients: "Liste des Clients",
