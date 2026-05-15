@@ -83,12 +83,12 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
   const download = async (path: string, name: string) => {
-    const { data, error } = await supabase.storage.from(BUCKET).download(path);
-    if (error || !data) return toast.error(error?.message || t("incoming_download_failed"));
-    const url = URL.createObjectURL(data);
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 600);
+    if (error || !data?.signedUrl) return toast.error(error?.message || t("incoming_download_failed"));
     const a = document.createElement("a");
-    a.href = url; a.download = name; a.click();
-    URL.revokeObjectURL(url);
+    a.href = data.signedUrl; a.download = name;
+    a.target = "_blank"; a.rel = "noopener noreferrer";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
 
   return (
