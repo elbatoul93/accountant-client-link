@@ -151,6 +151,68 @@ const AccountantDashboard = () => {
     setG50Map(map);
   }, []);
   useEffect(() => { refreshG50Map(); }, [refreshG50Map]);
+
+  // Send a G50 declaration to the linked client:
+  // 1) update g50_declarations.sent=true,sent_at, 2) generate PDF, 3) upload to shared-docs storage,
+  // 4) insert into shared_documents. Source of truth for "sent" is the DB (g50Map).
+  const handleSendG50 = useCallback(async (d: Decl, clientName: string, taxId: string | undefined, bp: string | undefined) => {
+    if (sendingDeclId) return;
+    const period = d.due.slice(0, 7); // YYYY-MM
+    const [yyyy, mm] = period.split("-");
+    const key = `${d.clientId}|${period}`;
+    const g50 = g50Map[key];
+    if (!g50) {
+      toast.error(t("g50_send_no_pdf") || "Generate the G50 first before sending.");
+      return;
+    }
+    if (g50.sent) return;
+    setSendingDeclId(d.id);
+    try {
+      const { data: au } = await supabase.auth.getUser();
+      const accId = au.user?.id;
+      if (!accId) throw new Error("Not authenticated");
+
+      // 1) Build PDF bytes from the persisted form data
+      const fileName = `G50_${taxId || "NIF"}_${yyyy}_${mm}.pdf`;
+      const pdfBytes = await generateG50PdfBytes({ ...(g50.formData as any), fileName });
+
+      // 2) Upload to storage at {client_id}/{g50_declaration_id}.pdf
+      const path = `${d.clientId}/${g50.id}.pdf`;
+      const { error: upErr } = await supabase.storage
+        .from("shared-docs")
+        .upload(path, new Blob([pdfBytes as BlobPart], { type: "application/pdf" }), {
+          contentType: "application/pdf", upsert: true,
+        });
+      if (upErr) throw upErr;
+
+      // 3) Insert shared_documents row
+      const title = `G50 — ${mm}/${yyyy}`;
+      const { error: insErr } = await supabase.from("shared_documents" as any).insert({
+        client_id: d.clientId,
+        accountant_id: accId,
+        g50_declaration_id: g50.id,
+        file_path: path,
+        title,
+      } as any);
+      if (insErr) throw insErr;
+
+      // 4) Mark as sent
+      const { error: updErr } = await supabase
+        .from("g50_declarations")
+        .update({ sent: true, sent_at: new Date().toISOString() } as any)
+        .eq("id", g50.id);
+      if (updErr) throw updErr;
+
+      setG50Map((m) => ({ ...m, [key]: { ...g50, sent: true } }));
+      toast.success(t("g50_sent_success") || "G50 sent to client");
+    } catch (e: any) {
+      console.error("[handleSendG50]", e);
+      toast.error(e?.message || t("g50_send_failed") || "Failed to send G50");
+    } finally {
+      setSendingDeclId(null);
+    }
+  }, [g50Map, sendingDeclId, t]);
+
   const { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks, precompte, setPrecompte } = useSuiteData();
   const [obligationsClient, setObligationsClient] = useState<Client | null>(null);
   const [openTool, setOpenTool] = useState<null | "fs" | "g50" | "send">(null);
