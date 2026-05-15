@@ -1119,13 +1119,13 @@ const ClientsListView = ({
                   <td className="py-3 text-end" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
                       <Button size="sm" variant="secondary" className="h-7 gap-1.5 text-xs" onClick={() => onCopyInvite(c)} title={t("acc_copy_invite_title")}>
-                        <Link2 className="h-3.5 w-3.5" /> Copier invitation
+                        <Link2 className="h-3.5 w-3.5" /> {t("acc_copy_invite")}
                       </Button>
                       <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => onExtract(c)}>
                         <FileDown className="h-3.5 w-3.5" /> {t("acc_extract")}
                       </Button>
                       <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => onMessage(c)} title={t("i18n_message")}>
-                        <MessageCircle className="h-3.5 w-3.5" /> Message
+                        <MessageCircle className="h-3.5 w-3.5" /> {t("i18n_message")}
                       </Button>
                       <Button size="sm" variant="outlineGold" className="h-7 gap-1.5 text-xs" onClick={() => onEdit(c)}>
                         <Pencil className="h-3.5 w-3.5" /> {t("acc_edit")}
