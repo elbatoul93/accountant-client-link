@@ -625,7 +625,7 @@ const AccountantDashboard = () => {
                     toast.success(t("acc_deleted"));
                   }}
                   onExtract={setObligationsClient}
-                  onViewG50={setViewG50Client}
+                  
                   onCopyInvite={async (c) => {
                     try {
                       const { data: { user: au } } = await supabase.auth.getUser();
