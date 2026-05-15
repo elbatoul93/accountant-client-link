@@ -290,6 +290,8 @@ export type Database = {
           generated_at: string
           id: string
           month: number
+          sent: boolean
+          sent_at: string | null
           year: number
         }
         Insert: {
@@ -300,6 +302,8 @@ export type Database = {
           generated_at?: string
           id?: string
           month: number
+          sent?: boolean
+          sent_at?: string | null
           year: number
         }
         Update: {
@@ -310,6 +314,8 @@ export type Database = {
           generated_at?: string
           id?: string
           month?: number
+          sent?: boolean
+          sent_at?: string | null
           year?: number
         }
         Relationships: []
@@ -472,6 +478,44 @@ export type Database = {
           user_type?: Database["public"]["Enums"]["app_role"]
         }
         Relationships: []
+      }
+      shared_documents: {
+        Row: {
+          accountant_id: string
+          client_id: string
+          created_at: string
+          file_path: string
+          g50_declaration_id: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          accountant_id: string
+          client_id: string
+          created_at?: string
+          file_path: string
+          g50_declaration_id?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          accountant_id?: string
+          client_id?: string
+          created_at?: string
+          file_path?: string
+          g50_declaration_id?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_documents_g50_declaration_id_fkey"
+            columns: ["g50_declaration_id"]
+            isOneToOne: false
+            referencedRelation: "g50_declarations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

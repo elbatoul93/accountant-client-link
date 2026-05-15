@@ -193,6 +193,12 @@ const en = {
   cli_docs_acc_subtitle: "Files securely shared by your accountant",
   cli_docs_empty: "Your accountant hasn't shared any documents yet.",
   cli_download: "Download",
+  download_pdf: "Download PDF",
+  g50_sent_label: "Sent",
+  g50_sending_label: "Sending…",
+  g50_sent_success: "G50 sent to client",
+  g50_send_failed: "Failed to send G50",
+  g50_send_no_pdf: "Generate the G50 first before sending.",
 
   // ERP Sidebar & Client profile
   side_dashboard: "Dashboard",
@@ -1027,6 +1033,12 @@ const fr: typeof en = {
   cli_docs_acc_subtitle: "Fichiers partagés par votre comptable en toute sécurité",
   cli_docs_empty: "Votre comptable n'a partagé aucun document pour le moment.",
   cli_download: "Télécharger",
+  download_pdf: "Télécharger PDF",
+  g50_sent_label: "Envoyé",
+  g50_sending_label: "Envoi…",
+  g50_sent_success: "G50 envoyé au client",
+  g50_send_failed: "Échec de l'envoi du G50",
+  g50_send_no_pdf: "Générez d'abord le G50 avant l'envoi.",
 
   side_dashboard: "Tableau de bord",
   side_clients: "Liste des Clients",
@@ -1847,6 +1859,12 @@ const ar: typeof en = {
   cli_docs_acc_subtitle: "ملفات مشاركة بأمان من طرف محاسبك",
   cli_docs_empty: "لم يقم محاسبك بمشاركة أي وثيقة بعد.",
   cli_download: "تحميل",
+  download_pdf: "تحميل PDF",
+  g50_sent_label: "تم الإرسال",
+  g50_sending_label: "جارٍ الإرسال…",
+  g50_sent_success: "تم إرسال G50 إلى العميل",
+  g50_send_failed: "فشل إرسال G50",
+  g50_send_no_pdf: "قم بإنشاء G50 أولاً قبل الإرسال.",
 
   side_dashboard: "لوحة التحكم",
   side_clients: "قائمة الزبائن",

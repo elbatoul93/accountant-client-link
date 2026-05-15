@@ -69,6 +69,8 @@ const ClientDashboard = () => {
   const [signing, setSigning] = useState<SharedDoc | null>(null);
   const [previewDoc, setPreviewDoc] = useState<SharedDoc | null>(null);
   const [dbSharedDocs, setDbSharedDocs] = useState<SharedDoc[]>([]);
+  const [accountantPdfs, setAccountantPdfs] = useState<{ id: string; title: string; file_path: string; created_at: string }[]>([]);
+  const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
 
   // Load shared documents from the DB (RLS scopes to this client).
   const refreshSharedDocs = useCallback(async () => {
@@ -76,6 +78,40 @@ const ClientDashboard = () => {
     setDbSharedDocs(rows as SharedDoc[]);
   }, []);
   useEffect(() => { refreshSharedDocs(); }, [refreshSharedDocs]);
+
+  // Load shared_documents (PDFs sent by the accountant, e.g. G50) — RLS scopes to client_id = auth.uid()
+  const refreshAccountantPdfs = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("shared_documents" as any)
+      .select("id,title,file_path,created_at")
+      .order("created_at", { ascending: false });
+    if (error || !data) return;
+    setAccountantPdfs(data as any);
+  }, []);
+  useEffect(() => { refreshAccountantPdfs(); }, [refreshAccountantPdfs]);
+
+  const downloadAccountantPdf = useCallback(async (id: string, file_path: string, title: string) => {
+    setDownloadingPdf(id);
+    try {
+      const { data, error } = await supabase.storage
+        .from("shared-docs")
+        .createSignedUrl(file_path, 60);
+      if (error || !data?.signedUrl) {
+        toast.error(error?.message || "Failed to generate download link");
+        return;
+      }
+      const a = document.createElement("a");
+      a.href = data.signedUrl;
+      a.download = `${title}.pdf`;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } finally {
+      setDownloadingPdf(null);
+    }
+  }, []);
 
   // ── Upload confirmation modal state ──
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -415,6 +451,39 @@ const ClientDashboard = () => {
                     </div>
                   )}
                 </Card>
+
+                {accountantPdfs.length > 0 && (
+                  <Card className="p-5 sm:p-6 shadow-card border-gold/30 bg-gradient-to-br from-card to-gold/5">
+                    <div className="flex items-center justify-between mb-1">
+                      <h2 className="text-lg font-bold text-primary flex items-center gap-2">
+                        <FolderOpen className="h-4 w-4 text-gold-deep" /> {t("cli_docs_acc_title")}
+                      </h2>
+                      <Badge variant="secondary" className="text-xs">{accountantPdfs.length}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-4">{t("cli_docs_acc_subtitle")}</p>
+                    <div className="space-y-2">
+                      {accountantPdfs.map((p) => (
+                        <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/60 bg-card">
+                          <div className="p-2 rounded-md bg-gradient-gold text-gold-foreground shadow-gold">
+                            <FileText className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm truncate">{p.title}</div>
+                            <div className="text-[11px] text-muted-foreground">{new Date(p.created_at).toLocaleString()}</div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outlineGold"
+                            disabled={downloadingPdf === p.id}
+                            onClick={() => downloadAccountantPdf(p.id, p.file_path, p.title)}
+                          >
+                            <Download className="h-3.5 w-3.5" /> {t("download_pdf") || "Download PDF"}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
 
                 <Card className="p-5 sm:p-6 shadow-card">
                   <div className="flex items-center justify-between mb-4">

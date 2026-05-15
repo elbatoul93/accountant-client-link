@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   loadInvoices, loadDecls, loadFsList, loadSharedDocs, loadLegalDocs,
   syncInvoices, syncDecls, syncFs, syncShared, syncLegal, migrateLocalToDb,
@@ -54,7 +54,7 @@ import { ClientFilesSection } from "@/components/ClientFilesSection";
 import { ClientDocumentsSection } from "@/components/ClientDocumentsSection";
 import { IncomingDocumentsLive } from "@/components/IncomingDocumentsLive";
 import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
-import { generateG50Xlsx, generateG50Pdf } from "@/lib/g50Export";
+import { generateG50Xlsx, generateG50Pdf, generateG50PdfBytes } from "@/lib/g50Export";
 import { copyToClipboard } from "@/lib/clipboard";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
@@ -130,6 +130,89 @@ const AccountantDashboard = () => {
   const [fsList, setFsList] = useState<FinStmt[]>(() => load<FinStmt>(KEY_FS));
   const [sharedDocs, setSharedDocs] = useState<SharedDoc[]>(() => load<SharedDoc>(KEY_SHARED));
   const [legalDocs, setLegalDocs] = useState<LegalDoc[]>(() => load<LegalDoc>(KEY_LEGAL));
+  // Map of `${clientId}|YYYY-MM` -> { id, sent, formData } from g50_declarations
+  const [g50Map, setG50Map] = useState<Record<string, { id: string; sent: boolean; formData: any }>>({});
+  const [sendingDeclId, setSendingDeclId] = useState<string | null>(null);
+
+  const refreshG50Map = useCallback(async () => {
+    const { data: au } = await supabase.auth.getUser();
+    const accId = au.user?.id;
+    if (!accId) return;
+    const { data, error } = await supabase
+      .from("g50_declarations")
+      .select("id, client_id, month, year, form_data, sent")
+      .eq("accountant_id", accId);
+    if (error || !data) return;
+    const map: Record<string, { id: string; sent: boolean; formData: any }> = {};
+    for (const r of data as any[]) {
+      const key = `${r.client_id}|${String(r.year).padStart(4, "0")}-${String(r.month).padStart(2, "0")}`;
+      map[key] = { id: r.id, sent: !!r.sent, formData: r.form_data };
+    }
+    setG50Map(map);
+  }, []);
+  useEffect(() => { refreshG50Map(); }, [refreshG50Map]);
+
+  // Send a G50 declaration to the linked client:
+  // 1) update g50_declarations.sent=true,sent_at, 2) generate PDF, 3) upload to shared-docs storage,
+  // 4) insert into shared_documents. Source of truth for "sent" is the DB (g50Map).
+  const handleSendG50 = useCallback(async (d: Decl, clientName: string, taxId: string | undefined, bp: string | undefined) => {
+    if (sendingDeclId) return;
+    const period = d.due.slice(0, 7); // YYYY-MM
+    const [yyyy, mm] = period.split("-");
+    const key = `${d.clientId}|${period}`;
+    const g50 = g50Map[key];
+    if (!g50) {
+      toast.error(t("g50_send_no_pdf") || "Generate the G50 first before sending.");
+      return;
+    }
+    if (g50.sent) return;
+    setSendingDeclId(d.id);
+    try {
+      const { data: au } = await supabase.auth.getUser();
+      const accId = au.user?.id;
+      if (!accId) throw new Error("Not authenticated");
+
+      // 1) Build PDF bytes from the persisted form data
+      const fileName = `G50_${taxId || "NIF"}_${yyyy}_${mm}.pdf`;
+      const pdfBytes = await generateG50PdfBytes({ ...(g50.formData as any), fileName });
+
+      // 2) Upload to storage at {client_id}/{g50_declaration_id}.pdf
+      const path = `${d.clientId}/${g50.id}.pdf`;
+      const { error: upErr } = await supabase.storage
+        .from("shared-docs")
+        .upload(path, new Blob([pdfBytes as BlobPart], { type: "application/pdf" }), {
+          contentType: "application/pdf", upsert: true,
+        });
+      if (upErr) throw upErr;
+
+      // 3) Insert shared_documents row
+      const title = `G50 — ${mm}/${yyyy}`;
+      const { error: insErr } = await supabase.from("shared_documents" as any).insert({
+        client_id: d.clientId,
+        accountant_id: accId,
+        g50_declaration_id: g50.id,
+        file_path: path,
+        title,
+      } as any);
+      if (insErr) throw insErr;
+
+      // 4) Mark as sent
+      const { error: updErr } = await supabase
+        .from("g50_declarations")
+        .update({ sent: true, sent_at: new Date().toISOString() } as any)
+        .eq("id", g50.id);
+      if (updErr) throw updErr;
+
+      setG50Map((m) => ({ ...m, [key]: { ...g50, sent: true } }));
+      toast.success(t("g50_sent_success") || "G50 sent to client");
+    } catch (e: any) {
+      console.error("[handleSendG50]", e);
+      toast.error(e?.message || t("g50_send_failed") || "Failed to send G50");
+    } finally {
+      setSendingDeclId(null);
+    }
+  }, [g50Map, sendingDeclId, t]);
+
   const { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks, precompte, setPrecompte } = useSuiteData();
   const [obligationsClient, setObligationsClient] = useState<Client | null>(null);
   const [openTool, setOpenTool] = useState<null | "fs" | "g50" | "send">(null);
@@ -732,24 +815,15 @@ const AccountantDashboard = () => {
                     onDelete={(id) => setDecls((p) => p.filter((x) => x.id !== id))}
                     onSend={(d) => {
                       const c = clients.find((x) => x.id === d.clientId);
-                      if (!c) return;
-                      const shared: SharedDoc = {
-                        id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
-                        clientEmail: c.contact, type: "G50",
-                        label: `G50 ${d.due.slice(0, 7)} — ${fmtDZD(d.amount)}`,
-                        date: new Date().toLocaleDateString("fr-DZ"),
-                        payload: JSON.stringify({ nif: c.taxId, bp: c.bp, amount: d.amount, due: d.due }),
-                        workflow: "sent",
-                      };
-                      setSharedDocs((p) => [shared, ...p]);
-                      pushNotification({
-                        forRole: "client", forEmail: c.contact,
-                        title: t("notif_g50_ready_title"),
-                        message: t("notif_g50_ready_msg").replace("{label}", shared.label),
-                        type: "g50_ready", link: "/dashboard/client", refId: shared.id,
-                      });
-                      toast.success(t("tools_send_to_client"));
+                      handleSendG50(d, c?.name || d.clientName, c?.taxId, c?.bp);
                     }}
+                    sentMap={Object.fromEntries(
+                      decls.filter((d) => d.type === "G50").map((d) => {
+                        const k = `${d.clientId}|${d.due.slice(0, 7)}`;
+                        return [d.id, !!g50Map[k]?.sent];
+                      })
+                    )}
+                    sendingId={sendingDeclId}
                     sharedDocs={sharedDocs}
                     onReview={(s) => setEditingShared(s)}
                   />
@@ -1955,12 +2029,14 @@ const AddDeclarationDialog = ({
   );
 };
 
-const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, onRegenerate, onEditG50 }: {
+const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, onRegenerate, onEditG50, sentMap, sendingId }: {
   items: Decl[]; onDelete: (id: string) => void; t: (k: string) => string;
   showType?: boolean; onSend?: (d: Decl) => void;
   sharedDocs?: SharedDoc[]; onReview?: (s: SharedDoc) => void;
   onRegenerate?: (d: Decl, format: "pdf" | "xlsx") => void | Promise<void>;
   onEditG50?: (d: Decl) => void | Promise<void>;
+  sentMap?: Record<string, boolean>;
+  sendingId?: string | null;
 }) => {
   const [busyId, setBusyId] = useState<string | null>(null);
   if (items.length === 0) return <EmptyState label={t("empty_no_decls")} />;
@@ -2021,11 +2097,22 @@ const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, 
                 <Pencil className="h-3.5 w-3.5" /> {t("wf_review_edit")}
               </Button>
             )}
-            {onSend && (
-              <Button size="sm" variant="outlineGold" onClick={() => onSend(d)} title={t("tools_send_to_client")}>
-                <Send className="h-3.5 w-3.5" />
-              </Button>
-            )}
+            {onSend && (() => {
+              const isSent = !!sentMap?.[d.id];
+              const isSending = sendingId === d.id;
+              return (
+                <Button
+                  size="sm"
+                  variant="outlineGold"
+                  onClick={() => onSend(d)}
+                  disabled={isSent || isSending}
+                  title={isSent ? (t("g50_sent_label") || "Sent") : t("tools_send_to_client")}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  {isSent ? (t("g50_sent_label") || "Sent") : isSending ? (t("g50_sending_label") || "Sending…") : null}
+                </Button>
+              );
+            })()}
             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(d.id)}>
               <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
