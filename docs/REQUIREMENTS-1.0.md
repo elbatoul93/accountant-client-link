@@ -1,6 +1,6 @@
 # Managementik — Requirements Document
 
-*[النسخة العربية](REQUIREMENTS.ar.md)*
+*[النسخة العربية](REQUIREMENTS-1.0.ar.md)*
 
 **Version:** 1.0
 **Status:** Approved specification for a ground-up **reimplementation** of Managementik. The current codebase (this repository, as of 2026-08-10) is a prototype that will be **replaced, not incrementally patched**. No prior product spec existed, so this document was produced by reverse-engineering the prototype's proven scope and behavior, then restating it as requirements for the new build — while explicitly calling out prototype design mistakes (§8) that the reimplementation must not repeat.
