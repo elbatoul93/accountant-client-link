@@ -3,6 +3,7 @@
 *[النسخة العربية](REQUIREMENTS-1.0.ar.md)*
 
 **Version:** 1.0
+
 **Status:** Approved specification for a ground-up **reimplementation** of Managementik. The current codebase (this repository, as of 2026-08-10) is a prototype that will be **replaced, not incrementally patched**. No prior product spec existed, so this document was produced by reverse-engineering the prototype's proven scope and behavior, then restating it as requirements for the new build — while explicitly calling out prototype design mistakes (§8) that the reimplementation must not repeat.
 
 ## 1. Purpose & Background
@@ -30,7 +31,6 @@ The system has exactly two roles, set permanently at account creation:
 | **Accountant** | Self-signup, no invite required | Manages one or more linked clients; owns the back-office suite. |
 | **Client** | Signup via an accountant-issued invite link only — no self-signup path | A single business linked to exactly one accountant; uses the client portal to upload documents, review/approve declarations, and message their accountant. |
 
-**Requirements:**
 - REQ-3.1: A client account must always be created via a valid, unexpired, single-use invite token issued by an accountant.
 - REQ-3.2: A client is linked to exactly one accountant. Multi-accountant-per-client and accountant "team seats" are out of scope for the current phase.
 - REQ-3.3: There is no admin/superuser role in this phase. Any support/back-office administration is performed directly against the database.
@@ -116,7 +116,7 @@ The system has exactly two roles, set permanently at account creation:
 
 ## 5. Data Model Requirements
 
-REQ-5.1: The system must persist, server-side, with row-level access control scoped to the owning accountant and/or linked client:
+- REQ-5.1: The system must persist, server-side, with row-level access control scoped to the owning accountant and/or linked client:
 
 - **Identity**: user profiles (role, business/legal fields), role assignments, accountant↔client links.
 - **Invitations**: token, issuing accountant, target email (optional), expiry, usage state, pre-fill fields.
@@ -129,17 +129,17 @@ REQ-5.1: The system must persist, server-side, with row-level access control sco
 - **General ledger**: journal entries, period locks, financial statement snapshots.
 - **Notifications**: per-user notification records with read state.
 
-REQ-5.2: Every entity listed above must live in the database with row-level access control from the first implementation pass — not in the browser's local storage, as several were in the prototype (see §8 item 1) — so that data survives device changes and browser storage clearing, and so the client and accountant always see a consistent, authoritative view of the same data.
+- REQ-5.2: Every entity listed above must live in the database with row-level access control from the first implementation pass — not in the browser's local storage, as several were in the prototype (see §8 item 1) — so that data survives device changes and browser storage clearing, and so the client and accountant always see a consistent, authoritative view of the same data.
 
 ## 6. Non-Functional Requirements
 
-- REQ-6.1 **Security**: Every table must enforce row-level access control scoped to the authenticated user's role and accountant↔client relationship; role-checking logic must be designed to avoid recursive-policy bugs from the outset — the prototype's history shows this was discovered and patched reactively multiple times, and the reimplementation should get it right the first time.
-- REQ-6.2 **Data residency & currency**: Amounts in DZD; tax logic specific to Algerian regimes must be kept current with statutory changes.
-- REQ-6.3 **Availability**: Core compliance features (declaration generation, PDF export) must not have an unmitigated single point of failure on a paid third-party service.
-- REQ-6.4 **Auditability**: Signed declarations must retain an immutable record of who signed, when, and what was signed.
-- REQ-6.5 **Testability**: Statutory calculation logic (tax/payroll engines) must have automated unit test coverage before being relied upon in production.
-- REQ-6.6 **Cross-device consistency**: A user's data and notifications must be identical regardless of which device or browser they log in from.
-- REQ-6.7 **Accessibility of urgent state**: Deadline and obligation status must be visually distinguishable by urgency at a glance.
+- REQ-6.1: **Security** — Every table must enforce row-level access control scoped to the authenticated user's role and accountant↔client relationship; role-checking logic must be designed to avoid recursive-policy bugs from the outset — the prototype's history shows this was discovered and patched reactively multiple times, and the reimplementation should get it right the first time.
+- REQ-6.2: **Data residency & currency** — Amounts in DZD; tax logic specific to Algerian regimes must be kept current with statutory changes.
+- REQ-6.3: **Availability** — Core compliance features (declaration generation, PDF export) must not have an unmitigated single point of failure on a paid third-party service.
+- REQ-6.4: **Auditability** — Signed declarations must retain an immutable record of who signed, when, and what was signed.
+- REQ-6.5: **Testability** — Statutory calculation logic (tax/payroll engines) must have automated unit test coverage before being relied upon in production.
+- REQ-6.6: **Cross-device consistency** — A user's data and notifications must be identical regardless of which device or browser they log in from.
+- REQ-6.7: **Accessibility of urgent state** — Deadline and obligation status must be visually distinguishable by urgency at a glance.
 
 ## 7. Out of Scope (current phase)
 
