@@ -6,6 +6,32 @@
 
 **Status:** Approved specification for a ground-up **reimplementation** of Managementik. The current codebase (this repository, as of 2026-08-10) is a prototype that will be **replaced, not incrementally patched**. No prior product spec existed, so this document was produced by reverse-engineering the prototype's proven scope and behavior, then restating it as requirements for the new build — while explicitly calling out prototype design mistakes (§8) that the reimplementation must not repeat.
 
+## Table of Contents
+
+- [1. Purpose & Background](#sec-1)
+- [2. Goals](#sec-2)
+- [3. User Roles](#sec-3)
+- [4. Functional Requirements](#sec-4)
+  - [4.1 Public Site & Onboarding](#sec-4-1)
+  - [4.2 Client Invitations](#sec-4-2)
+  - [4.3 Client Management (Accountant)](#sec-4-3)
+  - [4.4 Document Exchange](#sec-4-4)
+  - [4.5 Tax & Social Declarations](#sec-4-5)
+  - [4.6 Invoices & Billing](#sec-4-6)
+  - [4.7 Payroll](#sec-4-7)
+  - [4.8 Fixed Assets](#sec-4-8)
+  - [4.9 General Ledger & Financial Statements](#sec-4-9)
+  - [4.10 Fiscal Calendar](#sec-4-10)
+  - [4.11 Client Dashboard](#sec-4-11)
+  - [4.12 Messaging & Notifications](#sec-4-12)
+  - [4.13 Localization](#sec-4-13)
+- [5. Data Model Requirements](#sec-5)
+- [6. Non-Functional Requirements](#sec-6)
+- [7. Out of Scope (current phase)](#sec-7)
+- [8. Lessons from the Prototype — Mandatory Design Constraints for the Reimplementation](#sec-8)
+- [9. Glossary (Algerian Tax & Accounting Terms)](#sec-9)
+
+<a id="sec-1"></a>
 ## 1. Purpose & Background
 
 Managementik is a trilingual (French / Arabic / English, with RTL layout for Arabic) web portal that connects **Algerian accounting firms ("cabinets comptables")** with their **business clients**. It serves two purposes at once:
@@ -15,6 +41,7 @@ Managementik is a trilingual (French / Arabic / English, with RTL layout for Ara
 
 The existing prototype already implements most of this scope end-to-end against a real backend, and proves the product concept — but it will be **rebuilt from scratch**, not extended. Several prototype subsystems were client-side/browser-storage-only rather than properly persisted (see §8), and the reimplementation must design those correctly from the outset rather than retrofitting them. This document specifies requirements for the new implementation; the old codebase should be treated as reference material for validated scope and behavior, not as a codebase to branch from.
 
+<a id="sec-2"></a>
 ## 2. Goals
 
 - Give small/mid-size Algerian businesses a single place to send accounting documents to their accountant and track their tax obligations.
@@ -22,6 +49,7 @@ The existing prototype already implements most of this scope end-to-end against 
 - Automate as much of the statutory Algerian tax calculation and calendar logic as possible (G50, IBS, IRG, TAP, TFP, CNAS/CASNOS deadlines) to reduce manual errors.
 - Provide an auditable, signed record of client approval for filed declarations (e-signature).
 
+<a id="sec-3"></a>
 ## 3. User Roles
 
 The system has exactly two roles, set permanently at account creation:
@@ -36,8 +64,10 @@ The system has exactly two roles, set permanently at account creation:
 - REQ-3.3: There is no admin/superuser role in this phase. Any support/back-office administration is performed directly against the database.
 - REQ-3.4: Role must be authoritative and enforced server-side for every data access, independent of any client-side role check used for UI routing.
 
+<a id="sec-4"></a>
 ## 4. Functional Requirements
 
+<a id="sec-4-1"></a>
 ### 4.1 Public Site & Onboarding
 - REQ-4.1.1: Provide a public marketing landing page describing the product, with real (not placeholder) feature/pricing content before launch. *(See §8 item 9.)*
 - REQ-4.1.2: Provide email/password login shared by both roles.
@@ -45,16 +75,19 @@ The system has exactly two roles, set permanently at account creation:
 - REQ-4.1.4: Provide password reset / account recovery. *(See §8 item 6.)*
 - REQ-4.1.5: Provide email verification before granting full access, explicitly enforced by the application rather than left to the authentication provider's default behavior.
 
+<a id="sec-4-2"></a>
 ### 4.2 Client Invitations
 - REQ-4.2.1: An accountant can generate a tokenized invite link for a prospective client, optionally bound to a specific email address and pre-filled with known business details (name, commune, direction, BP).
 - REQ-4.2.2: Invite links expire after 30 days and are single-use; the accountant can view status (active/used/expired) and delete unused invites.
 - REQ-4.2.3: Following an invite link pre-validates token expiry/usage before allowing the client to complete signup.
 
+<a id="sec-4-3"></a>
 ### 4.3 Client Management (Accountant)
 - REQ-4.3.1: The accountant can view, add, edit, search, and delete linked clients, capturing: company name, legal form, activity, tax regime (Réel / Simplifié / IFU), NIF, NIS, RC, CNAS number, CASNOS number, CACOBATPH flag, address, commune, direction, BP, phone, and email.
 - REQ-4.3.2: Editing a client's profile requires re-authentication (password re-entry) before the edit form is accessible. This must be enforced server-side, not only via a client-side dialog gate.
 - REQ-4.3.3: The accountant can view a per-client summary of outstanding obligations, uploaded documents, invoices, and a shortcut to message that client.
 
+<a id="sec-4-4"></a>
 ### 4.4 Document Exchange
 - REQ-4.4.1: A client can upload documents (PDF or image, ≤5MB) to a personal, access-controlled store; the accountant sees all documents uploaded by their linked clients in a unified, real-time "incoming documents" feed.
 - REQ-4.4.2: The accountant can share generated/received documents back to a client (declarations, legal documents, filed forms) with signed, time-limited download URLs.
@@ -62,6 +95,7 @@ The system has exactly two roles, set permanently at account creation:
 - REQ-4.4.4: All documents must be stored server-side and accessible from any device the user logs into — no reliance on the browser's local storage for document availability.
 - REQ-4.4.5: Provide a "Vault" archive view, grouped by month, of all documents exchanged with a client, persisted server-side.
 
+<a id="sec-4-5"></a>
 ### 4.5 Tax & Social Declarations
 - REQ-4.5.1: Generate the monthly **G50** tax return from an editable form, export to PDF and XLSX, and track its workflow status (draft → review → sent → signed → filed).
 - REQ-4.5.2: PDF generation must not have a single point of failure on a paid third-party conversion service with no fallback. *(See §8 item 7.)*
@@ -71,32 +105,38 @@ The system has exactly two roles, set permanently at account creation:
 - REQ-4.5.6: Send a declaration to the client for e-signature; the client can sign by drawn signature (canvas) or a one-click acknowledgment, and the signature is persisted with a timestamp against the declaration record.
 - REQ-4.5.7: All statutory calculation logic (tax brackets, rates, thresholds) must be covered by automated unit tests, since these encode Algerian legal formulas that change periodically and are high-risk for silent regression.
 
+<a id="sec-4-6"></a>
 ### 4.6 Invoices & Billing
 - REQ-4.6.1: The accountant can record client invoices (add/list/delete) with a status (pending/processed/review).
 - REQ-4.6.2: The accountant can record firm-side sales/purchase bills feeding the general ledger. This must be a distinct, clearly-named feature from "client invoices" — the prototype's naming ("Invoices" vs. "Billing" for overlapping concepts) was a source of confusion and the reimplementation's information architecture must avoid repeating it.
 
+<a id="sec-4-7"></a>
 ### 4.7 Payroll
 - REQ-4.7.1: Maintain an employee roster per client.
 - REQ-4.7.2: Compute payslips including IRG bracket withholding.
 - REQ-4.7.3: Generate payroll mass reports, CNAS avis, movement reports, and the annual DAS declaration, exportable as CSV/print.
 - REQ-4.7.4: Payroll data must be persisted server-side per client, not client-side only.
 
+<a id="sec-4-8"></a>
 ### 4.8 Fixed Assets
 - REQ-4.8.1: Maintain a fixed-asset register per client with category-based depreciation rates.
 - REQ-4.8.2: Compute amortization schedules and yearly dotation automatically.
 - REQ-4.8.3: Fixed-asset data must be persisted server-side per client.
 
+<a id="sec-4-9"></a>
 ### 4.9 General Ledger & Financial Statements
 - REQ-4.9.1: Maintain a double-entry journal per client, combining manual entries and auto-posted entries from sales/purchases/payroll.
 - REQ-4.9.2: Produce a trial balance, balance sheet (Bilan), and income statement (TCR) from the journal.
 - REQ-4.9.3: Lock a fiscal period once its related declaration has been filed, preventing further edits to posted entries in that period.
 - REQ-4.9.4: The journal, trial balance, and period locks must be persisted server-side, not client-side only.
 
+<a id="sec-4-10"></a>
 ### 4.10 Fiscal Calendar
 - REQ-4.10.1: Generate a deadline calendar per client, aware of their tax regime, employee count, and CACOBATPH status.
 - REQ-4.10.2: Visually flag deadlines by urgency (on-track / due soon / overdue).
 - REQ-4.10.3: The client sees the same calendar scoped to their own obligations.
 
+<a id="sec-4-11"></a>
 ### 4.11 Client Dashboard
 - REQ-4.11.1: Upload Center for submitting documents to the accountant.
 - REQ-4.11.2: Monthly document checklist (sales/purchases/bank/payroll/expenses) with status tracking, persisted server-side.
@@ -104,16 +144,19 @@ The system has exactly two roles, set permanently at account creation:
 - REQ-4.11.4: Review and e-sign declarations sent by the accountant.
 - REQ-4.11.5: View own obligations, totals due, and invoices — computed from server data scoped to the signed-in client, not from any locally cached copy of the accountant's data. *(Critical — see §8 item 2.)*
 
+<a id="sec-4-12"></a>
 ### 4.12 Messaging & Notifications
 - REQ-4.12.1: Real-time 1:1 chat between an accountant and each linked client.
 - REQ-4.12.2: Unread message indicators.
 - REQ-4.12.3: In-app notifications (new document, new message, declaration ready to sign, upcoming deadline) must be persisted server-side and delivered consistently regardless of which device/browser the user is on. *(See §8 item 1.)*
 - REQ-4.12.4: Reminders to clients who have not uploaded required documents by a monthly cutoff must run on a durable server-side schedule, not only while an accountant's browser tab happens to be open. *(See §8 item 10.)*
 
+<a id="sec-4-13"></a>
 ### 4.13 Localization
 - REQ-4.13.1: Full UI support for French, Arabic (with RTL layout), and English, with the user's language preference persisted.
 - REQ-4.13.2: All new features must ship with translations in all three supported languages, not English-only.
 
+<a id="sec-5"></a>
 ## 5. Data Model Requirements
 
 - REQ-5.1: The system must persist, server-side, with row-level access control scoped to the owning accountant and/or linked client:
@@ -131,6 +174,7 @@ The system has exactly two roles, set permanently at account creation:
 
 - REQ-5.2: Every entity listed above must live in the database with row-level access control from the first implementation pass — not in the browser's local storage, as several were in the prototype (see §8 item 1) — so that data survives device changes and browser storage clearing, and so the client and accountant always see a consistent, authoritative view of the same data.
 
+<a id="sec-6"></a>
 ## 6. Non-Functional Requirements
 
 - REQ-6.1: **Security** — Every table must enforce row-level access control scoped to the authenticated user's role and accountant↔client relationship; role-checking logic must be designed to avoid recursive-policy bugs from the outset — the prototype's history shows this was discovered and patched reactively multiple times, and the reimplementation should get it right the first time.
@@ -141,6 +185,7 @@ The system has exactly two roles, set permanently at account creation:
 - REQ-6.6: **Cross-device consistency** — A user's data and notifications must be identical regardless of which device or browser they log in from.
 - REQ-6.7: **Accessibility of urgent state** — Deadline and obligation status must be visually distinguishable by urgency at a glance.
 
+<a id="sec-7"></a>
 ## 7. Out of Scope (current phase)
 
 - Multiple accountants per client, or client sharing across firms.
@@ -150,6 +195,7 @@ The system has exactly two roles, set permanently at account creation:
 - OAuth/social login (email/password only).
 - Admin/back-office role and tooling.
 
+<a id="sec-8"></a>
 ## 8. Lessons from the Prototype — Mandatory Design Constraints for the Reimplementation
 
 The codebase is being rebuilt from scratch, so nothing here is a "bug to patch" — these are architectural mistakes observed in the prototype that the new implementation must avoid repeating from its first version, not retrofit later:
@@ -166,6 +212,7 @@ The codebase is being rebuilt from scratch, so nothing here is a "bug to patch" 
 10. **Implement reminders/scheduled sweeps as durable server-side jobs, not client-side timers** that only run while a specific browser tab is open (REQ-4.12.4).
 11. **Pick one package manager and commit only its lockfile.** The prototype had lockfiles for multiple different package managers committed simultaneously — the reimplementation should settle this in its initial tooling setup.
 
+<a id="sec-9"></a>
 ## 9. Glossary (Algerian Tax & Accounting Terms)
 
 | Term | Meaning |
