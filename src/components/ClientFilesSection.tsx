@@ -181,10 +181,10 @@ export const ClientFilesSection = ({ clientId, clientEmail, clientName, t }: Pro
                 </div>
               </div>
               <div className="flex flex-col gap-1">
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openFile(f.file_path)}>
+                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openFile(f.file_path)} aria-label={t("common_open")}>
                   <ExternalLink className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => downloadFile(f.file_path, f.file_name)}>
+                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => downloadFile(f.file_path, f.file_name)} aria-label={t("common_download")}>
                   <Download className="h-3.5 w-3.5" />
                 </Button>
               </div>

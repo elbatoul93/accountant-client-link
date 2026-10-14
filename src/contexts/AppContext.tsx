@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
-import { translations, Lang } from "@/lib/i18n";
+import { loadTranslations, type Dict, type Lang } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 
@@ -154,10 +154,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const setLang = useCallback((l: Lang) => setLangState(l), []);
 
-  const t = useCallback((key: string) => {
-    const dict = translations[lang] as Record<string, string>;
-    return dict[key] ?? translations.en[key as keyof typeof translations.en] ?? key;
+  // Keep the previous dictionary while the next language loads so the UI never flashes raw keys.
+  const [dict, setDict] = useState<Dict | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    loadTranslations(lang).then((d) => { if (!cancelled) setDict(d); });
+    return () => { cancelled = true; };
   }, [lang]);
+
+  const t = useCallback((key: string) => dict?.[key] ?? key, [dict]);
 
   const logout = useCallback(async () => {
     let uid: string | null = null;
@@ -174,7 +179,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AppContext.Provider value={value}>
-      {children}
+      {dict ? children : null}
     </AppContext.Provider>
   );
 };

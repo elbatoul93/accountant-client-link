@@ -6,7 +6,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { WorkflowStatus } from "@/lib/portal";
-import { translations } from "@/lib/i18n";
+import { loadTranslations, type Lang } from "@/lib/i18n";
 import { toast } from "sonner";
 
 const BUCKET = "client-uploads";
@@ -165,12 +165,12 @@ export const loadLegalDocs = async (accId: string): Promise<LegalDoc[]> => {
 /** Throw when a Supabase write failed so callers can tell the user instead of losing edits silently. */
 const must = (res: { error: { message: string } | null }) => {
   if (!res.error) return;
-  let lang: keyof typeof translations = "en";
+  let lang: Lang = "en";
   try {
     const saved = localStorage.getItem("mgmtk_lang");
     if (saved === "fr" || saved === "ar") lang = saved;
   } catch { /* storage unavailable */ }
-  toast.error((translations[lang] as Record<string, string>).sync_failed);
+  void loadTranslations(lang).then((d) => toast.error(d.sync_failed));
   throw new Error(res.error.message);
 };
 

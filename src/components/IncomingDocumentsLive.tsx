@@ -151,10 +151,10 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => open(r.file_path)}>
+                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => open(r.file_path)} aria-label={t("common_open")}>
                   <ExternalLink className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => download(r.file_path, r.file_name)}>
+                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => download(r.file_path, r.file_name)} aria-label={t("common_download")}>
                   <Download className="h-3.5 w-3.5" />
                 </Button>
               </div>
