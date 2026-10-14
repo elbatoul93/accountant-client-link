@@ -1,5 +1,5 @@
 import { useState, FormEvent, useEffect } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,12 +20,14 @@ interface AuthFormProps {
 export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
   const { t } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
+  const pendingEmail = (location.state as { pendingConfirmationEmail?: string } | null)?.pendingConfirmationEmail;
   const params = useParams();
   const token = inviteToken ?? params.token;
   const isInvite = mode === "signup" && !!token;
 
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(pendingEmail ?? "");
   const [password, setPassword] = useState("");
   const [company, setCompany] = useState("");
   const [busy, setBusy] = useState(false);
@@ -33,6 +35,28 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
   const [accountantName, setAccountantName] = useState<string>("");
   const [prefillName, setPrefillName] = useState<string>("");
   const [prefillCompany, setPrefillCompany] = useState<string>("");
+  // Email of an account that exists but hasn't confirmed its address yet
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(pendingEmail ?? null);
+  const [resending, setResending] = useState(false);
+
+  const handleResend = async () => {
+    if (!unconfirmedEmail) return;
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: unconfirmedEmail,
+        options: { emailRedirectTo: `${window.location.origin}/login` },
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success(t("auth_confirmation_resent"));
+    } finally {
+      setResending(false);
+    }
+  };
 
   // Validate invite token on mount
   useEffect(() => {
@@ -70,7 +94,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
     try {
       if (mode === "signup") {
         const role = isInvite ? "client" : "accountant";
-        const redirectUrl = `${window.location.origin}/`;
+        const redirectUrl = `${window.location.origin}/login`;
         const resolvedName = isInvite
           ? (prefillName || email.split("@")[0])
           : (name || email.split("@")[0]);
@@ -103,7 +127,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
         }
         if (!data.session) {
           toast.success(t("auth_check_email_confirm"));
-          navigate("/login");
+          navigate("/login", { state: { pendingConfirmationEmail: email } });
           return;
         }
         toast.success(t("toast_signup_success"));
@@ -114,9 +138,18 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
       // LOGIN
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        toast.error(error.message.includes("Invalid") ? "Invalid email or password." : error.message);
+        const msg = error.message.toLowerCase();
+        if (error.code === "email_not_confirmed" || msg.includes("not confirmed")) {
+          setUnconfirmedEmail(email);
+          toast.error(t("auth_email_not_confirmed"));
+        } else if (error.code === "invalid_credentials" || msg.includes("invalid")) {
+          toast.error(t("auth_invalid_credentials"));
+        } else {
+          toast.error(error.message);
+        }
         return;
       }
+      setUnconfirmedEmail(null);
       const meta = (data.user?.user_metadata ?? {}) as { user_type?: string; role?: string };
       const userRole = (meta.user_type ?? meta.role) === "accountant" ? "accountant" : "client";
       toast.success(t("toast_login_success"));
@@ -208,6 +241,16 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
                 {t(mode === "login" ? "auth_signin_btn" : "auth_signup_btn")}
               </Button>
             </form>
+
+            {mode === "login" && unconfirmedEmail && (
+              <div className="mt-4 rounded-md border border-border/60 bg-muted/40 p-3 text-sm text-center space-y-2">
+                <p className="text-muted-foreground">{t("auth_email_not_confirmed")}</p>
+                <Button type="button" variant="outline" size="sm" onClick={handleResend} disabled={resending}>
+                  {resending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                  {t("auth_resend_confirmation")}
+                </Button>
+              </div>
+            )}
 
             <div className="mt-6 pt-6 border-t border-border/50 text-center text-sm">
               <span className="text-muted-foreground">
