@@ -68,25 +68,17 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
   useEffect(() => {
     if (!isInvite || !token) return;
     (async () => {
-      const { data, error } = await supabase
-        .from("invitations")
-        .select("accountant_id, is_used, expires_at, email, prefill_name, prefill_company")
-        .eq("token", token)
-        .maybeSingle();
-      if (error || !data || data.is_used || new Date(data.expires_at) < new Date()) {
+      const { data, error } = await supabase.rpc("get_invitation_by_token", { _token: token });
+      const inv = data?.[0];
+      if (error || !inv?.is_valid) {
         setInviteValid(false);
         return;
       }
       setInviteValid(true);
-      setPrefillName(data.prefill_name || "");
-      setPrefillCompany(data.prefill_company || "");
-      if (data.email) setEmail(data.email);
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("name, company")
-        .eq("user_id", data.accountant_id)
-        .maybeSingle();
-      if (prof) setAccountantName(prof.company || prof.name || "");
+      setPrefillName(inv.prefill_name || "");
+      setPrefillCompany(inv.prefill_company || "");
+      if (inv.email) setEmail(inv.email);
+      if (inv.accountant_name) setAccountantName(inv.accountant_name);
     })();
   }, [isInvite, token]);
 
@@ -124,7 +116,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
         if (error) {
           if (error.message.toLowerCase().includes("already")) {
             toast.error(t("auth_account_exists"));
-          } else if (error.message.toLowerCase().includes("invit") || error.message.toLowerCase().includes("expired")) {
+          } else if (error.message.toLowerCase().includes("invit") || error.message.toLowerCase().includes("expired") || error.message.toLowerCase().includes("database error saving new user")) {
             toast.error(t("auth_invite_link_expired"));
           } else {
             toast.error(error.message);

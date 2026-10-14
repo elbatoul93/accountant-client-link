@@ -543,6 +543,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_invitation_by_token: {
+        Args: { _token: string }
+        Returns: {
+          is_valid: boolean
+          email: string | null
+          prefill_name: string | null
+          prefill_company: string | null
+          accountant_name: string | null
+        }[]
+      }
       get_linked_client_names: {
         Args: never
         Returns: {
