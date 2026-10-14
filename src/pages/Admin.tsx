@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminBilling } from "@/pages/AdminBilling";
+import { AdminFunnel } from "@/pages/AdminFunnel";
 import { AdminAlerts, useOpenAlertCount } from "@/pages/AdminAlerts";
 
 type Status = "pending" | "active" | "suspended";
@@ -60,6 +61,7 @@ const Admin = () => {
           <TabsList>
             <TabsTrigger value="accounts">Accounts</TabsTrigger>
             <TabsTrigger value="billing">Plans and receipts</TabsTrigger>
+            <TabsTrigger value="funnel">Activation funnel</TabsTrigger>
             <TabsTrigger value="alerts" className="gap-2">
               Security alerts
               {alerts.count > 0 && <Badge variant="destructive">{alerts.count}</Badge>}
@@ -97,6 +99,7 @@ const Admin = () => {
         </Card>
           </TabsContent>
           <TabsContent value="billing"><AdminBilling /></TabsContent>
+          <TabsContent value="funnel"><AdminFunnel /></TabsContent>
           <TabsContent value="alerts"><AdminAlerts onChange={alerts.refresh} /></TabsContent>
         </Tabs>
       </main>
