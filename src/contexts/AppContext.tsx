@@ -48,7 +48,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       return;
     }
-    // Derive role synchronously from JWT metadata to stay consistent with RLS (auth.jwt() ->> 'user_type')
+    // Provisional role from user_metadata (user-editable); replaced by profiles.user_type below
     const meta = (session.user.user_metadata ?? {}) as { user_type?: string; role?: string };
     const role: Role = (meta.user_type ?? meta.role) === "accountant" ? "accountant" : "client";
     const meta2 = (session.user.user_metadata ?? {}) as { name?: string; company?: string };
@@ -66,11 +66,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const uid = session.user.id;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("name,email,company")
+        .select("name,email,company,user_type")
         .eq("user_id", uid)
         .maybeSingle();
-      // eslint-disable-next-line no-console
-      console.log("[AppContext] self profile fetch", { profile, meta: session.user.user_metadata });
       const resolvedName =
         (profile?.name && profile.name.trim()) ||
         (meta2.name && meta2.name.trim()) ||
@@ -78,7 +76,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setUser({
         name: resolvedName,
         email: profile?.email || session.user.email || "",
-        role,
+        // profiles.user_type is the source of truth; user_metadata is user-editable.
+        role: profile?.user_type ?? role,
         company: profile?.company ?? meta2.company ?? undefined,
       });
     }, 0);
