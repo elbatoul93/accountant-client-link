@@ -1,3 +1,4 @@
+import { isPasswordPwned } from "@/lib/pwnedPassword";
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -31,6 +32,10 @@ const ResetPassword = () => {
     }
     setBusy(true);
     try {
+      if (await isPasswordPwned(password)) {
+        setError(t("auth_password_pwned"));
+        return;
+      }
       const { error: err } = await supabase.auth.updateUser({ password });
       if (err) {
         setError(err.message);
