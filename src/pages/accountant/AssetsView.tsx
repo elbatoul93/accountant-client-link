@@ -1,5 +1,6 @@
-import { readJson } from "@/lib/safeStorage";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { loadAssets, syncAssets } from "@/lib/businessStore";
 import { useFmtDZD } from "@/lib/useFormat";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,20 +23,43 @@ import {
 
 interface ClientLite { id: string; name: string }
 
-const KEY_ASSETS = "mgmtk_acc_assets";
-const load = (): FixedAsset[] => {
-  const v = readJson<FixedAsset[]>(KEY_ASSETS, []);
-  return Array.isArray(v) ? v : [];
-};
-
 export const AssetsView = ({ t, clients }: { t: (k: string) => string; clients: ClientLite[] }) => {
   const fmtDZD = useFmtDZD();
-  const [assets, setAssets] = useState<FixedAsset[]>(() => load());
+  const [assets, setAssets] = useState<FixedAsset[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const accId = useRef<string | null>(null);
+  const prevAssets = useRef<FixedAsset[]>([]);
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [year, setYear] = useState(new Date().getFullYear());
 
-  useEffect(() => { localStorage.setItem(KEY_ASSETS, JSON.stringify(assets)); }, [assets]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        const id = data.user?.id;
+        if (!id) return;
+        const rows = await loadAssets(id);
+        if (cancelled) return;
+        accId.current = id;
+        prevAssets.current = rows;
+        setAssets(rows);
+        setLoaded(true);
+      } catch {
+        toast.error(t("load_failed"), { id: "load-failed" });
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!loaded || !accId.current) return;
+    const before = prevAssets.current;
+    prevAssets.current = assets;
+    syncAssets(before, assets, accId.current).catch(() => toast.error(t("i18n_error_generic")));
+  }, [assets, loaded, t]);
 
   const totalCost = useMemo(() => assets.reduce((s, a) => s + a.cost, 0), [assets]);
   const dotationYear = useMemo(() => yearlyDotation(assets, year), [assets, year]);

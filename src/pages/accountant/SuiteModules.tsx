@@ -1,5 +1,10 @@
-import { readJson } from "@/lib/safeStorage";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useApp } from "@/contexts/AppContext";
+import {
+  loadBills, loadEmployees, loadJournal, loadLocks, loadPrecompte,
+  syncBills, syncEmployees, syncJournal, syncLocks, syncPrecompte,
+} from "@/lib/businessStore";
 import { useFmtDZD } from "@/lib/useFormat";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,21 +55,6 @@ export interface BillInvoice {
 // Journal entries are now JournalLine from engine.
 export type JournalEntry = JournalLine;
 
-export const KEY_EMPLOYEES = "mgmtk_acc_employees";
-export const KEY_BILLS = "mgmtk_acc_bills";
-export const KEY_JOURNAL = "mgmtk_acc_journal";
-export const KEY_LOCKS = "mgmtk_acc_period_locks";
-export const KEY_PRECOMPTE = "mgmtk_acc_tva_precompte";
-
-const load = <T,>(k: string): T[] => {
-  const v = readJson<T[]>(k, []);
-  return Array.isArray(v) ? v : [];
-};
-
-const loadObj = <T extends object>(k: string, def: T): T => {
-  return { ...def, ...readJson<Partial<T>>(k, {}) };
-};
-
 const Empty = ({ label }: { label: string }) => (
   <div className="text-center py-10 border border-dashed border-border rounded-lg">
     <div className="inline-flex p-3 rounded-full bg-muted text-muted-foreground mb-3">
@@ -80,18 +70,86 @@ export const precompteKey = (clientId: string | undefined, period: string) =>
   `${clientId ?? "_"}__${period}`;
 
 /* ===== Hooks ===== */
-export function useSuiteData() {
-  const [employees, setEmployees] = useState<Employee[]>(() => load<Employee>(KEY_EMPLOYEES));
-  const [bills, setBills] = useState<BillInvoice[]>(() => load<BillInvoice>(KEY_BILLS));
-  const [journal, setJournal] = useState<JournalEntry[]>(() => load<JournalEntry>(KEY_JOURNAL));
-  const [locks, setLocks] = useState<PeriodLock[]>(() => load<PeriodLock>(KEY_LOCKS));
-  const [precompte, setPrecompte] = useState<PrecompteMap>(() => loadObj<PrecompteMap>(KEY_PRECOMPTE, {}));
-  useEffect(() => { localStorage.setItem(KEY_EMPLOYEES, JSON.stringify(employees)); }, [employees]);
-  useEffect(() => { localStorage.setItem(KEY_BILLS, JSON.stringify(bills)); }, [bills]);
-  useEffect(() => { localStorage.setItem(KEY_JOURNAL, JSON.stringify(journal)); }, [journal]);
-  useEffect(() => { localStorage.setItem(KEY_LOCKS, JSON.stringify(locks)); }, [locks]);
-  useEffect(() => { localStorage.setItem(KEY_PRECOMPTE, JSON.stringify(precompte)); }, [precompte]);
-  return { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks, precompte, setPrecompte };
+/**
+ * Accountant business data (employees, bills, journal, period locks, TVA précompte), stored in the
+ * database. `enabled` must only turn true once the clients are loaded: these rows reference a client.
+ * Same pattern as the dashboard: state arrays in the UI, diff-synced to the database on change.
+ */
+export function useSuiteData(enabled: boolean) {
+  const { t } = useApp();
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [bills, setBills] = useState<BillInvoice[]>([]);
+  const [journal, setJournal] = useState<JournalEntry[]>([]);
+  const [locks, setLocks] = useState<PeriodLock[]>([]);
+  const [precompte, setPrecompte] = useState<PrecompteMap>({});
+  const [loaded, setLoaded] = useState(false);
+  const accId = useRef<string | null>(null);
+  const prev = useRef({
+    employees: [] as Employee[], bills: [] as BillInvoice[], journal: [] as JournalEntry[],
+    locks: [] as PeriodLock[], precompte: {} as PrecompteMap,
+  });
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        const id = data.user?.id;
+        if (!id || cancelled) return;
+        const [e, b, j, l, p] = await Promise.all([
+          loadEmployees(id), loadBills(id), loadJournal(id), loadLocks(id), loadPrecompte(id),
+        ]);
+        if (cancelled) return;
+        accId.current = id;
+        prev.current = { employees: e, bills: b, journal: j, locks: l, precompte: p };
+        setEmployees(e); setBills(b); setJournal(j); setLocks(l); setPrecompte(p);
+        setLoaded(true);
+      } catch (err) {
+        console.error("[suite load]", err);
+        toast.error(t("load_failed"), { id: "load-failed" });
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled]);
+
+  const failed = (what: string) => (err: unknown) => {
+    console.error(`[sync ${what}]`, err);
+    toast.error(t("i18n_error_generic"));
+  };
+  useEffect(() => {
+    if (!loaded || !accId.current) return;
+    const before = prev.current.employees; prev.current.employees = employees;
+    syncEmployees(before, employees, accId.current).catch(failed("employees"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employees, loaded]);
+  useEffect(() => {
+    if (!loaded || !accId.current) return;
+    const before = prev.current.bills; prev.current.bills = bills;
+    syncBills(before, bills, accId.current).catch(failed("bills"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bills, loaded]);
+  useEffect(() => {
+    if (!loaded || !accId.current) return;
+    const before = prev.current.journal; prev.current.journal = journal;
+    syncJournal(before, journal, accId.current).catch(failed("journal"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [journal, loaded]);
+  useEffect(() => {
+    if (!loaded || !accId.current) return;
+    const before = prev.current.locks; prev.current.locks = locks;
+    syncLocks(before, locks, accId.current).catch(failed("locks"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locks, loaded]);
+  useEffect(() => {
+    if (!loaded || !accId.current) return;
+    const before = prev.current.precompte; prev.current.precompte = precompte;
+    syncPrecompte(before, precompte, accId.current).catch(failed("precompte"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [precompte, loaded]);
+
+  return { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks, precompte, setPrecompte, loaded };
 }
 
 /** Aggregate totals for G50 sync (per client, all-time, in DA). */

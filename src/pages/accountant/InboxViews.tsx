@@ -2,80 +2,15 @@ import { useFormat } from "@/hooks/useFormat";
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Trash2, Download, FileCheck2, Clock, Eye, ListChecks, MessageCircle } from "lucide-react";
-import { toast } from "sonner";
+import { ListChecks, MessageCircle } from "lucide-react";
 import { ChatTab } from "@/components/ChatTab";
 import { DocChecklist } from "@/components/DocChecklist";
-import { type IncomingInvoice, type VaultEntry } from "@/lib/portal";
-import { Archive, Inbox as InboxIcon, FileSignature } from "lucide-react";
+import { type VaultEntry } from "@/lib/vault";
+import { Archive, FileSignature } from "lucide-react";
 import { Client } from "@/pages/accountant/shared";
 import { EmptyState } from "@/pages/accountant/ui";
-
-export const IncomingDocsView = ({ t, items, onMarkProcessed, onDelete, onPreview }: {
-  t: (k: string) => string; items: IncomingInvoice[];
-  onMarkProcessed: (id: string) => void; onDelete: (id: string) => void;
-  onPreview: (it: IncomingInvoice) => void;
-}) => {
-  return (
-    <Card className="p-5 shadow-card">
-      <div className="flex items-center justify-between mb-1">
-        <h2 className="text-lg font-bold text-primary flex items-center gap-2">
-          <InboxIcon className="h-4 w-4 text-gold-deep" /> {t("incoming_title")}
-        </h2>
-        <Badge variant="secondary" className="text-xs">{items.length}</Badge>
-      </div>
-      <p className="text-xs text-muted-foreground mb-4">{t("incoming_subtitle")}</p>
-      {items.length === 0 ? (
-        <EmptyState label={t("incoming_empty")} />
-      ) : (
-        <div className="space-y-2">
-          {items.map((it) => {
-            const statusBadge =
-              it.status === "pending" ? <Badge className="bg-warning/15 text-warning-foreground border-warning/40 text-[10px]"><Clock className="h-3 w-3 me-1" /> {t("incoming_pending")}</Badge>
-              : it.status === "processed" ? <Badge className="bg-success/15 text-success border-success/40 text-[10px]"><FileCheck2 className="h-3 w-3 me-1" /> {t("incoming_processed")}</Badge>
-              : <Badge variant="outline" className="text-[10px]">{t("incoming_review")}</Badge>;
-            return (
-              <div key={it.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/60 hover:border-primary/40 transition-smooth">
-                <div className="p-2 rounded-md bg-primary/10 text-primary flex-shrink-0">
-                  {it.mimeType.startsWith("image/") ? <FileText className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm truncate">{it.fileName}</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {t("incoming_from")} <span className="font-medium">{it.clientName}</span> • {(it.size / 1024).toFixed(0)} KB • {new Date(it.uploadedAt).toLocaleString("fr-DZ")}
-                  </div>
-                </div>
-                {statusBadge}
-                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onPreview(it)}>
-                  <Eye className="h-3.5 w-3.5" /> {t("preview_btn")}
-                </Button>
-                {it.fileData && (
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => {
-                    const a = document.createElement("a");
-                    a.href = it.fileData!; a.download = it.fileName; a.target = "_blank"; a.click();
-                  }} title={t("incoming_open_file")} aria-label={t("incoming_open_file")}>
-                    <Download className="h-3.5 w-3.5 text-gold-deep" />
-                  </Button>
-                )}
-                {it.status !== "processed" && (
-                  <Button size="sm" variant="outlineGold" onClick={() => { onMarkProcessed(it.id); toast.success(t("incoming_processed")); }}>
-                    {t("incoming_mark_processed")}
-                  </Button>
-                )}
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(it.id)} aria-label={t("common_delete")}>
-                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                </Button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </Card>
-  );
-};
 
 export const AccountantVaultView = ({ t, entries }: { t: (k: string) => string; entries: VaultEntry[] }) => {
   const fmt = useFormat();
@@ -160,7 +95,7 @@ export const TrackingView = ({ t, clients, activeId, setActiveId }: {
       </Card>
 
       {active ? (
-        <DocChecklist t={t} clientEmail={active.contact} clientName={active.name} accountantMode />
+        <DocChecklist t={t} clientRef={active.id} accountantMode />
       ) : (
         <Card className="p-8 shadow-card text-center text-sm text-muted-foreground">
           {t("acc_select_client")}

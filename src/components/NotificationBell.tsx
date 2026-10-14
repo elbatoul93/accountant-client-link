@@ -1,5 +1,7 @@
 import { useFormat } from "@/hooks/useFormat";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Bell, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,19 +9,40 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  getNotifications, markNotificationRead, markAllRead,
-  onPortalChange, type NotifRole, type PortalNotification,
-} from "@/lib/portal";
+  loadNotifications, markAllNotificationsRead, markNotificationRead, subscribeNotifications,
+  type PortalNotificationRow,
+} from "@/lib/portalStore";
 
-export const NotificationBell = ({ role, email, t }: { role: NotifRole; email?: string; t: (k: string) => string }) => {
+export const NotificationBell = ({ t }: { t: (k: string) => string }) => {
+  const navigate = useNavigate();
   const fmt = useFormat();
-  const [items, setItems] = useState<PortalNotification[]>([]);
-  const refresh = () => setItems(getNotifications(role, email));
+  const [items, setItems] = useState<PortalNotificationRow[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    try { setItems(await loadNotifications(30)); } catch { /* the bell stays as it was */ }
+  }, []);
+
   useEffect(() => {
-    refresh();
-    return onPortalChange(refresh);
-  }, [role, email]);
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user || cancelled) return;
+      setUserId(data.user.id);
+      await refresh();
+      if (!cancelled) unsubscribe = subscribeNotifications(data.user.id, refresh);
+    })();
+    return () => { cancelled = true; unsubscribe?.(); };
+  }, [refresh]);
+
   const unread = items.filter((n) => !n.read).length;
+
+  const open = async (n: PortalNotificationRow) => {
+    try { if (!n.read) await markNotificationRead(n.id); } catch { /* ignore */ }
+    await refresh();
+    if (n.link) navigate(n.link);
+  };
 
   return (
     <DropdownMenu>
@@ -38,7 +61,7 @@ export const NotificationBell = ({ role, email, t }: { role: NotifRole; email?: 
           <div className="text-sm font-semibold text-primary">{t("notif_title")}</div>
           {unread > 0 && (
             <Button variant="ghost" size="sm" className="h-7 text-[11px]"
-              onClick={() => markAllRead(role, email)}>
+              onClick={async () => { if (userId) { try { await markAllNotificationsRead(userId); } catch { /* ignore */ } await refresh(); } }}>
               <CheckCheck className="h-3 w-3" /> {t("notif_mark_all")}
             </Button>
           )}
@@ -50,7 +73,7 @@ export const NotificationBell = ({ role, email, t }: { role: NotifRole; email?: 
             items.slice(0, 30).map((n) => (
               <button
                 key={n.id}
-                onClick={() => markNotificationRead(n.id)}
+                onClick={() => open(n)}
                 className={`w-full text-start px-3 py-2.5 border-b border-border/40 hover:bg-muted/50 transition-smooth ${
                   n.read ? "opacity-60" : "bg-gold/5"
                 }`}

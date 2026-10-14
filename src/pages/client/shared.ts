@@ -34,8 +34,6 @@ export const regimeShort = (r?: TaxRegime) =>
 export const fmtDZD = (n: number) =>
   `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
 
-export const STORAGE_KEY = "mgmtk_client_docs";
-
 export const safeParse = (s: string): Record<string, string> | undefined => {
   try { const o = JSON.parse(s); return typeof o === "object" && o ? o : undefined; } catch { return undefined; }
 };

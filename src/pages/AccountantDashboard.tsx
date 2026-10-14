@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadInvoices, loadDecls, loadFsList, loadSharedDocs, loadLegalDocs, syncInvoices, syncDecls, syncFs, syncShared, syncLegal, migrateLocalToDb } from "@/lib/accountantStore";
+import { importLocalBusinessData, loadClients, syncClients, type ClientRecord } from "@/lib/businessStore";
+import { loadRemindersSent, markReminderSent, sendNotification } from "@/lib/portalStore";
+import { sortVault, vaultFromInvoiceDocs, vaultFromShared } from "@/lib/vault";
 import { useApp } from "@/contexts/AppContext";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +30,7 @@ import { DocPreviewDialog } from "@/components/DocPreviewDialog";
 import { WorkflowBadge, WorkflowStepper } from "@/components/WorkflowStatus";
 import { finalizePayrollRun } from "@/lib/payrollStore";
 import { lockPeriod, computeG50FromJournal } from "@/lib/accounting/engine";
-import { getIncomingInvoices, pushNotification, getVault, onPortalChange, setSharedDocWorkflow, updateSharedDocPayload, runUploadReminderSweep, unreadChatCount, type IncomingInvoice, type VaultEntry, type WorkflowStatus } from "@/lib/portal";
+import { type WorkflowStatus } from "@/lib/portal";
 import { ClientInviteManager } from "@/components/ClientInviteManager";
 import { ClientFilesSection } from "@/components/ClientFilesSection";
 import { ClientDocumentsSection } from "@/components/ClientDocumentsSection";
@@ -37,7 +40,7 @@ import { generateG50Xlsx, generateG50Pdf, generateG50PdfBytes } from "@/lib/g50E
 import { copyToClipboard } from "@/lib/clipboard";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
-import { Client, Decl, DeclType, FinStmt, Invoice, KEY_CLIENTS, KEY_DECLS, KEY_FS, KEY_INVOICES, KEY_LEGAL, KEY_SHARED, LegalDoc, REGIME_DECLS, SharedDoc, TaxRegime, View, declLabelKey, fmtDZD, load, regimeLabelKey } from "@/pages/accountant/shared";
+import { Client, Decl, DeclType, FinStmt, Invoice, LegalDoc, REGIME_DECLS, SharedDoc, TaxRegime, View, declLabelKey, fmtDZD, regimeLabelKey } from "@/pages/accountant/shared";
 import { EmptyState, InfoCell, KPI, ToolCard } from "@/pages/accountant/ui";
 import { AddClientDialog, AddInvoiceDialog, LockDialog, UploadLegalDialog } from "@/pages/accountant/ClientDialogs";
 import { ClientsListView, DashboardView, InvoiceTable } from "@/pages/accountant/OverviewViews";
@@ -45,19 +48,15 @@ import { AccountantVaultView, ChatHubView, TrackingView } from "@/pages/accounta
 
 const AccountantDashboard = () => {
   const { t, user, lang } = useApp();
-  const [clients, setClients] = useState<Client[]>(() => load<Client>(KEY_CLIENTS));
-  const [invoices, setInvoices] = useState<Invoice[]>(() => load<Invoice>(KEY_INVOICES));
-  const [decls, setDecls] = useState<Decl[]>(() => load<Decl>(KEY_DECLS));
-  const [incoming, setIncoming] = useState<IncomingInvoice[]>(() => getIncomingInvoices());
-  const [vault, setVault] = useState<VaultEntry[]>(() => getVault());
-  useEffect(() => onPortalChange(() => {
-    setIncoming(getIncomingInvoices());
-    setVault(getVault());
-  }), []);
-  const [fsList, setFsList] = useState<FinStmt[]>(() => load<FinStmt>(KEY_FS));
-  const [sharedDocs, setSharedDocs] = useState<SharedDoc[]>(() => load<SharedDoc>(KEY_SHARED));
-  const [legalDocs, setLegalDocs] = useState<LegalDoc[]>(() => load<LegalDoc>(KEY_LEGAL));
+  const [clients, setClients] = useState<Client[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [decls, setDecls] = useState<Decl[]>([]);
+  const [fsList, setFsList] = useState<FinStmt[]>([]);
+  const [sharedDocs, setSharedDocs] = useState<SharedDoc[]>([]);
+  const [legalDocs, setLegalDocs] = useState<LegalDoc[]>([]);
   // Map of `${clientId}|YYYY-MM` -> { id, sent, formData } from g50_declarations
+  // Latest client-ref -> portal user id lookup, for callbacks created before the linked clients load.
+  const userIdOfRef = useRef<(clientId: string) => string>((id) => id);
   const [g50Map, setG50Map] = useState<Record<string, { id: string; sent: boolean; formData: any }>>({});
   const [sendingDeclId, setSendingDeclId] = useState<string | null>(null);
 
@@ -86,7 +85,7 @@ const AccountantDashboard = () => {
     if (sendingDeclId) return;
     const period = d.due.slice(0, 7); // YYYY-MM
     const [yyyy, mm] = period.split("-");
-    const key = `${d.clientId}|${period}`;
+    const key = `${userIdOfRef.current(d.clientId)}|${period}`;
     const g50 = g50Map[key];
     if (!g50) {
       toast.error(t("g50_send_no_pdf") || "Generate the G50 first before sending.");
@@ -115,7 +114,7 @@ const AccountantDashboard = () => {
       // 3) Insert shared_documents row
       const title = `G50 — ${mm}/${yyyy}`;
       const { error: insErr } = await supabase.from("shared_documents" as any).insert({
-        client_id: d.clientId,
+        client_id: userIdOfRef.current(d.clientId),
         accountant_id: accId,
         g50_declaration_id: g50.id,
         file_path: path,
@@ -140,7 +139,7 @@ const AccountantDashboard = () => {
     }
   }, [g50Map, sendingDeclId, t]);
 
-  const { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks, precompte, setPrecompte } = useSuiteData();
+  
   const [obligationsClient, setObligationsClient] = useState<Client | null>(null);
   const [openTool, setOpenTool] = useState<null | "fs" | "g50" | "send">(null);
   const [editG50, setEditG50] = useState<{ id: string; formData: any } | null>(null);
@@ -154,7 +153,6 @@ const AccountantDashboard = () => {
   const [confirmDelete, setConfirmDelete] = useState<(() => void) | null>(null);
   const askDelete = (action: () => void) => setConfirmDelete(() => action);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [previewIncoming, setPreviewIncoming] = useState<IncomingInvoice | null>(null);
   const [editingShared, setEditingShared] = useState<SharedDoc | null>(null);
   const [trackingClientId, setTrackingClientId] = useState<string>("");
   
@@ -169,9 +167,11 @@ const AccountantDashboard = () => {
   };
   const [dbLinkedClients, setDbLinkedClients] = useState<DbLinkedClient[]>([]);
 
-  const dbToClient = (d: DbLinkedClient, base?: Client): Client => {
+  // keepBaseId: the clients state is keyed by acc_clients.client_ref, so a matched client keeps
+  // its own id. The G50/chat flows address clients by portal user id (d.id) instead.
+  const dbToClient = (d: DbLinkedClient, base?: Client, keepBaseId = false): Client => {
     const seed: Client = base
-      ? { ...base, id: d.id }
+      ? { ...base, id: keepBaseId ? base.id : d.id }
       : { id: d.id, name: (d.full_name && d.full_name.trim()) || "Unknown", taxId: "", contact: "", status: "active" };
     return {
       ...seed,
@@ -200,10 +200,15 @@ const AccountantDashboard = () => {
   const mergeDbIntoClients = (db: DbLinkedClient[]) => {
     setClients((prev) => {
       const byName = new Map(prev.map((c) => [c.name.trim().toLowerCase(), c]));
-      const merged: Client[] = db.map((d) => dbToClient(d, byName.get((d.full_name || "").trim().toLowerCase())));
-      const dbNames = new Set(db.map((d) => (d.full_name || "").trim().toLowerCase()));
+      const byEmail = new Map(prev.filter((c) => c.email || c.contact).map((c) => [(c.email || c.contact).toLowerCase(), c]));
+      const used = new Set<string>();
+      const merged: Client[] = db.map((d) => {
+        const base = (d.email ? byEmail.get(d.email.toLowerCase()) : undefined) ?? byName.get((d.full_name || "").trim().toLowerCase());
+        if (base) used.add(base.id);
+        return dbToClient(d, base, true);
+      });
       for (const c of prev) {
-        if (!dbNames.has(c.name.trim().toLowerCase())) merged.push(c);
+        if (!used.has(c.id)) merged.push(c);
       }
       return merged;
     });
@@ -248,6 +253,29 @@ const AccountantDashboard = () => {
     return merged;
   }, [dbLinkedClients, clients]);
 
+  // The clients state is keyed by acc_clients.client_ref; g50_declarations, chat and notifications
+  // address the portal account (user id). Match a client to its portal account by email, then name.
+  const linkedFor = (clientId: string): DbLinkedClient | undefined => {
+    const direct = dbLinkedClients.find((d) => d.id === clientId);
+    if (direct) return direct;
+    const c = clients.find((x) => x.id === clientId);
+    if (!c) return undefined;
+    const em = (c.email || c.contact || "").toLowerCase();
+    return (em ? dbLinkedClients.find((d) => (d.email || "").toLowerCase() === em) : undefined)
+      ?? dbLinkedClients.find((d) => (d.full_name || "").trim().toLowerCase() === c.name.trim().toLowerCase());
+  };
+  const userIdOf = (clientId: string): string => linkedFor(clientId)?.id ?? clientId;
+  userIdOfRef.current = userIdOf;
+  const refOfUser = (userId: string): string => {
+    if (clients.some((c) => c.id === userId)) return userId;
+    const d = dbLinkedClients.find((x) => x.id === userId);
+    if (!d) return userId;
+    const em = (d.email || "").toLowerCase();
+    const c = (em ? clients.find((x) => (x.email || x.contact || "").toLowerCase() === em) : undefined)
+      ?? clients.find((x) => x.name.trim().toLowerCase() === (d.full_name || "").trim().toLowerCase());
+    return c?.id ?? userId;
+  };
+
   // Persist all editable client business fields to the linked client's profile (if matched in DB).
   const persistClientProfileFields = async (c: Client) => {
     const match = dbLinkedClients.find(
@@ -277,11 +305,13 @@ const AccountantDashboard = () => {
     if (!error) await refetchLinkedClients();
   };
 
-  useEffect(() => { localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients)); }, [clients]);
-
   // === DB persistence: load on mount + diff-sync on every change ===
   const accIdRef = useRef<string | null>(null);
   const dbReadyRef = useRef(false);
+  const prevClientsRef = useRef<Client[]>([]);
+  const clientsReadyRef = useRef(false);
+  const [clientsReady, setClientsReady] = useState(false);
+  const { employees, setEmployees, bills, setBills, journal, setJournal, locks, setLocks, precompte, setPrecompte } = useSuiteData(clientsReady);
   const prevInvoicesRef = useRef<typeof invoices>([]);
   const prevDeclsRef = useRef<typeof decls>([]);
   const prevFsRef = useRef<typeof fsList>([]);
@@ -296,11 +326,27 @@ const AccountantDashboard = () => {
       if (!accId || cancelled) return;
       accIdRef.current = accId;
       await migrateLocalToDb(accId);
-      const [inv, dec, fs, sh, lg] = await Promise.all([
+      try {
+        // One-time upload of this browser's old local data (clients, employees, bills, journal, assets)
+        await importLocalBusinessData(accId);
+      } catch (e) {
+        console.error("[import local data]", e);
+      }
+      const [inv, dec, fs, sh, lg, cl] = await Promise.all([
         loadInvoices(accId), loadDecls(accId), loadFsList(accId),
         loadSharedDocs(accId), loadLegalDocs(accId),
+        loadClients(accId).catch(() => null),
       ]);
       if (cancelled) return;
+      if (cl) {
+        prevClientsRef.current = cl as Client[];
+        setClients(cl as Client[]);
+        clientsReadyRef.current = true;
+        setClientsReady(true);
+        refetchLinkedClients(); // merge portal-linked clients into the loaded list
+      } else {
+        toast.error(t("load_failed"), { id: "load-failed" });
+      }
       prevInvoicesRef.current = inv; prevDeclsRef.current = dec; prevFsRef.current = fs;
       prevSharedRef.current = sh as typeof sharedDocs; prevLegalRef.current = lg as typeof legalDocs;
       setInvoices(inv); setDecls(dec); setFsList(fs);
@@ -315,10 +361,20 @@ const AccountantDashboard = () => {
   }, []);
 
   useEffect(() => {
+    if (!clientsReadyRef.current || !accIdRef.current) return;
+    const prev = prevClientsRef.current;
+    prevClientsRef.current = clients;
+    syncClients(prev as unknown as ClientRecord[], clients as unknown as ClientRecord[], accIdRef.current).catch((e) => {
+      console.error("[sync clients]", e);
+      toast.error(t("i18n_error_generic"));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clients]);
+
+  useEffect(() => {
     if (!dbReadyRef.current || !accIdRef.current) return;
     const prev = prevInvoicesRef.current;
     prevInvoicesRef.current = invoices;
-    localStorage.setItem(KEY_INVOICES, JSON.stringify(invoices));
     syncInvoices(prev, invoices, accIdRef.current).catch((e) => console.error("[sync invoices]", e));
   }, [invoices]);
 
@@ -326,7 +382,6 @@ const AccountantDashboard = () => {
     if (!dbReadyRef.current || !accIdRef.current) return;
     const prev = prevDeclsRef.current;
     prevDeclsRef.current = decls;
-    localStorage.setItem(KEY_DECLS, JSON.stringify(decls));
     syncDecls(prev, decls, accIdRef.current).catch((e) => console.error("[sync decls]", e));
   }, [decls]);
 
@@ -334,7 +389,6 @@ const AccountantDashboard = () => {
     if (!dbReadyRef.current || !accIdRef.current) return;
     const prev = prevFsRef.current;
     prevFsRef.current = fsList;
-    localStorage.setItem(KEY_FS, JSON.stringify(fsList));
     syncFs(prev, fsList, accIdRef.current).catch((e) => console.error("[sync fs]", e));
   }, [fsList]);
 
@@ -342,7 +396,6 @@ const AccountantDashboard = () => {
     if (!dbReadyRef.current || !accIdRef.current) return;
     const prev = prevSharedRef.current;
     prevSharedRef.current = sharedDocs;
-    localStorage.setItem(KEY_SHARED, JSON.stringify(sharedDocs));
     syncShared(prev, sharedDocs, accIdRef.current)
       .then((updated) => {
         // Replace any data: URLs with signed URLs after upload, without retriggering DB writes.
@@ -359,7 +412,6 @@ const AccountantDashboard = () => {
     if (!dbReadyRef.current || !accIdRef.current) return;
     const prev = prevLegalRef.current;
     prevLegalRef.current = legalDocs;
-    localStorage.setItem(KEY_LEGAL, JSON.stringify(legalDocs));
     syncLegal(prev, legalDocs, accIdRef.current)
       .then((updated) => {
         const changed = updated.some((u, i) => u.fileData !== legalDocs[i]?.fileData || u.filePath !== (legalDocs[i] as any)?.filePath);
@@ -394,23 +446,46 @@ const AccountantDashboard = () => {
     return m;
   }, [employees]);
 
-  // Automated chat reminder for clients who have not uploaded by the 10th of the month.
+  // Automated reminder for clients who have not uploaded by the 10th of the month.
+  // Idempotent per (client, month): the database records who was already reminded.
   useEffect(() => {
-    if (!clients.length) return;
-    const sent = runUploadReminderSweep(
-      clients.map((c) => ({ email: c.contact, name: c.name })),
-      user?.name || "Cabinet Comptable",
-    );
-    if (sent > 0) toast.message(t(pluralKey("toast_reminders_sent", sent, lang), { n: sent }));
+    if (!clientsReady || !dbLinkedClients.length) return;
+    let cancelled = false;
+    const sweep = async () => {
+      const now = new Date();
+      const accId = accIdRef.current;
+      if (now.getDate() < 10 || !accId) return;
+      try {
+        const month = now.toISOString().slice(0, 7);
+        const [already, uploads] = await Promise.all([
+          loadRemindersSent(accId, month),
+          supabase.from("documents").select("user_id").gte("created_at", `${month}-01`),
+        ]);
+        const uploaded = new Set((uploads.data ?? []).map((r) => r.user_id));
+        let sent = 0;
+        for (const c of clients) {
+          const link = linkedFor(c.id);
+          if (cancelled || !link || already.has(c.id) || uploaded.has(link.id)) continue;
+          if (!(await markReminderSent(accId, c.id, month))) continue;
+          await sendNotification({
+            recipientId: link.id,
+            title: "📌 Rappel / تذكير",
+            message: `Aucun document reçu pour ${month}. Merci de téléverser vos factures avant le 20 du mois pour la déclaration G50. (تذكير: لم نستلم وثائقك لهذا الشهر).`,
+            link: "/dashboard/client",
+          });
+          sent++;
+        }
+        if (sent > 0 && !cancelled) toast.message(t(pluralKey("toast_reminders_sent", sent, lang), { n: sent }));
+      } catch (e) {
+        console.error("[reminders]", e);
+      }
+    };
+    sweep();
     // run again every hour while the dashboard stays open
-    const id = setInterval(() => {
-      runUploadReminderSweep(
-        clients.map((c) => ({ email: c.contact, name: c.name })),
-        user?.name || "Cabinet Comptable",
-      );
-    }, 60 * 60 * 1000);
-    return () => clearInterval(id);
-  }, [clients, user?.name]);
+    const id = setInterval(sweep, 60 * 60 * 1000);
+    return () => { cancelled = true; clearInterval(id); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientsReady, dbLinkedClients, clients]);
 
 
   const activeClient = activeClientId ? clients.find((c) => c.id === activeClientId) || null : null;
@@ -421,8 +496,41 @@ const AccountantDashboard = () => {
   };
 
   // Recompute unread badge whenever portal data changes
-  const [unreadMsgs, setUnreadMsgs] = useState<number>(() => unreadChatCount("accountant"));
-  useEffect(() => onPortalChange(() => setUnreadMsgs(unreadChatCount("accountant"))), []);
+  const [unreadMsgs, setUnreadMsgs] = useState<number>(0);
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = async () => {
+      const { data: au } = await supabase.auth.getUser();
+      if (!au.user) return;
+      const { count } = await supabase.from("messages").select("id", { count: "exact", head: true })
+        .eq("receiver_id", au.user.id).eq("is_read", false);
+      if (!cancelled) setUnreadMsgs(count ?? 0);
+    };
+    refresh();
+    const channel = supabase.channel("messages-badge")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, refresh)
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, []);
+
+  // Vault: shared documents plus the invoices clients uploaded (RLS limits both to this accountant's clients).
+  const [invoiceDocs, setInvoiceDocs] = useState<{ id: string; fileName: string; createdAt: string; userId: string }[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    supabase.from("documents").select("id,file_name,created_at,user_id").eq("kind", "invoice")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (!cancelled) setInvoiceDocs((data ?? []).map((r) => ({ id: r.id, fileName: r.file_name, createdAt: r.created_at, userId: r.user_id })));
+      });
+    return () => { cancelled = true; };
+  }, []);
+  const vault = useMemo(() => sortVault([
+    ...vaultFromShared(sharedDocs),
+    ...invoiceDocs.flatMap((d) => {
+      const link = dbLinkedClients.find((x) => x.id === d.userId);
+      return vaultFromInvoiceDocs([d], link?.full_name || "", link?.email ?? undefined);
+    }),
+  ]), [sharedDocs, invoiceDocs, dbLinkedClients]);
 
   // Live count of incoming documents (same source as the IncomingDocumentsLive feed).
   // RLS already restricts visibility to documents owned by clients linked to this accountant.
@@ -709,7 +817,7 @@ const AccountantDashboard = () => {
 
             {view === "profile" && activeClient && (
               <ClientProfileView
-                t={t} client={activeClient}
+                t={t} client={activeClient} userId={userIdOf(activeClient.id)}
                 decls={decls.filter((d) => d.clientId === activeClient.id)}
                 invoices={invoices.filter((i) => i.clientId === activeClient.id)}
                 legalDocs={legalDocs.filter((d) => d.clientId === activeClient.id)}
@@ -722,13 +830,13 @@ const AccountantDashboard = () => {
                 onEdit={(c) => setEditingClient(c)}
                 onEditG50={(d) => { setEditG50(d); setOpenTool("g50"); }}
                 onMessage={() => {
-                  // activeClient.id is the client's auth user_id (from get_linked_client_names RPC).
-                  // Avoid querying profiles directly — that triggers RLS recursion.
-                  if (!activeClient.id) {
+                  // Chat addresses the portal account (user id), known once the client has signed up.
+                  const link = linkedFor(activeClient.id);
+                  if (!link) {
                     toast.error(t("acc_client_inactive"));
                     return;
                   }
-                  setChatPreselectId(activeClient.id);
+                  setChatPreselectId(link.id);
                   setView("chat");
                 }}
               />
@@ -769,7 +877,7 @@ const AccountantDashboard = () => {
                     }}
                     sentMap={Object.fromEntries(
                       decls.filter((d) => d.type === "G50").map((d) => {
-                        const k = `${d.clientId}|${d.due.slice(0, 7)}`;
+                        const k = `${userIdOf(d.clientId)}|${d.due.slice(0, 7)}`;
                         return [d.id, !!g50Map[k]?.sent];
                       })
                     )}
@@ -908,21 +1016,21 @@ const AccountantDashboard = () => {
         open={openTool === "g50"} onOpenChange={(o) => { if (!o) { setOpenTool(null); setEditG50(null); } }}
         clients={g50Clients} t={t}
         editing={editG50}
-        getAggregates={(cid) => aggregateForG50(cid, bills, employees)}
-        getLiveG50={(cid, period) => computeG50FromJournal(journal, { clientId: cid, period })}
+        getAggregates={(cid) => aggregateForG50(refOfUser(cid), bills, employees)}
+        getLiveG50={(cid, period) => computeG50FromJournal(journal, { clientId: refOfUser(cid), period })}
         onGenerate={(d, shared, lockOpts) => {
-          setDecls((p) => [d, ...p]);
+          setDecls((p) => [{ ...d, clientId: refOfUser(d.clientId) }, ...p]);
           if (shared) {
-            setSharedDocs((p) => [shared, ...p]);
-            pushNotification({
-              forRole: "client",
-              forEmail: shared.clientEmail,
+            // The G50 dialog works with portal user ids; the rest of the dashboard uses client refs.
+            setSharedDocs((p) => [{ ...shared, clientId: refOfUser(shared.clientId) }, ...p]);
+            void sendNotification({
+              recipientId: shared.clientId,
               title: t("notif_g50_ready_title"),
               message: t("notif_g50_ready_msg").replace("{label}", shared.label),
               type: "g50_ready",
               link: "/dashboard/client",
               refId: shared.id,
-            });
+            }).catch((e) => console.error("[notify]", e));
           }
           if (lockOpts) {
             setLocks((p) => lockPeriod(p, lockOpts));
@@ -937,15 +1045,14 @@ const AccountantDashboard = () => {
         clients={clients} t={t}
         onSend={(doc) => {
           setSharedDocs((p) => [doc, ...p]);
-          pushNotification({
-            forRole: "client",
-            forEmail: doc.clientEmail,
+          void sendNotification({
+            recipientId: userIdOf(doc.clientId),
             title: t("notif_g50_ready_title"),
             message: t("notif_g50_ready_msg").replace("{label}", doc.label),
             type: "g50_ready",
             link: "/dashboard/client",
             refId: doc.id,
-          });
+          }).catch((e) => console.error("[notify]", e));
           setOpenTool(null);
         }}
       />
@@ -1000,25 +1107,11 @@ const AccountantDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Preview incoming invoice */}
-      <DocPreviewDialog
-        open={!!previewIncoming}
-        onClose={() => setPreviewIncoming(null)}
-        title={previewIncoming?.fileName || ""}
-        fileName={previewIncoming?.fileName}
-        mimeType={previewIncoming?.mimeType}
-        fileData={previewIncoming?.fileData}
-        meta={previewIncoming ? { client: previewIncoming.clientName, size: `${(previewIncoming.size/1024).toFixed(0)} KB`, status: previewIncoming.status } : undefined}
-        t={t}
-      />
-
       {/* Review & Edit declaration */}
       <EditDeclDialog
         doc={editingShared}
         onClose={() => setEditingShared(null)}
         onSave={(id, payload, label, workflow) => {
-          updateSharedDocPayload(id, payload, label);
-          setSharedDocWorkflow(id, workflow);
           setSharedDocs((p) => p.map((s) => (s.id === id ? { ...s, payload, label, workflow } : s)));
         }}
         t={t}
@@ -1030,9 +1123,9 @@ const AccountantDashboard = () => {
 };
 
 const ClientProfileView = ({
-  t, client, decls, invoices, legalDocs, onBack, onAddLegal, onDeleteLegal, onAddDecl, onDeleteDecl, onExtract, onMessage, onEdit, onEditG50,
+  t, client, userId, decls, invoices, legalDocs, onBack, onAddLegal, onDeleteLegal, onAddDecl, onDeleteDecl, onExtract, onMessage, onEdit, onEditG50,
 }: {
-  t: (k: string) => string; client: Client; decls: Decl[]; invoices: Invoice[]; legalDocs: LegalDoc[];
+  t: (k: string) => string; client: Client; userId: string; decls: Decl[]; invoices: Invoice[]; legalDocs: LegalDoc[];
   onBack: () => void; onAddLegal: (d: LegalDoc) => void; onDeleteLegal: (id: string) => void;
   onAddDecl: (d: Decl) => void; onDeleteDecl: (id: string) => void;
   onExtract: () => void; onMessage: () => void; onEdit: (c: Client) => void;
@@ -1226,7 +1319,7 @@ const ClientProfileView = ({
                 const { data: row, error: lookupErr } = await supabase
                   .from("g50_declarations")
                   .select("id")
-                  .eq("client_id", client.id)
+                  .eq("client_id", userId)
                   .eq("year", Number(yyyy))
                   .eq("month", Number(mm))
                   .order("generated_at", { ascending: false })
@@ -1257,7 +1350,7 @@ const ClientProfileView = ({
                 const { data, error } = await supabase
                   .from("g50_declarations")
                   .select("form_data")
-                  .eq("client_id", client.id)
+                  .eq("client_id", userId)
                   .eq("year", Number(yyyy))
                   .eq("month", Number(mm))
                   .order("generated_at", { ascending: false })
@@ -1286,7 +1379,7 @@ const ClientProfileView = ({
                 const { data, error } = await supabase
                   .from("g50_declarations")
                   .select("id, form_data")
-                  .eq("client_id", client.id)
+                  .eq("client_id", userId)
                   .eq("year", Number(yyyy))
                   .eq("month", Number(mm))
                   .order("generated_at", { ascending: false })
