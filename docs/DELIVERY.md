@@ -29,4 +29,4 @@ Migrations must be backward compatible with the frontend currently live (add col
 `public/_headers` sets HSTS, nosniff, frame denial, referrer and permissions policies. The Content-Security-Policy is in Report-Only mode because the payslip and liasse print popups write an inline `<script>`; once those call `w.print()` from the opener, rename the header to `Content-Security-Policy` to enforce it.
 
 ## Lockfiles
-`package-lock.json` is the one CI uses. `bun.lock` / `bun.lockb` are leftovers from the Lovable template; do not edit them by hand.
+Both `package-lock.json` (npm) and `bun.lock` (bun) are kept in sync; the `lockfiles` CI job fails if either drifts from `package.json`. After changing dependencies run `npm install` and `bun install` and commit both. `bun.lock` was regenerated from the public registry (the old one pointed at a private Lovable mirror that returns 403) and the stale binary `bun.lockb` was removed.
