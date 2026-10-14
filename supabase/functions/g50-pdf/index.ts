@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
       console.error("[g50-pdf] CLOUDCONVERT_API_KEY missing or empty");
       return jsonResponse(
         { error: "CLOUDCONVERT_API_KEY is not configured in edge function secrets", stage: "config" },
-        200,
+        500,
       );
     }
     console.log(`[g50-pdf] API key loaded (length=${apiKey.length})`);
@@ -27,16 +27,18 @@ Deno.serve(async (req) => {
     try {
       payload = await req.json();
     } catch (e) {
-      return jsonResponse({ error: "Invalid JSON body", stage: "parse" }, 200);
+      return jsonResponse({ error: "Invalid JSON body", stage: "parse" }, 400);
     }
     const { xlsxBase64, fileName } = payload;
     if (!xlsxBase64 || !fileName) {
       return jsonResponse(
         { error: "xlsxBase64 and fileName are required", stage: "validate" },
-        200,
+        400,
       );
     }
-    console.log(`[g50-pdf] Received file=${fileName}, base64Length=${xlsxBase64.length}`);
+    if (xlsxBase64.length > 15_000_000) {
+      return jsonResponse({ error: "File too large", stage: "validate" }, 413);
+    }
 
     const auth = { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" };
 
@@ -73,12 +75,11 @@ Deno.serve(async (req) => {
         {
           error: `CloudConvert job creation failed (HTTP ${jobRes.status})`,
           stage: "job-create",
-          details: jobText,
           hint: jobRes.status === 401 || jobRes.status === 403
             ? "Check that CLOUDCONVERT_API_KEY is valid and has scopes: user.read, task.read, task.write"
             : undefined,
         },
-        200,
+        502,
       );
     }
     const job = JSON.parse(jobText);
@@ -95,12 +96,11 @@ Deno.serve(async (req) => {
         {
           error: `CloudConvert wait failed (HTTP ${waitRes.status})`,
           stage: "job-wait",
-          details: waitText,
           hint: waitRes.status === 401 || waitRes.status === 403
             ? "Your CloudConvert API key is missing required scopes. Edit the key at https://cloudconvert.com/dashboard/api/v2/keys and enable: user.read, task.read, task.write"
             : undefined,
         },
-        200,
+        502,
       );
     }
     const waited = JSON.parse(waitText);
@@ -114,10 +114,8 @@ Deno.serve(async (req) => {
           error: `CloudConvert job did not finish (status=${status})`,
           stage: "job-status",
           failedTask: failedTask?.name,
-          taskMessage: failedTask?.message,
-          details: waited.data,
         },
-        200,
+        502,
       );
     }
 
@@ -128,8 +126,8 @@ Deno.serve(async (req) => {
     if (!fileUrl) {
       console.error("[g50-pdf] No PDF URL in export task", JSON.stringify(exportTask));
       return jsonResponse(
-        { error: "CloudConvert returned no PDF URL", stage: "export", details: exportTask },
-        200,
+        { error: "CloudConvert returned no PDF URL", stage: "export" },
+        502,
       );
     }
 
@@ -138,8 +136,8 @@ Deno.serve(async (req) => {
     if (!pdfRes.ok) {
       const errText = await pdfRes.text();
       return jsonResponse(
-        { error: `PDF download failed (HTTP ${pdfRes.status})`, stage: "download", details: errText },
-        200,
+        { error: `PDF download failed (HTTP ${pdfRes.status})`, stage: "download" },
+        502,
       );
     }
     const pdfBuf = new Uint8Array(await pdfRes.arrayBuffer());
@@ -155,8 +153,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ pdfBase64 }, 200);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    const stack = e instanceof Error ? e.stack : undefined;
-    console.error("[g50-pdf] Unexpected error:", msg, stack);
-    return jsonResponse({ error: msg, stage: "exception", stack }, 200);
+    console.error("[g50-pdf] Unexpected error:", msg, e instanceof Error ? e.stack : undefined);
+    return jsonResponse({ error: msg, stage: "exception" }, 500);
   }
 });
