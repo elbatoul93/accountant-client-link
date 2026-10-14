@@ -168,6 +168,7 @@ const Landing = () => {
         <div className="container flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
           <div>© 2026 Managementik — {t("brand_tagline")}</div>
           <div className="flex gap-5">
+            <Link to="/help" className="hover:text-primary transition-smooth">{t("help_link")}</Link>
             <Link to="/privacy" className="hover:text-primary transition-smooth">{t("landing_privacy")}</Link>
             <Link to="/terms" className="hover:text-primary transition-smooth">{t("landing_terms")}</Link>
             <a href="mailto:contact@managementik.dz" className="hover:text-primary transition-smooth">{t("landing_contact")}</a>
