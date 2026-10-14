@@ -9,11 +9,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
-// Use flagcdn SVGs — render reliably across all OSes (Windows/Linux lack flag emoji glyphs).
+// Self-hosted SVG flags (public/flags) — render reliably across all OSes (Windows/Linux lack flag emoji glyphs).
 const Flag = ({ code }: { code: string }) => (
   <img
-    src={`https://flagcdn.com/24x18/${code}.png`}
-    srcSet={`https://flagcdn.com/48x36/${code}.png 2x`}
+    src={`/flags/${code}.svg`}
     width={20}
     height={15}
     alt=""
