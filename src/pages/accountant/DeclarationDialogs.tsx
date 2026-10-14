@@ -11,6 +11,7 @@ import { WorkflowBadge, WorkflowStepper } from "@/components/WorkflowStatus";
 import { type WorkflowStatus } from "@/lib/portal";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Client, Decl, FinStmt, SharedDoc, fmtDZD } from "@/pages/accountant/shared";
+import { todayIso } from "@/lib/isoDate";
 import { EmptyState } from "@/pages/accountant/ui";
 
 export const AddDeclarationDialog = ({
@@ -182,7 +183,7 @@ export const FinancialStatementsDialog = ({
       id: crypto.randomUUID(), clientId: c.id, clientName: c.name, year,
       assets: Number(assets), liabilities: Number(liab || 0), equity: Number(equity || 0),
       revenue: Number(revenue || 0), netResult: Number(net || 0),
-      createdAt: new Date().toLocaleDateString("fr-DZ"),
+      createdAt: todayIso(),
     });
     toast.success(t("acc_balance_saved"));
     setClientId(""); setAssets(""); setLiab(""); setEquity(""); setRevenue(""); setNet("");
@@ -247,7 +248,7 @@ export const SendDocumentDialog = ({
     onSend({
       id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
       clientEmail: c.contact, type, label,
-      date: new Date().toLocaleDateString("fr-DZ"),
+      date: todayIso(),
       fileName: file?.name, mimeType: file?.type, fileData: fileData || undefined,
     });
     toast.success(t("acc_doc_shared"));

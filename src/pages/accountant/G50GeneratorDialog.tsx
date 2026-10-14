@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { generateG50Xlsx, generateG50Pdf } from "@/lib/g50Export";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
+import { todayIso } from "@/lib/isoDate";
 import { Client, Decl, SharedDoc, fmtDZD } from "@/pages/accountant/shared";
 
 export const G50GeneratorDialog = ({
@@ -176,7 +177,7 @@ export const G50GeneratorDialog = ({
       id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
       clientEmail: c.contact, type: "G50",
       label: `G50 ${period} — ${fmtDZD(total)}`,
-      date: new Date().toLocaleDateString("fr-DZ"),
+      date: todayIso(),
       payload: JSON.stringify({ nif: c.taxId, bp: c.bp, caHt, salaries, benefice, rTap, rTva, rIrg, rIbs, tap, tva, irg, ibs, total, period }),
       workflow: "filed",
     };
