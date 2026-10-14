@@ -361,7 +361,7 @@ export const AddInvoiceDialog = ({ clients, onAdd, t }: { clients: Client[]; onA
     const c = clients.find((x) => x.id === clientId);
     if (!c || !amount) { toast.error(t("acc_client_amount_required")); return; }
     onAdd({
-      id: `INV-${Date.now().toString().slice(-5)}`,
+      id: crypto.randomUUID(),
       clientId: c.id, clientName: c.name,
       amount: Number(amount),
       date: todayIso(),
