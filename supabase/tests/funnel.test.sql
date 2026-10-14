@@ -42,7 +42,7 @@ INSERT INTO public.admins (user_id) VALUES (:'adm');
 
 -- Security alerts raised by the signups and the admin grant.
 SELECT f.eq((SELECT count(*)::int FROM public.security_alerts WHERE kind = 'admin_granted' AND severity = 'critical'), 1, 'admin grant raises a critical alert');
-SELECT f.eq((SELECT count(*)::int FROM public.security_alerts WHERE kind = 'accountant_signup_pending'), 4, 'pending accountant signups raise info alerts');
+SELECT f.eq((SELECT count(*)::int FROM public.security_alerts WHERE kind = 'accountant_signup_pending' AND accountant_id = :'a3' AND severity = 'info'), 1, 'a pending accountant signup raises one info alert');
 
 -- a1: activated, client, G50 sent, paid.  a2: activated, client only.  a3: pending.
 SELECT f.as_user(:'adm');
