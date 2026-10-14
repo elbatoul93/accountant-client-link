@@ -14,6 +14,7 @@ import { Users, FileText, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2,
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { toast } from "sonner";
+import { pluralKey } from "@/lib/format";
 import { BillingView, JournalView, useSuiteData, aggregateForG50 } from "./accountant/SuiteModules";
 import { PayrollAdvanced } from "./accountant/PayrollAdvanced";
 import { ReportsView } from "./accountant/ReportsView";
@@ -41,7 +42,7 @@ import { ClientsListView, DashboardView, InvoiceTable } from "@/pages/accountant
 import { AccountantVaultView, ChatHubView, TrackingView } from "@/pages/accountant/InboxViews";
 
 const AccountantDashboard = () => {
-  const { t, user } = useApp();
+  const { t, user, lang } = useApp();
   const [clients, setClients] = useState<Client[]>(() => load<Client>(KEY_CLIENTS));
   const [invoices, setInvoices] = useState<Invoice[]>(() => load<Invoice>(KEY_INVOICES));
   const [decls, setDecls] = useState<Decl[]>(() => load<Decl>(KEY_DECLS));
@@ -398,7 +399,7 @@ const AccountantDashboard = () => {
       clients.map((c) => ({ email: c.contact, name: c.name })),
       user?.name || "Cabinet Comptable",
     );
-    if (sent > 0) toast.message(t("toast_reminders_sent", { n: sent }));
+    if (sent > 0) toast.message(t(pluralKey("toast_reminders_sent", sent, lang), { n: sent }));
     // run again every hour while the dashboard stays open
     const id = setInterval(() => {
       runUploadReminderSweep(
