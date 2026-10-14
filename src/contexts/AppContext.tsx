@@ -51,10 +51,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     // Derive role synchronously from JWT metadata to stay consistent with RLS (auth.jwt() ->> 'user_type')
     const meta = (session.user.user_metadata ?? {}) as { user_type?: string; role?: string };
     const role: Role = (meta.user_type ?? meta.role) === "accountant" ? "accountant" : "client";
+    const meta2 = (session.user.user_metadata ?? {}) as { name?: string; company?: string };
+    // Set the user synchronously from the JWT so route guards never see a
+    // signed-in session with a null user (which bounced logins back to /login).
+    setUser((prev) => ({
+      name: prev?.name || meta2.name?.trim() || session.user.email?.split("@")[0] || "Unknown",
+      email: prev?.email || session.user.email || "",
+      role,
+      company: prev?.company ?? meta2.company ?? undefined,
+    }));
+    setLoading(false);
     // Defer DB calls outside the auth callback to avoid deadlocks
     setTimeout(async () => {
       const uid = session.user.id;
-      const meta2 = (session.user.user_metadata ?? {}) as { name?: string; company?: string };
       const { data: profile } = await supabase
         .from("profiles")
         .select("name,email,company")
@@ -72,7 +81,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         role,
         company: profile?.company ?? meta2.company ?? undefined,
       });
-      setLoading(false);
     }, 0);
   };
 
