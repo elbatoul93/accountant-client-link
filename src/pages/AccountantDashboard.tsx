@@ -367,6 +367,15 @@ const AccountantDashboard = () => {
     prevClientsRef.current = clients;
     syncClients(prev as unknown as ClientRecord[], clients as unknown as ClientRecord[], accIdRef.current).catch((e) => {
       console.error("[sync clients]", e);
+      if (/foreign key|23503|violates/i.test(String(e?.message ?? e))) {
+        // The delete was refused: put the removed clients back so the screen matches the database.
+        const kept = new Set(clients.map((c) => c.id));
+        const restored = prev.filter((c) => !kept.has(c.id));
+        prevClientsRef.current = [...clients, ...restored];
+        setClients((cur) => [...cur, ...restored]);
+        toast.error(t("acc_delete_has_records"));
+        return;
+      }
       toast.error(t("i18n_error_generic"));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -760,13 +769,16 @@ const AccountantDashboard = () => {
                       toast.error(e?.message || t("i18n_error_generic"));
                     }
                   }}
-                  onDelete={(id) => askDelete(() => {
-                    setClients((p) => p.filter((x) => x.id !== id));
-                    setInvoices((p) => p.filter((x) => x.clientId !== id));
-                    setDecls((p) => p.filter((x) => x.clientId !== id));
-                    setLegalDocs((p) => p.filter((x) => x.clientId !== id));
-                    toast.success(t("acc_deleted"));
-                  })}
+                  onDelete={(id) => {
+                    // The database refuses to delete a client that still has records, so say so up front.
+                    const hasRecords = invoices.some((x) => x.clientId === id) || decls.some((x) => x.clientId === id)
+                      || legalDocs.some((x) => x.clientId === id) || sharedDocs.some((x) => x.clientId === id);
+                    if (hasRecords) { toast.error(t("acc_delete_has_records")); return; }
+                    askDelete(() => {
+                      setClients((p) => p.filter((x) => x.id !== id));
+                      toast.success(t("acc_deleted"));
+                    });
+                  }}
                   onExtract={setObligationsClient}
                   
                   onCopyInvite={async (c) => {

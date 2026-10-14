@@ -732,6 +732,7 @@ export const ar: typeof en = {
   chat_label: "المحادثة",
   acc_client_inactive: "لم يفعّل هذا الزبون حسابه بعد.",
   acc_deleted: "تم الحذف",
+  acc_delete_has_records: "احذف أو أرشف وثائق هذا الزبون أولاً.",
   acc_invite_copied: "تم نسخ رابط الدعوة للزبون {name}",
   acc_no_g50_data: "لا توجد بيانات G50 محفوظة لهذه الفترة",
   acc_copy_invite_title: "نسخ رابط الدعوة",

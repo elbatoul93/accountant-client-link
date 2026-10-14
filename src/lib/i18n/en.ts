@@ -752,6 +752,7 @@ export const en = {
   chat_label: "Chat",
   acc_client_inactive: "This client has not activated their account yet.",
   acc_deleted: "Deleted",
+  acc_delete_has_records: "Delete or archive this client's documents first.",
   acc_invite_copied: "Invitation link copied for {name}",
   acc_no_g50_data: "No saved G50 data for this period",
   acc_copy_invite_title: "Copy invitation link",
