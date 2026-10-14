@@ -196,6 +196,21 @@ function arrayBufferToBase64(buf: ArrayBuffer): string {
   return btoa(binary);
 }
 
+/** Error from the g50-pdf function. `code`/`retryable` come from the new function; the old one sends neither. */
+export class G50PdfError extends Error {
+  constructor(message: string, public code?: string, public retryable?: boolean) {
+    super(message);
+    this.name = "G50PdfError";
+  }
+}
+
+/** True when the PDF is unavailable for a reason the user cannot fix, so the XLSX is a sensible substitute. */
+export const isG50PdfUnavailable = (e: unknown): boolean => {
+  if (!(e instanceof G50PdfError)) return false;
+  if (e.code) return e.retryable === true || e.code === "not_configured" || e.code === "provider_rejected";
+  return true; // legacy function: no code, treat any failure as a provider problem
+};
+
 export async function generateG50PdfBytes(input: G50ExportInput): Promise<Uint8Array> {
   const xlsxBuf = await buildG50Buffer(input, true);
   const xlsxBase64 = arrayBufferToBase64(xlsxBuf);
@@ -204,20 +219,23 @@ export async function generateG50PdfBytes(input: G50ExportInput): Promise<Uint8A
   const { data, error } = await supabase.functions.invoke("g50-pdf", {
     body: { xlsxBase64, fileName: xlsxName },
   });
+  type Body = { error?: string; hint?: string; code?: string; retryable?: boolean };
   if (error) {
     // Non-2xx responses put the JSON body on error.context
-    let body: { error?: string; hint?: string } | undefined = data ?? undefined;
+    let body: Body | undefined = data ?? undefined;
     try { body = body ?? (await (error as { context?: Response }).context?.json()); } catch { /* not JSON */ }
     console.error("g50-pdf invoke error:", error, "body:", body);
     const detail = body?.error || error.message;
     const hint = body?.hint ? ` (${body.hint})` : "";
-    throw new Error(`PDF conversion failed: ${detail}${hint}`);
+    // Network failures (no response body) are retryable.
+    const retryable = body?.retryable ?? (body?.code ? undefined : !(error as { context?: Response }).context);
+    throw new G50PdfError(`PDF conversion failed: ${detail}${hint}`, body?.code, retryable);
   }
   if (data?.error) {
     console.error("g50-pdf returned error:", data);
-    throw new Error(`PDF conversion failed: ${data.error}${data.hint ? ` — ${data.hint}` : ""}`);
+    throw new G50PdfError(`PDF conversion failed: ${data.error}${data.hint ? ` — ${data.hint}` : ""}`, data.code, data.retryable);
   }
-  if (!data?.pdfBase64) throw new Error("PDF conversion failed: no PDF returned");
+  if (!data?.pdfBase64) throw new G50PdfError("PDF conversion failed: no PDF returned");
 
   const bin = atob(data.pdfBase64);
   const bytes = new Uint8Array(bin.length);
@@ -225,8 +243,19 @@ export async function generateG50PdfBytes(input: G50ExportInput): Promise<Uint8A
   return bytes;
 }
 
-export async function generateG50Pdf(input: G50ExportInput) {
-  const bytes = await generateG50PdfBytes(input);
-  const pdfName = input.fileName.replace(/\.xlsx$/i, ".pdf");
-  downloadBlob(new Blob([bytes as BlobPart], { type: "application/pdf" }), pdfName);
+/**
+ * Download the G50 as PDF. When the PDF service is unavailable, the Excel file is
+ * downloaded instead so the accountant is never blocked. Returns which format was saved.
+ */
+export async function generateG50Pdf(input: G50ExportInput): Promise<"pdf" | "xlsx-fallback"> {
+  try {
+    const bytes = await generateG50PdfBytes(input);
+    const pdfName = input.fileName.replace(/\.xlsx$/i, ".pdf");
+    downloadBlob(new Blob([bytes as BlobPart], { type: "application/pdf" }), pdfName);
+    return "pdf";
+  } catch (e) {
+    if (!isG50PdfUnavailable(e)) throw e;
+    await generateG50Xlsx({ ...input, fileName: input.fileName.replace(/\.pdf$/i, ".xlsx") });
+    return "xlsx-fallback";
+  }
 }
