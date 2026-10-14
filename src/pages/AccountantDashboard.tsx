@@ -398,7 +398,7 @@ const AccountantDashboard = () => {
       clients.map((c) => ({ email: c.contact, name: c.name })),
       user?.name || "Cabinet Comptable",
     );
-    if (sent > 0) toast.message(`${sent} rappel(s) envoyé(s) aux clients sans dépôt ce mois-ci.`);
+    if (sent > 0) toast.message(t("toast_reminders_sent", { n: sent }));
     // run again every hour while the dashboard stays open
     const id = setInterval(() => {
       runUploadReminderSweep(
@@ -1266,7 +1266,7 @@ const ClientProfileView = ({
                 try {
                   if (fmt === "pdf") {
                     const saved = await generateG50Pdf({ ...payload, fileName });
-                    if (saved === "xlsx-fallback") toast.warning("Service PDF indisponible : le fichier Excel a été téléchargé à la place.");
+                    if (saved === "xlsx-fallback") toast.warning(t("toast_pdf_unavailable_xlsx"));
                   } else await generateG50Xlsx({ ...payload, fileName });
                 } catch (e) {
                   console.error(e);
@@ -1642,7 +1642,7 @@ const G50GeneratorDialog = ({
       };
       if (format === "pdf") {
         const saved = await generateG50Pdf(payload);
-        if (saved === "xlsx-fallback") toast.warning("Service PDF indisponible : le fichier Excel a été téléchargé à la place.");
+        if (saved === "xlsx-fallback") toast.warning(t("toast_pdf_unavailable_xlsx"));
       } else {
         await generateG50Xlsx(payload);
       }
