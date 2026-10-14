@@ -1495,8 +1495,10 @@ const ClientProfileView = ({
                 const ext = fmt === "pdf" ? "pdf" : "xlsx";
                 const fileName = `G50_${payload.nif || "NIF"}_${yyyy}_${mm}.${ext}`;
                 try {
-                  if (fmt === "pdf") await generateG50Pdf({ ...payload, fileName });
-                  else await generateG50Xlsx({ ...payload, fileName });
+                  if (fmt === "pdf") {
+                    const saved = await generateG50Pdf({ ...payload, fileName });
+                    if (saved === "xlsx-fallback") toast.warning("Service PDF indisponible : le fichier Excel a été téléchargé à la place.");
+                  } else await generateG50Xlsx({ ...payload, fileName });
                 } catch (e) {
                   console.error(e);
                   toast.error(fmt === "pdf" ? "Export PDF échoué" : "Export G50 échoué");
@@ -2354,7 +2356,8 @@ const G50GeneratorDialog = ({
         fileName: `G50_${c.taxId || "NIF"}_${yyyy}_${mm}.${ext}`,
       };
       if (format === "pdf") {
-        await generateG50Pdf(payload);
+        const saved = await generateG50Pdf(payload);
+        if (saved === "xlsx-fallback") toast.warning("Service PDF indisponible : le fichier Excel a été téléchargé à la place.");
       } else {
         await generateG50Xlsx(payload);
       }
