@@ -1,3 +1,4 @@
+import { useFormat } from "@/hooks/useFormat";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +15,7 @@ import {
 
 export const NotificationBell = ({ t }: { t: (k: string) => string }) => {
   const navigate = useNavigate();
+  const fmt = useFormat();
   const [items, setItems] = useState<PortalNotificationRow[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -82,7 +84,7 @@ export const NotificationBell = ({ t }: { t: (k: string) => string }) => {
                     <div className="text-xs font-semibold text-foreground truncate">{n.title}</div>
                     <div className="text-[11px] text-muted-foreground line-clamp-2">{n.message}</div>
                     <div className="text-[10px] text-muted-foreground mt-0.5">
-                      {new Date(n.createdAt).toLocaleString("fr-DZ")}
+                      {fmt.dateTime(n.createdAt)}
                     </div>
                   </div>
                 </div>

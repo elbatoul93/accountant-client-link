@@ -10,6 +10,7 @@ import Login from "./pages/Login.tsx";
 import Signup from "./pages/Signup.tsx";
 import InviteSignup from "./pages/InviteSignup.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import RecoveryRedirect from "./components/RecoveryRedirect";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Privacy from "./pages/legal/Privacy.tsx";
 import Terms from "./pages/legal/Terms.tsx";
@@ -37,6 +38,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <RecoveryRedirect />
           <ErrorBoundary>
           <Suspense fallback={<PageSpinner />}>
           <Routes>

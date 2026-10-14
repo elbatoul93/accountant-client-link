@@ -1,3 +1,4 @@
+import { useFormat } from "@/hooks/useFormat";
 import { useState, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ import { SharedDoc } from "@/pages/client/shared";
 export const SignDialog = ({
   doc, onClose, onSigned, t,
 }: { doc: SharedDoc | null; onClose: () => void; onSigned: (id: string, sig: string) => void; t: (k: string) => string }) => {
+  const fmt = useFormat();
   const [sig, setSig] = useState<string | null>(null);
   useEffect(() => { setSig(null); }, [doc?.id]);
   if (!doc) return null;
@@ -58,7 +60,7 @@ export const SignDialog = ({
               <img src={doc.signatureDataUrl} alt={t("i18n_signature")} className="mx-auto h-20 object-contain" />
             )}
             <div className="text-xs text-muted-foreground">
-              {doc.signedBy} • {doc.signedAt && new Date(doc.signedAt).toLocaleString("fr-DZ")}
+              {doc.signedBy} • {doc.signedAt && fmt.dateTime(doc.signedAt)}
             </div>
           </div>
         ) : (
@@ -103,6 +105,7 @@ export const SignDialog = ({
 };
 
 export const VaultView = ({ entries, t }: { entries: VaultEntry[]; t: (k: string) => string }) => {
+  const fmt = useFormat();
   const groups = useMemo(() => {
     const m = new Map<string, VaultEntry[]>();
     for (const e of entries) {
@@ -129,7 +132,7 @@ export const VaultView = ({ entries, t }: { entries: VaultEntry[]; t: (k: string
           {groups.map(([month, items]) => (
             <div key={month}>
               <div className="text-xs uppercase tracking-wide font-bold text-primary mb-2 border-b border-border/60 pb-1">
-                {new Date(month + "-01").toLocaleDateString("fr-DZ", { month: "long", year: "numeric" })}
+                {fmt.date(month + "-01", { month: "long", year: "numeric" })}
                 <Badge variant="secondary" className="ms-2 text-[10px]">{items.length}</Badge>
               </div>
               <div className="space-y-1.5">
@@ -149,7 +152,7 @@ export const VaultView = ({ entries, t }: { entries: VaultEntry[]; t: (k: string
                       )}
                     </div>
                     <span className="text-muted-foreground text-[11px] ms-2 flex-shrink-0">
-                      {new Date(e.date).toLocaleDateString("fr-DZ")}
+                      {fmt.date(e.date)}
                     </span>
                   </div>
                 ))}

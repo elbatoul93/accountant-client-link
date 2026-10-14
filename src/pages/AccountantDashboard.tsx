@@ -472,7 +472,7 @@ const AccountantDashboard = () => {
           });
           sent++;
         }
-        if (sent > 0 && !cancelled) toast.message(`${sent} rappel(s) envoyé(s) aux clients sans dépôt ce mois-ci.`);
+        if (sent > 0 && !cancelled) toast.message(t("toast_reminders_sent", { n: sent }));
       } catch (e) {
         console.error("[reminders]", e);
       }
@@ -1359,7 +1359,7 @@ const ClientProfileView = ({
                 try {
                   if (fmt === "pdf") {
                     const saved = await generateG50Pdf({ ...payload, fileName });
-                    if (saved === "xlsx-fallback") toast.warning("Service PDF indisponible : le fichier Excel a été téléchargé à la place.");
+                    if (saved === "xlsx-fallback") toast.warning(t("toast_pdf_unavailable_xlsx"));
                   } else await generateG50Xlsx({ ...payload, fileName });
                 } catch (e) {
                   console.error(e);
@@ -1735,7 +1735,7 @@ const G50GeneratorDialog = ({
       };
       if (format === "pdf") {
         const saved = await generateG50Pdf(payload);
-        if (saved === "xlsx-fallback") toast.warning("Service PDF indisponible : le fichier Excel a été téléchargé à la place.");
+        if (saved === "xlsx-fallback") toast.warning(t("toast_pdf_unavailable_xlsx"));
       } else {
         await generateG50Xlsx(payload);
       }

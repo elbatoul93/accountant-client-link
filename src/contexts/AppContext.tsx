@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { loadTranslations, type Dict, type Lang } from "@/lib/i18n";
+import { detectBrowserLang, interpolate } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 
@@ -14,7 +15,7 @@ export interface User {
 interface AppContextValue {
   lang: Lang;
   setLang: (l: Lang) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
   dir: "ltr" | "rtl";
   user: User | null;
   loading: boolean;
@@ -67,7 +68,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const saved = localStorage.getItem("mgmtk_lang");
       if (saved === "ar" || saved === "fr" || saved === "en") return saved;
     } catch { /* storage unavailable */ }
-    return "ar";
+    // First visit: follow the browser's language when we support it, else Arabic.
+    return detectBrowserLang(typeof navigator !== "undefined" ? navigator.languages : undefined) ?? "ar";
   });
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -158,11 +160,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [dict, setDict] = useState<Dict | null>(null);
   useEffect(() => {
     let cancelled = false;
-    loadTranslations(lang).then((d) => { if (!cancelled) setDict(d); });
+    const apply = (d: Dict) => { if (!cancelled) setDict(d); };
+    // A failed chunk load (offline, or a stale tab after a deploy) must never leave the app blank:
+    // retry once, then fall back to English, then render with raw keys.
+    loadTranslations(lang)
+      .catch(() => loadTranslations(lang))
+      .catch(() => loadTranslations("en"))
+      .catch(() => ({} as Dict))
+      .then(apply);
     return () => { cancelled = true; };
   }, [lang]);
 
-  const t = useCallback((key: string) => dict?.[key] ?? key, [dict]);
+  const t = useCallback(
+    (key: string, params?: Record<string, string | number>) => interpolate(dict?.[key] ?? key, params),
+    [dict],
+  );
 
   const logout = useCallback(async () => {
     let uid: string | null = null;

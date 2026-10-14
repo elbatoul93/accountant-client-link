@@ -1,3 +1,4 @@
+import { useFormat } from "@/hooks/useFormat";
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ import { Client } from "@/pages/accountant/shared";
 import { EmptyState } from "@/pages/accountant/ui";
 
 export const AccountantVaultView = ({ t, entries }: { t: (k: string) => string; entries: VaultEntry[] }) => {
+  const fmt = useFormat();
   const groups = useMemo(() => {
     const m = new Map<string, VaultEntry[]>();
     for (const e of entries) {
@@ -34,7 +36,7 @@ export const AccountantVaultView = ({ t, entries }: { t: (k: string) => string; 
           {groups.map(([month, items]) => (
             <div key={month}>
               <div className="text-xs uppercase tracking-wide font-bold text-primary mb-2 border-b border-border/60 pb-1">
-                {new Date(month + "-01").toLocaleDateString("fr-DZ", { month: "long", year: "numeric" })}
+                {fmt.date(month + "-01", { month: "long", year: "numeric" })}
                 <Badge variant="secondary" className="ms-2 text-[10px]">{items.length}</Badge>
               </div>
               <div className="space-y-1.5">
@@ -55,7 +57,7 @@ export const AccountantVaultView = ({ t, entries }: { t: (k: string) => string; 
                       )}
                     </div>
                     <span className="text-muted-foreground text-[11px] ms-2 flex-shrink-0">
-                      {new Date(e.date).toLocaleDateString("fr-DZ")}
+                      {fmt.date(e.date)}
                     </span>
                   </div>
                 ))}

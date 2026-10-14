@@ -1,3 +1,5 @@
+import { useApp } from "@/contexts/AppContext";
+import { formatDate } from "@/lib/format";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +24,7 @@ const labelOf = (kind: ChecklistRow["kind"]): string =>
   DEFAULT_CHECKLIST.find((d) => d.kind === kind)?.labelFr || kind;
 
 export const DocChecklist = ({ t, clientRef, accountantMode, monthKey }: Props) => {
+  const { lang } = useApp();
   const month = monthKey || new Date().toISOString().slice(0, 7);
   const [entries, setEntries] = useState<ChecklistRow[]>([]);
 
@@ -51,7 +54,7 @@ export const DocChecklist = ({ t, clientRef, accountantMode, monthKey }: Props) 
   const total = entries.length || DEFAULT_CHECKLIST.length;
   const pct = total > 0 ? Math.round((received / total) * 100) : 0;
 
-  const monthLabel = new Date(month + "-01").toLocaleDateString("fr-DZ", { month: "long", year: "numeric" });
+  const monthLabel = formatDate(month + "-01", lang, { month: "long", year: "numeric" });
 
   return (
     <Card className="p-5 shadow-card border-primary/15">
@@ -85,7 +88,7 @@ export const DocChecklist = ({ t, clientRef, accountantMode, monthKey }: Props) 
                 <div className="text-[10px] text-muted-foreground">
                   {e.status === "missing"
                     ? t("chk_status_missing")
-                    : `${t(`chk_status_${e.status}`)}${e.receivedAt ? " • " + new Date(e.receivedAt).toLocaleDateString("fr-DZ") : ""}`}
+                    : `${t(`chk_status_${e.status}`)}${e.receivedAt ? " • " + formatDate(e.receivedAt, lang) : ""}`}
                 </div>
               </div>
               {accountantMode ? (
