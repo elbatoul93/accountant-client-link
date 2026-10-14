@@ -1,7 +1,8 @@
 name: Verify production deploy
 
 # After every push to main, wait for the Cloudflare Pages check on that commit and
-# confirm the live site serves the security headers. Fails (and emails the repo
+# confirm the live site serves the security headers, on pages.dev and on the production
+# domain (managementik.com), which can lag pages.dev by a minute after a deploy. Fails (and emails the repo
 # admins) when production did not deploy.
 on:
   push:
@@ -18,7 +19,9 @@ jobs:
     timeout-minutes: 20
     env:
       GH_TOKEN: ${{ github.token }}
+      # Cloudflare's built-in address for the Pages project, and the custom domain real users open.
       SITE_URL: https://accountant-client-link.pages.dev
+      PROD_URL: https://managementik.com
     steps:
       - name: Wait for the Cloudflare Pages check on this commit
         run: |
@@ -39,3 +42,29 @@ jobs:
           echo "$headers"
           echo "$headers" | grep -qi '^content-security-policy:' || { echo "::error::CSP header missing on $SITE_URL"; exit 1; }
           echo "$headers" | grep -qi '^strict-transport-security:' || { echo "::error::HSTS header missing on $SITE_URL"; exit 1; }
+      - name: Production domain serves the same build
+        run: |
+          bundle() { curl -fsS "$1/" | grep -o 'assets/index-[A-Za-z0-9_-]*\.js' | head -1; }
+          want=$(bundle "$SITE_URL")
+          [ -n "$want" ] || { echo "::error::Could not read the bundle name from $SITE_URL"; exit 1; }
+          for i in $(seq 1 30); do
+            got=$(bundle "$PROD_URL" || true)
+            echo "[$i] $PROD_URL serves ${got:-nothing}; $SITE_URL serves $want"
+            if [ "$got" = "$want" ]; then
+              headers=$(curl -fsSI "$PROD_URL/")
+              echo "$headers" | grep -qi '^content-security-policy:' || { echo "::error::CSP header missing on $PROD_URL"; exit 1; }
+              echo "$headers" | grep -qi '^strict-transport-security:' || { echo "::error::HSTS header missing on $PROD_URL"; exit 1; }
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "::error::$PROD_URL did not serve the latest build ($want) within 10 minutes"; exit 1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Login page renders on the production domain
+        run: node scripts/verify-site.mjs "$PROD_URL"

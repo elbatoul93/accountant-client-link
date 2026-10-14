@@ -9,4 +9,8 @@
   Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://*.supabase.co https://*.r2.dev; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io https://cloudflareinsights.com https://api.pwnedpasswords.com; frame-src 'self' blob: data: https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 
 /assets/*
-  Cache-Control: public, max-age=31536000, immutable
+  # Not immutable on purpose: for a file that does not exist (yet) Pages answers with index.html
+  # and this same header, and the managementik.com zone then cached that HTML under the .js
+  # name for a year, which blanks the app (module script served as text/html). With
+  # must-revalidate the edge re-checks the origin, so a bad entry heals as soon as the file exists.
+  Cache-Control: public, max-age=300, must-revalidate

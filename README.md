@@ -2,6 +2,8 @@
 
 React + Vite + Tailwind/shadcn front end on Supabase (auth, Postgres with RLS, storage, edge functions).
 
+Production: https://managementik.com (Cloudflare Pages; `accountant-client-link.pages.dev` is Cloudflare's built-in address for the same project).
+
 ## Develop
 ```
 npm ci
