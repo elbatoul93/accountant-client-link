@@ -309,7 +309,7 @@ export const en = {
   side_reports: "Reports",
   pay_run_post: "Run & Post",
   // Advanced Payroll
-  payx_engine: "Smart calculator (SS 9% • IRG progressive • Employer 26%)",
+  payx_engine: "Smart calculator (SS 9% • IRG progressive • Employer 25.5%)",
   payx_tab_employees: "Employees",
   payx_tab_cnas: "CNAS",
   payx_tab_movements: "Movements",
@@ -348,7 +348,7 @@ export const en = {
   payx_irg_total: "IRG withheld",
   payx_net_mass: "Net salary mass",
   payx_employer_cost: "Total employer cost",
-  payx_employer_cost_hint: "Gross + 26% CNAS employer share",
+  payx_employer_cost_hint: "Gross + 25.5% CNAS employer share",
   payx_nss: "CNAS Matricule",
   payx_client_optional: "Client (optional)",
   payx_hire_date: "Hire date",

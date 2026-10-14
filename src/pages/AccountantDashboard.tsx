@@ -1063,8 +1063,10 @@ const AccountantDashboard = () => {
             }).catch((e) => console.error("[notify]", e));
           }
           if (lockOpts) {
-            setLocks((p) => lockPeriod(p, lockOpts));
-            void finalizePayrollRun(lockOpts.clientId, lockOpts.period);
+            // Period locks and payroll runs are keyed by client ref, like the journal; the dialog hands us the portal user id.
+            const lockRef = { ...lockOpts, clientId: lockOpts.clientId ? refOfUser(lockOpts.clientId) : undefined };
+            setLocks((p) => lockPeriod(p, lockRef));
+            void finalizePayrollRun(lockRef.clientId, lockRef.period);
           }
           setOpenTool(null);
           setEditG50(null);

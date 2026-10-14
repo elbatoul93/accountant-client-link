@@ -301,7 +301,7 @@ export const fr: typeof en = {
   side_reports: "Rapports",
   pay_run_post: "Calculer & Comptabiliser",
   // Advanced Payroll
-  payx_engine: "Calculatrice intelligente (SS 9% • IRG progressif • Patronal 26%)",
+  payx_engine: "Calculatrice intelligente (SS 9% • IRG progressif • Patronal 25,5%)",
   payx_tab_employees: "Employés",
   payx_tab_cnas: "CNAS",
   payx_tab_movements: "Mouvements",
@@ -340,7 +340,7 @@ export const fr: typeof en = {
   payx_irg_total: "IRG retenu",
   payx_net_mass: "Masse nette",
   payx_employer_cost: "Coût total employeur",
-  payx_employer_cost_hint: "Brut + 26% part patronale CNAS",
+  payx_employer_cost_hint: "Brut + 25,5% part patronale CNAS",
   payx_nss: "Matricule CNAS",
   payx_client_optional: "Client (optionnel)",
   payx_hire_date: "Date d'embauche",
