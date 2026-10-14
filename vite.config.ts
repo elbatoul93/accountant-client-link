@@ -12,6 +12,18 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // The "-b2" suffix renames every built file once. The managementik.com edge had cached
+        // index.html under some old /assets names (see public/_headers); a new name is never
+        // in that cache. Change the suffix again only if a similar cleanup is ever needed.
+        entryFileNames: "assets/[name]-[hash]-b2.js",
+        chunkFileNames: "assets/[name]-[hash]-b2.js",
+        assetFileNames: "assets/[name]-[hash]-b2[extname]",
+      },
+    },
+  },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
