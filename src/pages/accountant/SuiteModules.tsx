@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2, Inbox, Users, FileText, BookOpen, FileDown, Receipt, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { computePayslip } from "@/lib/accounting/payroll";
 import { PcnPicker } from "@/components/PcnPicker";
 import {
   type JournalLine, type PeriodLock,
@@ -111,29 +112,6 @@ export function aggregateForG50(
   return { caHt, tvaCollected, tvaDeductible, tvaDue, salaries };
 }
 
-/* ===== IRG bracket (Algerian monthly, simplified) ===== */
-const computeIRG = (taxable: number): number => {
-  if (taxable <= 30000) return 0;
-  let irg = 0;
-  const brackets = [
-    { upTo: 30000, rate: 0 },
-    { upTo: 35000, rate: 0.20 },
-    { upTo: 40000, rate: 0.23 },
-    { upTo: 80000, rate: 0.27 },
-    { upTo: 160000, rate: 0.30 },
-    { upTo: 320000, rate: 0.33 },
-    { upTo: Infinity, rate: 0.35 },
-  ];
-  let prev = 0;
-  for (const b of brackets) {
-    const slice = Math.min(taxable, b.upTo) - prev;
-    if (slice > 0) irg += slice * b.rate;
-    prev = b.upTo;
-    if (taxable <= b.upTo) break;
-  }
-  return Math.round(irg);
-};
-
 /* ===== Payroll ===== */
 type ClientLite = { id: string; name: string; hasCacobatph?: boolean };
 
@@ -151,11 +129,7 @@ export const PayrollView = ({
   const [slip, setSlip] = useState<Employee | null>(null);
 
   const runPayroll = (e: Employee) => {
-    const gross = e.basic + e.iew + e.prc;
-    const ss = Math.round(gross * 0.09);
-    const taxable = gross - ss;
-    const irg = computeIRG(taxable);
-    const net = gross - ss - irg;
+    const { gross, ssEmployee: ss, irg, net } = computePayslip(e);
     const today = new Date().toISOString().slice(0, 10);
     const period = today.slice(0, 7);
     if (locks.some((l) => l.period === period && l.clientId === e.clientId)) {
@@ -208,11 +182,7 @@ export const PayrollView = ({
             </thead>
             <tbody>
               {employees.map((e) => {
-                const gross = e.basic + e.iew + e.prc;
-                const ss = gross * 0.09;
-                const taxable = gross - ss;
-                const irg = computeIRG(taxable);
-                const net = gross - ss - irg;
+                const { net } = computePayslip(e);
                 return (
                   <tr key={e.id} className="border-b border-border/50 last:border-0 hover:bg-muted/40">
                     <td className="py-3 font-semibold">{e.name}</td>
@@ -306,11 +276,7 @@ const AddEmployeeDialog = ({
 
 const PayslipDialog = ({ employee, onClose, t }: { employee: Employee | null; onClose: () => void; t: (k: string) => string }) => {
   if (!employee) return null;
-  const gross = employee.basic + employee.iew + employee.prc;
-  const ss = Math.round(gross * 0.09);
-  const taxable = gross - ss;
-  const irg = computeIRG(taxable);
-  const net = gross - ss - irg;
+  const { gross, ssEmployee: ss, irg, net } = computePayslip(employee);
   const print = () => window.print();
   return (
     <Dialog open={!!employee} onOpenChange={(o) => !o && onClose()}>

@@ -195,7 +195,7 @@ export const buildFiscalCalendar = (
   }
 
   // IBS acomptes (Réel/Simplifié)
-  for (const m of ["03", "06", "09", "11"]) {
+  for (const m of ["03", "06", "11"]) { // 3 acomptes (CIDTA art. 356)
     events.push({
       id: `ibs-${year}-${m}`,
       date: `${year}-${m}-20`,

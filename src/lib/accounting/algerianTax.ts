@@ -19,6 +19,10 @@ export const IBS_RATES: Record<IbsSector, number> = {
   SERVICES: 26,
 };
 
+/** IBS acomptes: 30 % of the previous year's IBS, due 20 Mar, 20 Jun, 20 Nov. */
+export const IBS_ACOMPTE_RATE = 30;
+export const IBS_ACOMPTE_MONTHS = [3, 6, 11];
+
 /** Compute one IBS quarterly instalment = 30% × IBS N-1. */
 export const computeIbsAcompte = (
   ibsPriorYear: number,
@@ -137,8 +141,16 @@ export const computeTrwi = (kind: LegalEntityKind): number => TRWI_FEES[kind];
 
 /* ===================== TAP / TVA constants ===================== */
 
-/** Official Algerian TAP rate — 1% of monthly turnover (LF 2024). */
+/** Last TAP rate (1 %, 2 % before LF 2024 for some activities). */
 export const TAP_RATE = 1;
+
+/**
+ * The TAP (CIDTA art. 217-231) was repealed by LF 2024 art. 14 for periods
+ * from 1 January 2024. Earlier periods still use the legacy 1 % rate.
+ */
+export const TAP_REPEAL_PERIOD = "2024-01";
+export const tapRateForPeriod = (period: string): number =>
+  period < TAP_REPEAL_PERIOD ? TAP_RATE : 0;
 
 /** Standard Algerian VAT rates. */
 export const TVA_RATES = [0, 9, 19] as const;
@@ -272,7 +284,7 @@ export interface G50PreviewInput {
   tvaDeductible: number;
   /** Précompte (TVA credit) carried forward from prior month. */
   precompteFromPrev?: number;
-  tapRate?: number;        // default 1 (LF 2024)
+  tapRate?: number;        // default: 1 before 2024, 0 after (TAP repealed)
   irgSalaries: number;
   ibsAcompte?: number;     // monthly share of quarterly acompte
   tfpTapp?: TfpTappResult;
@@ -294,7 +306,7 @@ export interface G50Preview {
 }
 
 export const buildG50Preview = (input: G50PreviewInput): G50Preview => {
-  const tapRate = input.tapRate ?? TAP_RATE;
+  const tapRate = input.tapRate ?? tapRateForPeriod(input.period);
   const tva = computeTvaSettlement({
     period: input.period,
     tvaCollected: input.tvaCollected,
@@ -315,15 +327,17 @@ export const buildG50Preview = (input: G50PreviewInput): G50Preview => {
     section: "A",
     informational: true,
   });
-  lines.push({
-    code: "A-TAP",
-    label: "TAP — Taxe sur l'Activité Professionnelle",
-    base: input.caHt,
-    rate: tapRate,
-    amount: tap,
-    group: "TAP",
-    section: "A",
-  });
+  if (tapRate > 0) {
+    lines.push({
+      code: "A-TAP",
+      label: "TAP — Taxe sur l'Activité Professionnelle",
+      base: input.caHt,
+      rate: tapRate,
+      amount: tap,
+      group: "TAP",
+      section: "A",
+    });
+  }
 
   /* Section B — TVA (Sales / Purchases / Précompte) */
   lines.push({

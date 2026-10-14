@@ -26,7 +26,7 @@ import {
   IRG_PRO_BRACKETS_2024, computeIrgProfessionsLiberales,
   computeTfpTapp, TFP_TAPP_THRESHOLD,
   buildG50Preview, type G50Line, type G50Section,
-  TAP_RATE, buildEtat104,
+  tapRateForPeriod, IBS_ACOMPTE_MONTHS, buildEtat104,
 } from "@/lib/accounting/algerianTax";
 import { computeG50FromJournal, type JournalLine } from "@/lib/accounting/engine";
 import { type BillInvoice, type PrecompteMap, precompteKey } from "./SuiteModules";
@@ -69,7 +69,6 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
   const [ibsResult, setIbsResult] = useState<string>("0");
   const ibsAcompte = computeIbsAcompte(Number(ibsPrior || 0));
   const ibsAnnual = computeIbs(Number(ibsResult || 0), ibsSector);
-  const monthlyIbsShare = Math.round(ibsAcompte.perAcompte / 3);
 
   /* IRG state */
   const [irgTaxable, setIrgTaxable] = useState<string>("0");
@@ -86,11 +85,13 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
   });
 
   /* G50 — pulls live amounts from journal then layers our calculators on top.
-   * TAP forced to 1% (LF 2024). Précompte is auto-loaded from previous month.
+   * TAP: 1% before 2024, repealed by LF 2024 (rate 0 from 2024-01). Précompte is auto-loaded from previous month.
    * TRWI (Radio/TV) removed from G50 per regulatory update. */
+  // Acomptes fall in March, June and November only (not spread monthly).
+  const monthlyIbsShare = IBS_ACOMPTE_MONTHS.includes(Number(period.slice(5, 7))) ? ibsAcompte.perAcompte : 0;
   const cid = clientId === "ALL" ? undefined : clientId;
   const liveG50 = useMemo(
-    () => computeG50FromJournal(journal, { clientId: cid, period, tapRate: TAP_RATE }),
+    () => computeG50FromJournal(journal, { clientId: cid, period, tapRate: tapRateForPeriod(period) }),
     [journal, cid, period],
   );
 
@@ -103,7 +104,7 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
       tvaCollected: liveG50.tvaCollected,
       tvaDeductible: liveG50.tvaDeductible,
       precompteFromPrev,
-      tapRate: TAP_RATE,
+      tapRate: tapRateForPeriod(period),
       irgSalaries: liveG50.irgSalaries,
       ibsAcompte: monthlyIbsShare,
       tfpTapp,
