@@ -19,7 +19,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { toast } from "sonner";
 import { pluralKey } from "@/lib/format";
-import { BillingView, JournalView, useSuiteData, aggregateForG50 } from "./accountant/SuiteModules";
+import { BillingView, JournalView, useSuiteData, aggregateForG50, precompteKey } from "./accountant/SuiteModules";
+import { prevPeriod } from "@/lib/accounting/algerianTax";
 import { PayrollAdvanced } from "./accountant/PayrollAdvanced";
 import { ReportsView } from "./accountant/ReportsView";
 import { TaxIntelView } from "./accountant/TaxIntelView";
@@ -949,7 +950,7 @@ const AccountantDashboard = () => {
                 clients={clients.map((c) => ({ id: c.id, name: c.name }))} locks={locks} />
             )}
             {view === "reports" && (
-              <ReportsView t={t} journal={journal} locks={locks}
+              <ReportsView t={t} journal={journal} locks={locks} precompte={precompte}
                 clients={clients.map((c) => ({ id: c.id, name: c.name }))} />
             )}
             {view === "taxintel" && (
@@ -1017,7 +1018,10 @@ const AccountantDashboard = () => {
         clients={g50Clients} t={t}
         editing={editG50}
         getAggregates={(cid) => aggregateForG50(refOfUser(cid), bills, employees)}
-        getLiveG50={(cid, period) => computeG50FromJournal(journal, { clientId: refOfUser(cid), period })}
+        getLiveG50={(cid, period) => computeG50FromJournal(journal, {
+          clientId: refOfUser(cid), period,
+          precompteFromPrev: precompte[precompteKey(refOfUser(cid), prevPeriod(period))] ?? 0,
+        })}
         onGenerate={(d, shared, lockOpts) => {
           setDecls((p) => [{ ...d, clientId: refOfUser(d.clientId) }, ...p]);
           if (shared) {

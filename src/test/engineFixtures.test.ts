@@ -134,3 +134,17 @@ describe("payroll mass", () => {
     expect(mass.employees).toBe(2);
   });
 });
+
+describe("G50 from journal carries the VAT credit", () => {
+  const lines = postSalesInvoice({ date: "2026-09-05", ht: 100_000, tva: 19_000, ttc: 119_000, party: "C", number: "F1" });
+  it("uses the previous month's précompte before computing VAT due", () => {
+    const g = computeG50FromJournal(lines, { period: "2026-09", precompteFromPrev: 5_000 });
+    expect(g.tvaDue).toBe(14_000);
+    expect(g.precompteToNext).toBe(0);
+  });
+  it("rolls an unused credit forward", () => {
+    const g = computeG50FromJournal(lines, { period: "2026-09", precompteFromPrev: 30_000 });
+    expect(g.tvaDue).toBe(0);
+    expect(g.precompteToNext).toBe(11_000);
+  });
+});
