@@ -1,3 +1,4 @@
+import { readJson } from "@/lib/safeStorage";
 import { useEffect, useMemo, useState } from "react";
 import { useFmtDZD } from "@/lib/useFormat";
 import { Card } from "@/components/ui/card";
@@ -55,13 +56,12 @@ export const KEY_LOCKS = "mgmtk_acc_period_locks";
 export const KEY_PRECOMPTE = "mgmtk_acc_tva_precompte";
 
 const load = <T,>(k: string): T[] => {
-  const raw = localStorage.getItem(k);
-  return raw ? JSON.parse(raw) : [];
+  const v = readJson<T[]>(k, []);
+  return Array.isArray(v) ? v : [];
 };
 
 const loadObj = <T extends object>(k: string, def: T): T => {
-  const raw = localStorage.getItem(k);
-  return raw ? { ...def, ...JSON.parse(raw) } : def;
+  return { ...def, ...readJson<Partial<T>>(k, {}) };
 };
 
 const Empty = ({ label }: { label: string }) => (

@@ -1,3 +1,4 @@
+import { readJson } from "@/lib/safeStorage";
 import { useEffect, useMemo, useState } from "react";
 import { useFmtDZD } from "@/lib/useFormat";
 import { Card } from "@/components/ui/card";
@@ -23,8 +24,8 @@ interface ClientLite { id: string; name: string }
 
 const KEY_ASSETS = "mgmtk_acc_assets";
 const load = (): FixedAsset[] => {
-  const raw = localStorage.getItem(KEY_ASSETS);
-  return raw ? JSON.parse(raw) : [];
+  const v = readJson<FixedAsset[]>(KEY_ASSETS, []);
+  return Array.isArray(v) ? v : [];
 };
 
 export const AssetsView = ({ t, clients }: { t: (k: string) => string; clients: ClientLite[] }) => {
