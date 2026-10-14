@@ -1,1 +1,4 @@
 project_id = "kjdokftgjldqriwyeuox"
+
+[functions.g50-pdf]
+verify_jwt = true
