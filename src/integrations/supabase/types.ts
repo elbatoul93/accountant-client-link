@@ -758,6 +758,22 @@ export type Database = {
         Update: never
         Relationships: []
       }
+      security_alerts: {
+        Row: {
+          accountant_id: string | null
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          at: string
+          dedupe_key: string | null
+          detail: Json
+          id: string
+          kind: string
+          severity: string
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           accountant_id: string
@@ -1153,6 +1169,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_ack_security_alert: { Args: { _id: string }; Returns: undefined }
+      admin_list_security_alerts: {
+        Args: { _limit?: number; _only_open?: boolean }
+        Returns: Database["public"]["Tables"]["security_alerts"]["Row"][]
+      }
+      admin_open_alert_count: { Args: never; Returns: number }
       admin_get_billing_settings: { Args: never; Returns: Json }
       admin_list_receipts: {
         Args: { _accountant_id?: string }
