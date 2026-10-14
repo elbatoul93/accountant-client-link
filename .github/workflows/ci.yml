@@ -74,3 +74,24 @@ jobs:
       - run: scripts/test-db.sh
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+
+  e2e:
+    # Browser test of sign-up, email confirmation, sign-in and route guards against the built app.
+    # Supabase is replaced by an in-browser fake (e2e/fakeSupabase.ts); the database side is the `database` job.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

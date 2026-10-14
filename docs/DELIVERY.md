@@ -13,6 +13,9 @@ The `Verify production deploy` workflow runs after every push to `main`: it wait
 ## Database tests
 `scripts/test-db.sh` (`npm run test:db`) applies every file in `supabase/migrations` to an empty PostgreSQL database, using stand-ins for Supabase's `auth` and `storage` schemas (`supabase/tests/bootstrap.sql`), then runs `supabase/tests/*.test.sql`. CI runs it as the `database` job against a Postgres 15 service container; locally it starts a throwaway server if PostgreSQL is installed (or set `DATABASE_URL`). `rls.test.sql` covers signup, invite and activation flows and tenant isolation. Add a check there whenever a policy or trigger changes. Migrations must apply cleanly from scratch, so write new ones to be safe on a fresh database.
 
+## Browser tests
+`npm run test:e2e` (CI job `e2e`) builds the app against a fake Supabase origin and drives Chromium through sign-up, email confirmation, sign-in, the pending-accountant screen, session restore on reload and route guards. `e2e/fakeSupabase.ts` answers the Auth and REST calls inside the browser, so no database is needed; real triggers and RLS are covered by the `database` job. Locally run `npx playwright install chromium` once (or set `PW_CHROMIUM_PATH` to an existing Chromium). When the sign-in or sign-up screens change, update the selectors in `e2e/auth.spec.ts`.
+
 ## Releasing a change that needs a database change
 Order matters, because `main` goes live as soon as it is merged and the database does not:
 
