@@ -275,7 +275,11 @@ const ClientDashboard = () => {
       setUploadTitle("");
       setUploadDescription("");
     } catch (e: any) {
-      toast.error(e?.message || t("upload_failed"));
+      // Storage rejections (size / type rules) come back as raw English text
+      const msg = String(e?.message || "").toLowerCase();
+      if (msg.includes("exceed") || msg.includes("too large") || msg.includes("payload")) toast.error(t("upload_too_large"));
+      else if (msg.includes("mime") || msg.includes("not allowed") || msg.includes("not supported")) toast.error(t("upload_wrong_type"));
+      else toast.error(t("upload_failed"));
     } finally {
       setUploading(false);
       setUploadProgress(0);
