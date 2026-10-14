@@ -28,15 +28,6 @@ const load = (): FixedAsset[] => {
   return raw ? JSON.parse(raw) : [];
 };
 
-const CATEGORY_LABELS: Record<AssetCategory, string> = {
-  buildings:  "Constructions / Bâtiments",
-  industrial: "Matériel & Outillage industriel",
-  office:     "Mobilier & Équipement bureau",
-  computers:  "Matériel informatique",
-  vehicles:   "Véhicules de transport",
-  intangible: "Logiciels / Frais d'établissement",
-};
-
 export const AssetsView = ({ t, clients }: { t: (k: string) => string; clients: ClientLite[] }) => {
   const [assets, setAssets] = useState<FixedAsset[]>(() => load());
   const [open, setOpen] = useState(false);
@@ -107,7 +98,7 @@ export const AssetsView = ({ t, clients }: { t: (k: string) => string; clients: 
                         <div className="font-semibold">{a.label}</div>
                         <div className="text-xs text-muted-foreground font-mono">PCN {meta.pcn}</div>
                       </td>
-                      <td className="py-3 text-xs hidden md:table-cell">{CATEGORY_LABELS[a.category]}</td>
+                      <td className="py-3 text-xs hidden md:table-cell">{t(`assets_cat_${a.category}`)}</td>
                       <td className="py-3 text-xs hidden lg:table-cell font-mono">{a.acquiredAt}</td>
                       <td className="py-3 text-end font-mono text-xs">{fmtDZD(a.cost)}</td>
                       <td className="py-3 text-end font-mono text-xs">{rate}%</td>
@@ -162,7 +153,7 @@ const ScheduleTable = ({ asset, t }: { asset: FixedAsset; t: (k: string) => stri
           {t("assets_amortization_table")} — {asset.label}
         </h4>
         <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => {
-          const csv = "Année;Annuité;Cumul;VNC\n" +
+          const csv = [t("assets_year"), t("assets_annuity"), t("assets_cumulated"), t("assets_vnc")].join(";") + "\n" +
             sch.map((r) => `${r.year};${r.annuity};${r.cumulated};${r.vnc}`).join("\n");
           const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
           const url = URL.createObjectURL(blob);
@@ -238,7 +229,7 @@ const AddAssetDialog = ({ open, onOpenChange, clients, onAdd, t }: {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {(Object.keys(ASSET_RATES) as AssetCategory[]).map((k) => (
-                  <SelectItem key={k} value={k}>{CATEGORY_LABELS[k]} — {ASSET_RATES[k].rate}% / {ASSET_RATES[k].years} ans</SelectItem>
+                  <SelectItem key={k} value={k}>{t(`assets_cat_${k}`)} — {ASSET_RATES[k].rate}% / {ASSET_RATES[k].years} {t("assets_years_unit")}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

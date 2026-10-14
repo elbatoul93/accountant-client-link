@@ -1,3 +1,6 @@
+import { formatDate as formatDateLocale } from "@/lib/format";
+import type { Lang } from "@/lib/i18n";
+import { useApp } from "@/contexts/AppContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -23,9 +26,9 @@ const formatSize = (bytes: number | null) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-const formatDate = (iso: string) => {
+const formatDate = (iso: string, lang: Lang) => {
   try {
-    return new Date(iso).toLocaleDateString(undefined, {
+    return formatDateLocale(iso, lang, {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -51,6 +54,7 @@ export const ClientDocumentsSection = ({
   clientId: string;
   t: (k: string) => string;
 }) => {
+  const { lang } = useApp();
   const [docs, setDocs] = useState<ClientDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
@@ -133,7 +137,7 @@ export const ClientDocumentsSection = ({
                   </Badge>
                   <span>{formatSize(d.size)}</span>
                   <span>•</span>
-                  <span>{formatDate(d.created_at)}</span>
+                  <span>{formatDate(d.created_at, lang)}</span>
                 </div>
               </div>
               <Button
