@@ -77,9 +77,10 @@ export const LiasseFiscaleView = ({ t, journal, employees, clients }: Props) => 
         .total { font-weight:700; background:linear-gradient(135deg,#fef3c7,#fde68a); }
         .head { display:flex; justify-content:space-between; border-bottom:2px solid #0f766e; padding-bottom:10px; margin-bottom:16px; }
         .meta { font-size:11px; color:#6b7280; }
-      </style></head><body>${node.innerHTML}
-      <script>window.onload=()=>setTimeout(()=>window.print(),200);</script></body></html>`);
+      </style></head><body>${node.innerHTML}</body></html>`);
     w.document.close();
+    // Print from the opener: no inline script in the popup (CSP-friendly).
+    setTimeout(() => { w.focus(); w.print(); }, 300);
   };
 
   if (clients.length === 0) {
