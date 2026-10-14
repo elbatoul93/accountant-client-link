@@ -361,9 +361,9 @@ const ClientDashboard = () => {
             )}
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-primary">
-            {t("dash_cli_welcome")}, {user.name.split(" ")[0]} 👋
+            {t("dash_cli_welcome")}, {user?.name.split(" ")[0]} 👋
           </h1>
-          {user.company && <p className="text-muted-foreground mt-1">{user.company}</p>}
+          {user?.company && <p className="text-muted-foreground mt-1">{user.company}</p>}
         </div>
 
         <Tabs defaultValue="upload" className="w-full">
