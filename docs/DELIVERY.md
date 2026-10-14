@@ -7,7 +7,11 @@
 - Edge function secret: `CLOUDCONVERT_API_KEY` (`supabase secrets set CLOUDCONVERT_API_KEY=...`).
 
 ## Checks
+The `Verify production deploy` workflow runs after every push to `main`: it waits for the Cloudflare Pages check on that commit and checks that the live site serves the CSP and HSTS headers. A red run means production did not update. `SITE_URL` in the workflow is the default pages.dev address; change it if a custom domain is used.
 `.github/workflows/ci.yml` runs typecheck, lint, tests and build on every PR and push to `main`. Merge only when it is green.
+
+## Database tests
+`scripts/test-db.sh` (`npm run test:db`) applies every file in `supabase/migrations` to an empty PostgreSQL database, using stand-ins for Supabase's `auth` and `storage` schemas (`supabase/tests/bootstrap.sql`), then runs `supabase/tests/*.test.sql`. CI runs it as the `database` job against a Postgres 15 service container; locally it starts a throwaway server if PostgreSQL is installed (or set `DATABASE_URL`). `rls.test.sql` covers signup, invite and activation flows and tenant isolation. Add a check there whenever a policy or trigger changes. Migrations must apply cleanly from scratch, so write new ones to be safe on a fresh database.
 
 ## Releasing a change that needs a database change
 Order matters, because `main` goes live as soon as it is merged and the database does not:
@@ -26,7 +30,7 @@ Migrations must be backward compatible with the frontend currently live (add col
 - `SUPABASE_DB_PASSWORD`: the project's database password (Supabase dashboard > Project Settings > Database)
 
 ## Security headers
-`public/_headers` sets HSTS, nosniff, frame denial, referrer and permissions policies. The Content-Security-Policy is in Report-Only mode because the payslip and liasse print popups write an inline `<script>`; once those call `w.print()` from the opener, rename the header to `Content-Security-Policy` to enforce it.
+`public/_headers` sets HSTS, nosniff, frame denial, referrer/permissions policies and an enforced Content-Security-Policy. Scripts must be same-origin (no inline `<script>`, including in `document.write` popups). If a new feature needs another origin (fonts, images, API, analytics), add it to the matching directive in `_headers`; a blocked resource shows as a "Refused to ..." console error. Error reporting (Sentry) and Cloudflare Web Analytics hosts are already allowed.
 
 ## Lockfiles
-`package-lock.json` is the one CI uses. `bun.lock` / `bun.lockb` are leftovers from the Lovable template; do not edit them by hand.
+Both `package-lock.json` (npm) and `bun.lock` (bun) are kept in sync; the `lockfiles` CI job fails if either drifts from `package.json`. After changing dependencies run `npm install` and `npx bun@1.2.15 install` and commit both (newer bun versions write lockfileVersion 2, which the bun on Cloudflare cannot parse, so use 1.2.15). `bun.lock` was regenerated from the public registry (the old one pointed at a private Lovable mirror that returns 403) and the stale binary `bun.lockb` was removed.

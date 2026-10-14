@@ -1,0 +1,78 @@
+name: Nightly backup
+
+# Dumps the live database and storage, encrypts them with the PUBLIC key in
+# BACKUP_AGE_PUBLIC_KEY (only the holder of the private key can read them) and keeps
+# them as a private workflow artifact for 30 days. Does nothing until the secrets exist.
+# Restore steps: docs/BACKUP-RESTORE.md
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      BACKUP_AGE_PUBLIC_KEY: ${{ secrets.BACKUP_AGE_PUBLIC_KEY }}
+      PROJECT_REF: kjdokftgjldqriwyeuox
+    steps:
+      - name: Check secrets
+        id: gate
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_AGE_PUBLIC_KEY" ]; then
+            echo "::notice::Backups are not configured (missing SUPABASE_DB_URL or BACKUP_AGE_PUBLIC_KEY). Skipping."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+      - name: Install PostgreSQL 17 client and age
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17 age
+      - name: Dump database
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          mkdir -p out
+          stamp=$(date -u +%Y%m%dT%H%M%SZ)
+          echo "STAMP=$stamp" >> "$GITHUB_ENV"
+          # Application data and users. Excludes Supabase-internal schemas that it recreates itself.
+          pg_dump "$SUPABASE_DB_URL" --format=custom --no-owner --no-privileges \
+            --schema=public --schema=auth --schema=storage \
+            --file="out/db-$stamp.dump"
+          pg_restore --list "out/db-$stamp.dump" | wc -l
+      - name: Copy storage buckets
+        if: steps.gate.outputs.run == 'true' && env.SUPABASE_ACCESS_TOKEN != ''
+        run: |
+          npx --yes supabase@latest link --project-ref "$PROJECT_REF" || true
+          mkdir -p storage
+          npx --yes supabase@latest storage cp -r ss:///client-uploads ./storage/client-uploads --linked --experimental || echo "::warning::storage copy failed"
+          tar -czf "out/storage-$STAMP.tar.gz" storage
+      - name: Encrypt
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          for f in out/*; do age -r "$BACKUP_AGE_PUBLIC_KEY" -o "$f.age" "$f" && rm "$f"; done
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          name: backup-${{ env.STAMP }}
+          path: out/
+          retention-days: 30
+          if-no-files-found: error

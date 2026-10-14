@@ -1,4 +1,5 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { LangSwitcher } from "./LangSwitcher";
 import { Logo } from "./Logo";
 import { NotificationBell } from "./NotificationBell";
@@ -17,9 +18,11 @@ import { toast } from "sonner";
 export const SiteHeader = () => {
   const { t, user, logout } = useApp();
   const navigate = useNavigate();
+  const isAdmin = useIsAdmin(!!user) === "yes";
+  const onLanding = useLocation().pathname === "/";
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     toast.success(t("toast_logout"));
     navigate("/");
   };
@@ -29,7 +32,7 @@ export const SiteHeader = () => {
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center"><Logo /></Link>
 
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
+        <nav className={`${onLanding ? "hidden md:flex" : "hidden"} items-center gap-8 text-sm font-medium text-muted-foreground`}>
           <a href="#features" className="hover:text-primary transition-smooth">{t("nav_features")}</a>
           <a href="#about" className="hover:text-primary transition-smooth">{t("nav_about")}</a>
           <a href="#pricing" className="hover:text-primary transition-smooth">{t("nav_pricing")}</a>
@@ -59,6 +62,9 @@ export const SiteHeader = () => {
                 <DropdownMenuItem onClick={() => navigate(user.role === "accountant" ? "/dashboard/accountant" : "/dashboard/client")}>
                   <LayoutDashboard className="me-2 h-4 w-4" /> {t("nav_dashboard")}
                 </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem onClick={() => navigate("/admin")}>Admin</DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                   <LogOut className="me-2 h-4 w-4" /> {t("nav_logout")}

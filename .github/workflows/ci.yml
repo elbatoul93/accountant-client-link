@@ -35,3 +35,42 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+
+  lockfiles:
+    # Cloudflare Pages may install with bun or npm depending on which lockfile it finds,
+    # so both must stay in sync with package.json.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.15
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --dry-run --no-audit --no-fund --ignore-scripts
+
+  database:
+    # Applies every migration from scratch on plain PostgreSQL and runs supabase/tests/*.test.sql
+    # (signup, invite, activation, RLS isolation). See scripts/test-db.sh.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/test-db.sh
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres

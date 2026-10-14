@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { interpolate } from "@/lib/format";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, AlertTriangle, Clock, Timer } from "lucide-react";
@@ -108,7 +109,7 @@ export const FiscalCalendar = ({ t, regime, limit = 8, employeeCount, hasCacobat
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-semibold text-primary truncate">{e.label}</span>
+                    <span className="text-sm font-semibold text-primary truncate">{e.labelKey ? interpolate(t(e.labelKey), e.labelParams) : e.label}</span>
                     <Badge variant="outline" className="text-[9px] font-mono">{e.type}</Badge>
                     {e.quarterly && <Badge variant="outline" className="text-[9px] font-mono border-gold/40 text-gold-deep">{t("fcal_freq_quarterly")}</Badge>}
                   </div>

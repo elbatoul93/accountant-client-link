@@ -322,6 +322,34 @@ export interface ReminderClient {
  *  - the client has not uploaded any incoming invoice this month
  *  - we have not already nudged them this month
  */
+/** Reminder wording in one language at a time (the app language of whoever runs the sweep). */
+const reminderTexts = (month: string) => {
+  let lang = "fr";
+  try {
+    const saved = localStorage.getItem("mgmtk_lang");
+    if (saved === "en" || saved === "ar") lang = saved;
+  } catch { /* storage unavailable */ }
+  if (lang === "en") {
+    return {
+      title: "Missing documents",
+      message: `No document has been uploaded yet for ${month}.`,
+      chat: `📌 Automatic reminder: no document received for ${month}. Please upload your sales/purchase invoices before the 20th for the G50 return.`,
+    };
+  }
+  if (lang === "ar") {
+    return {
+      title: "وثائق ناقصة",
+      message: `لم يتم رفع أي وثيقة لشهر ${month}.`,
+      chat: `📌 تذكير تلقائي: لم نستلم أي وثيقة لشهر ${month}. يرجى رفع فواتير المبيعات والمشتريات قبل 20 من الشهر لإعداد التصريح G50.`,
+    };
+  }
+  return {
+    title: "Documents manquants",
+    message: `Aucun document n'a encore été déposé pour ${month}.`,
+    chat: `📌 Rappel automatique : aucun document reçu pour ${month}. Merci de téléverser vos factures de ventes/achats avant le 20 du mois pour la déclaration G50.`,
+  };
+};
+
 export const runUploadReminderSweep = (
   clients: ReminderClient[],
   accountantName = "Cabinet Comptable",
@@ -343,23 +371,20 @@ export const runUploadReminderSweep = (
     );
     if (hasUpload) continue;
 
-    const text =
-      `📌 Rappel automatique — Aucun document reçu pour ${month}. ` +
-      `Merci de téléverser vos factures de ventes/achats avant le 20 du mois pour la déclaration G50. ` +
-      `(تذكير: لم نستلم وثائقك لهذا الشهر).`;
+    const msg = reminderTexts(month);
 
     sendChatMessage({
       threadKey: chatThreadKey(c.email),
       fromRole: "accountant",
       fromName: accountantName,
-      text,
+      text: msg.chat,
     });
     pushNotification({
       forRole: "client",
       forEmail: c.email,
       fromName: accountantName,
-      title: "Documents manquants — رسالة من المحاسب",
-      message: `Aucun document n'a encore été déposé pour ${month}.`,
+      title: msg.title,
+      message: msg.message,
       type: "info",
       link: "/dashboard/client",
     });

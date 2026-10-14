@@ -1,3 +1,4 @@
+import { useFormat } from "@/hooks/useFormat";
 import { useEffect, useState } from "react";
 import { Bell, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import {
 } from "@/lib/portal";
 
 export const NotificationBell = ({ role, email, t }: { role: NotifRole; email?: string; t: (k: string) => string }) => {
+  const fmt = useFormat();
   const [items, setItems] = useState<PortalNotification[]>([]);
   const refresh = () => setItems(getNotifications(role, email));
   useEffect(() => {
@@ -22,7 +24,7 @@ export const NotificationBell = ({ role, email, t }: { role: NotifRole; email?: 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative" aria-label={t("notif_title")}>
           <Bell className="h-4 w-4" />
           {unread > 0 && (
             <Badge className="absolute -top-1 -end-1 h-4 min-w-[16px] px-1 rounded-full bg-gold text-gold-foreground border-0 text-[10px] font-bold leading-none flex items-center justify-center">
@@ -59,7 +61,7 @@ export const NotificationBell = ({ role, email, t }: { role: NotifRole; email?: 
                     <div className="text-xs font-semibold text-foreground truncate">{n.title}</div>
                     <div className="text-[11px] text-muted-foreground line-clamp-2">{n.message}</div>
                     <div className="text-[10px] text-muted-foreground mt-0.5">
-                      {new Date(n.createdAt).toLocaleString("fr-DZ")}
+                      {fmt.dateTime(n.createdAt)}
                     </div>
                   </div>
                 </div>

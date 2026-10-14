@@ -1,0 +1,41 @@
+name: Verify production deploy
+
+# After every push to main, wait for the Cloudflare Pages check on that commit and
+# confirm the live site serves the security headers. Fails (and emails the repo
+# admins) when production did not deploy.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SITE_URL: https://accountant-client-link.pages.dev
+    steps:
+      - name: Wait for the Cloudflare Pages check on this commit
+        run: |
+          for i in $(seq 1 60); do
+            out=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs" \
+              --jq '.check_runs[] | select(.name=="Cloudflare Pages") | "\(.status) \(.conclusion)"' | head -1)
+            echo "[$i] Cloudflare Pages: ${out:-not reported yet}"
+            case "$out" in
+              "completed success") exit 0 ;;
+              "completed "*) echo "::error::Cloudflare Pages build did not succeed ($out)"; exit 1 ;;
+            esac
+            sleep 20
+          done
+          echo "::error::Timed out waiting for the Cloudflare Pages check"; exit 1
+      - name: Live site serves the security headers
+        run: |
+          headers=$(curl -fsSI "$SITE_URL/")
+          echo "$headers"
+          echo "$headers" | grep -qi '^content-security-policy:' || { echo "::error::CSP header missing on $SITE_URL"; exit 1; }
+          echo "$headers" | grep -qi '^strict-transport-security:' || { echo "::error::HSTS header missing on $SITE_URL"; exit 1; }

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
-import { translations, Lang } from "@/lib/i18n";
+import { loadTranslations, type Dict, type Lang } from "@/lib/i18n";
+import { detectBrowserLang, interpolate } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 
@@ -9,12 +10,14 @@ export interface User {
   email: string;
   role: Role;
   company?: string;
+  /** Accountant activation state (profiles.account_status). Anything but "active" blocks the dashboard. */
+  accountStatus?: "pending" | "active" | "suspended";
 }
 
 interface AppContextValue {
   lang: Lang;
   setLang: (l: Lang) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
   dir: "ltr" | "rtl";
   user: User | null;
   loading: boolean;
@@ -67,7 +70,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const saved = localStorage.getItem("mgmtk_lang");
       if (saved === "ar" || saved === "fr" || saved === "en") return saved;
     } catch { /* storage unavailable */ }
-    return "ar";
+    // First visit: follow the browser's language when we support it, else Arabic.
+    return detectBrowserLang(typeof navigator !== "undefined" ? navigator.languages : undefined) ?? "ar";
   });
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -125,6 +129,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         .select("name,email,company,user_type")
         .eq("user_id", uid)
         .maybeSingle();
+      // Separate query so a database without the activation column yet still loads the profile.
+      // Any error means "no gate" (active); the database rejects a pending account's data anyway.
+      const { data: statusRow, error: statusErr } = await supabase
+        .from("profiles")
+        .select("account_status" as never)
+        .eq("user_id", uid)
+        .maybeSingle();
+      const rawStatus = statusErr ? null : (statusRow as { account_status?: string } | null)?.account_status;
+      const accountStatus: User["accountStatus"] =
+        rawStatus === "pending" || rawStatus === "suspended" ? rawStatus : "active";
       if (activeUid.current !== uid) return; // signed out or switched account meanwhile
       profileUid.current = uid;
       const resolvedName =
@@ -137,6 +151,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         // profiles.user_type is the source of truth; user_metadata is user-editable.
         role: profile?.user_type ?? role,
         company: profile?.company ?? meta2.company ?? undefined,
+        accountStatus,
       });
       setLoading(false);
     }, 0);
@@ -154,10 +169,25 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const setLang = useCallback((l: Lang) => setLangState(l), []);
 
-  const t = useCallback((key: string) => {
-    const dict = translations[lang] as Record<string, string>;
-    return dict[key] ?? translations.en[key as keyof typeof translations.en] ?? key;
+  // Keep the previous dictionary while the next language loads so the UI never flashes raw keys.
+  const [dict, setDict] = useState<Dict | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const apply = (d: Dict) => { if (!cancelled) setDict(d); };
+    // A failed chunk load (offline, or a stale tab after a deploy) must never leave the app blank:
+    // retry once, then fall back to English, then render with raw keys.
+    loadTranslations(lang)
+      .catch(() => loadTranslations(lang))
+      .catch(() => loadTranslations("en"))
+      .catch(() => ({} as Dict))
+      .then(apply);
+    return () => { cancelled = true; };
   }, [lang]);
+
+  const t = useCallback(
+    (key: string, params?: Record<string, string | number>) => interpolate(dict?.[key] ?? key, params),
+    [dict],
+  );
 
   const logout = useCallback(async () => {
     let uid: string | null = null;
@@ -174,7 +204,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AppContext.Provider value={value}>
-      {children}
+      {dict ? children : null}
     </AppContext.Provider>
   );
 };

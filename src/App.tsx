@@ -10,12 +10,16 @@ import Login from "./pages/Login.tsx";
 import Signup from "./pages/Signup.tsx";
 import InviteSignup from "./pages/InviteSignup.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import RecoveryRedirect from "./components/RecoveryRedirect";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Privacy from "./pages/legal/Privacy.tsx";
+import Terms from "./pages/legal/Terms.tsx";
 import ForgotPassword from "./pages/ForgotPassword.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const AccountantDashboard = lazy(() => import("./pages/AccountantDashboard.tsx"));
+const Admin = lazy(() => import("./pages/Admin.tsx"));
 const ClientDashboard = lazy(() => import("./pages/ClientDashboard.tsx"));
 
 const PageSpinner = () => (
@@ -35,17 +39,21 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <RecoveryRedirect />
           <ErrorBoundary>
           <Suspense fallback={<PageSpinner />}>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/invite/:token" element={<InviteSignup />} />
             <Route path="/dashboard/accountant" element={<ProtectedRoute role="accountant"><AccountantDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/client" element={<ProtectedRoute role="client"><ClientDashboard /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>

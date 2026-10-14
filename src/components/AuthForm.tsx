@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/Logo";
 import { LangSwitcher } from "@/components/LangSwitcher";
@@ -89,6 +90,8 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
     })();
   }, [isInvite, token]);
 
+  const [accepted, setAccepted] = useState(false);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -99,6 +102,10 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
     const needsName = mode === "signup" && !(isInvite && prefillName);
     if (needsName && !name.trim()) {
       setFormError(t("auth_name_required"));
+      return;
+    }
+    if (mode === "signup" && !accepted) {
+      setFormError(t("auth_consent_required"));
       return;
     }
     setBusy(true);
@@ -281,6 +288,18 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
                   <p id="password-hint" className="text-xs text-muted-foreground">{t("auth_password_hint")}</p>
                 )}
               </div>
+
+              {mode === "signup" && (
+                <div className="flex items-start gap-2">
+                  <Checkbox id="accept-terms" checked={accepted} onCheckedChange={(v) => setAccepted(v === true)} className="mt-0.5" />
+                  <Label htmlFor="accept-terms" className="text-xs font-normal leading-relaxed text-muted-foreground">
+                    {t("auth_consent_prefix")}{" "}
+                    <Link to="/terms" target="_blank" className="text-primary underline">{t("landing_terms")}</Link>{" "}
+                    {t("auth_consent_and")}{" "}
+                    <Link to="/privacy" target="_blank" className="text-primary underline">{t("landing_privacy")}</Link>
+                  </Label>
+                </div>
+              )}
 
               {formError && (
                 <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">

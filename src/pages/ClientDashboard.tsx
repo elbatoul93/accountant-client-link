@@ -1,69 +1,37 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useDropzone } from "react-dropzone";
+import { formatDateTime } from "@/lib/format";
 import { useApp } from "@/contexts/AppContext";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  UploadCloud, FileText, CheckCircle2, Clock, FileImage, Inbox, Trash2, Receipt, ShieldCheck,
-  FolderOpen, Download, PenTool, Archive, FileSignature, Eye, CalendarDays,
-} from "lucide-react";
-import { Navigate } from "react-router-dom";
+import { UploadCloud, FileText, CheckCircle2, Clock, FileImage, Inbox, Trash2, Receipt, ShieldCheck, FolderOpen, Download, PenTool, Archive, FileSignature, Eye, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { SignaturePad } from "@/components/SignaturePad";
 import { ChatTab } from "@/components/ChatTab";
 import { MessageCircle } from "lucide-react";
 import { DocChecklist } from "@/components/DocChecklist";
 import { DocPreviewDialog } from "@/components/DocPreviewDialog";
 import { WorkflowBadge } from "@/components/WorkflowStatus";
 import { FiscalCalendar } from "@/components/FiscalCalendar";
-import {
-  addIncomingInvoice, pushNotification, getVault, onPortalChange, type VaultEntry,
-} from "@/lib/portal";
+import { addIncomingInvoice, pushNotification, getVault, onPortalChange, type VaultEntry } from "@/lib/portal";
 import { loadSharedDocsForClient, signSharedDocDb } from "@/lib/accountantStore";
-
-interface Doc { id?: string; file_path?: string; name: string; size: string; date: string; status: "processed" | "pending" }
-type DeclType = "G50" | "CNAS" | "CASNOS" | "CACOBATPH" | "TAP" | "IBS" | "FS" | "G12" | "CP";
-type TaxRegime = "REEL" | "SIMPLIFIE" | "IFU";
-interface Decl { id: string; clientId: string; clientName: string; type: DeclType; amount: number; due: string; status: "upcoming" | "filed" | "overdue" }
-interface Invoice { id: string; clientId: string; clientName: string; amount: number; date: string; status: string }
-interface ClientRow { id: string; name: string; taxId: string; contact: string; taxRegime?: TaxRegime }
-interface SharedDoc {
-  id: string; clientId: string; clientName: string; clientEmail: string;
-  type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string;
-  payload?: string; fileName?: string; mimeType?: string; fileData?: string;
-  signatureDataUrl?: string; signedAt?: string; signedBy?: string;
-  workflow?: "draft" | "review" | "sent" | "signed" | "filed";
-}
-
-const REGIME_DECLS: Record<TaxRegime, DeclType[]> = {
-  REEL:      ["G50", "TAP", "IBS", "FS"],
-  SIMPLIFIE: ["G50", "TAP", "IBS", "FS"],
-  IFU:       ["G12", "CP"],
-};
-const regimeShort = (r?: TaxRegime) =>
-  r === "REEL" ? "Réel" : r === "SIMPLIFIE" ? "Simplifié" : r === "IFU" ? "IFU" : "";
-
-const fmtDZD = (n: number) =>
-  `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
-
-const STORAGE_KEY = "mgmtk_client_docs";
+import { readJson } from "@/lib/safeStorage";
+import { Decl, DeclType, Doc, Invoice, MAX_UPLOAD_BYTES, REGIME_DECLS, STORAGE_KEY, SharedDoc, TaxRegime, fmtDZD, regimeShort, safeParse } from "@/pages/client/shared";
+import { SignDialog } from "@/pages/client/SignAndVault";
 
 const ClientDashboard = () => {
-  const { t, user } = useApp();
+  const { t, user, lang } = useApp();
   const [docs, setDocs] = useState<Doc[]>(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const cached = readJson<Doc[]>(STORAGE_KEY, []);
+    return Array.isArray(cached) ? cached : [];
   });
   const [tick, setTick] = useState(0);
   const [signing, setSigning] = useState<SharedDoc | null>(null);
@@ -74,8 +42,12 @@ const ClientDashboard = () => {
 
   // Load shared documents from the DB (RLS scopes to this client).
   const refreshSharedDocs = useCallback(async () => {
-    const rows = await loadSharedDocsForClient();
-    setDbSharedDocs(rows as SharedDoc[]);
+    try {
+      const rows = await loadSharedDocsForClient();
+      setDbSharedDocs(rows as SharedDoc[]);
+    } catch {
+      toast.error(t("load_failed"), { id: "load-failed" });
+    }
   }, []);
   useEffect(() => { refreshSharedDocs(); }, [refreshSharedDocs]);
 
@@ -85,7 +57,10 @@ const ClientDashboard = () => {
       .from("shared_documents" as any)
       .select("id,title,file_path,created_at")
       .order("created_at", { ascending: false });
-    if (error || !data) return;
+    if (error || !data) {
+      toast.error(t("load_failed"), { id: "load-failed" });
+      return;
+    }
     setAccountantPdfs(data as any);
   }, []);
   useEffect(() => { refreshAccountantPdfs(); }, [refreshAccountantPdfs]);
@@ -265,7 +240,11 @@ const ClientDashboard = () => {
       setUploadTitle("");
       setUploadDescription("");
     } catch (e: any) {
-      toast.error(e?.message || t("upload_failed"));
+      // Storage rejections (size / type rules) come back as raw English text
+      const msg = String(e?.message || "").toLowerCase();
+      if (msg.includes("exceed") || msg.includes("too large") || msg.includes("payload")) toast.error(t("upload_too_large"));
+      else if (msg.includes("mime") || msg.includes("not allowed") || msg.includes("not supported")) toast.error(t("upload_wrong_type"));
+      else toast.error(t("upload_failed"));
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -274,7 +253,12 @@ const ClientDashboard = () => {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { "image/*": [], "application/pdf": [] },
+    accept: { "image/png": [], "image/jpeg": [], "application/pdf": [] },
+    maxSize: MAX_UPLOAD_BYTES,
+    onDropRejected: (rejections) => {
+      const code = rejections[0]?.errors[0]?.code;
+      toast.error(t(code === "file-too-large" ? "upload_too_large" : "upload_wrong_type"));
+    },
     multiple: false,
     disabled: uploading || !!pendingFile,
   });
@@ -285,11 +269,10 @@ const ClientDashboard = () => {
       totalDue: 0, myRegime: undefined as TaxRegime | undefined, requiredTypes: [] as DeclType[], vault: [] as VaultEntry[],
       myEmpCount: 0, myHasCacobatph: false,
     };
-    const allClients: any[] = JSON.parse(localStorage.getItem("mgmtk_acc_clients") || "[]");
-    const allDecls: Decl[] = JSON.parse(localStorage.getItem("mgmtk_acc_declarations") || "[]");
-    const allInvoices: Invoice[] = JSON.parse(localStorage.getItem("mgmtk_acc_invoices") || "[]");
-    const allShared: SharedDoc[] = JSON.parse(localStorage.getItem("mgmtk_acc_shared_docs") || "[]");
-    const allEmployees: any[] = JSON.parse(localStorage.getItem("mgmtk_acc_employees") || "[]");
+    const allClients: any[] = readJson("mgmtk_acc_clients", []);
+    const allDecls: Decl[] = readJson("mgmtk_acc_declarations", []);
+    const allInvoices: Invoice[] = readJson("mgmtk_acc_invoices", []);
+    const allEmployees: any[] = readJson("mgmtk_acc_employees", []);
     const mine = allClients.filter(
       (c) => c.contact?.toLowerCase() === user.email.toLowerCase()
     );
@@ -469,7 +452,7 @@ const ClientDashboard = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-semibold text-sm truncate">{p.title}</div>
-                            <div className="text-[11px] text-muted-foreground">{new Date(p.created_at).toLocaleString()}</div>
+                            <div className="text-[11px] text-muted-foreground">{formatDateTime(p.created_at, lang)}</div>
                           </div>
                           <Button
                             size="sm"
@@ -511,7 +494,7 @@ const ClientDashboard = () => {
                           <Badge className="bg-warning/15 text-warning-foreground border-warning/40 hover:bg-warning/20">
                             <Clock className="h-3 w-3 me-1" /> {t("dash_status_pending")}
                           </Badge>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeDoc(i)}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeDoc(i)} aria-label={t("common_delete")}>
                             <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                         </div>
@@ -626,7 +609,7 @@ const ClientDashboard = () => {
                         <div className="font-semibold text-sm text-foreground mt-1">{s.label}</div>
                         {s.signedAt && (
                           <div className="text-[11px] text-muted-foreground mt-0.5">
-                            {t("cli_signed_on")} {new Date(s.signedAt).toLocaleString("fr-DZ")}
+                            {t("cli_signed_on")} {formatDateTime(s.signedAt, lang)}
                           </div>
                         )}
                       </div>
@@ -763,163 +746,6 @@ const ClientDashboard = () => {
       </Dialog>
 
     </div>
-  );
-};
-
-const safeParse = (s: string): Record<string, string> | undefined => {
-  try { const o = JSON.parse(s); return typeof o === "object" && o ? o : undefined; } catch { return undefined; }
-};
-
-const SignDialog = ({
-  doc, onClose, onSigned, t,
-}: { doc: SharedDoc | null; onClose: () => void; onSigned: (id: string, sig: string) => void; t: (k: string) => string }) => {
-  const [sig, setSig] = useState<string | null>(null);
-  useEffect(() => { setSig(null); }, [doc?.id]);
-  if (!doc) return null;
-  const alreadySigned = !!doc.signedAt;
-  return (
-    <Dialog open={!!doc} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileSignature className="h-4 w-4 text-gold-deep" /> {doc.label}
-          </DialogTitle>
-        </DialogHeader>
-
-        {/* Document preview */}
-        <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
-          <div className="flex items-center justify-between">
-            <Badge variant="outline" className="font-mono text-[10px]">{doc.type}</Badge>
-            <span className="text-[11px] text-muted-foreground">{doc.date}</span>
-          </div>
-          <div className="text-sm font-semibold text-primary">{doc.label}</div>
-          {doc.payload && (() => {
-            try {
-              const p = JSON.parse(doc.payload);
-              return (
-                <div className="grid grid-cols-2 gap-2 text-[11px] mt-2">
-                  {Object.entries(p).slice(0, 8).map(([k, v]) => (
-                    <div key={k} className="flex justify-between gap-2 border-b border-border/40 py-1">
-                      <span className="text-muted-foreground">{k}</span>
-                      <span className="font-mono font-semibold text-foreground truncate">{String(v)}</span>
-                    </div>
-                  ))}
-                </div>
-              );
-            } catch { return null; }
-          })()}
-        </div>
-
-        {alreadySigned ? (
-          <div className="p-4 rounded-lg border-2 border-success/40 bg-success/5 text-center space-y-2">
-            <Badge className="bg-success/15 text-success border-success/40">
-              <CheckCircle2 className="h-3 w-3 me-1" /> {t("sig_signed_stamp")}
-            </Badge>
-            {doc.signatureDataUrl && (
-              <img src={doc.signatureDataUrl} alt={t("i18n_signature")} className="mx-auto h-20 object-contain" />
-            )}
-            <div className="text-xs text-muted-foreground">
-              {doc.signedBy} • {doc.signedAt && new Date(doc.signedAt).toLocaleString("fr-DZ")}
-            </div>
-          </div>
-        ) : (
-          <>
-            <div>
-              <h3 className="text-sm font-semibold text-primary mb-2">{t("sig_title")}</h3>
-              <SignaturePad onChange={setSig} t={t} />
-            </div>
-            <DialogFooter className="gap-2 flex-wrap">
-              <Button
-                variant="outlineGold"
-                onClick={() => {
-                  // Quick "click to sign" — generate a simple text signature
-                  const c = document.createElement("canvas");
-                  c.width = 520; c.height = 180;
-                  const ctx = c.getContext("2d")!;
-                  ctx.fillStyle = "#0a3055";
-                  ctx.font = "italic 48px 'Brush Script MT', cursive";
-                  ctx.fillText("✓ Signed", 30, 100);
-                  ctx.font = "14px sans-serif";
-                  ctx.fillText(new Date().toLocaleString("fr-DZ"), 30, 140);
-                  onSigned(doc.id, c.toDataURL("image/png"));
-                }}
-              >
-                <CheckCircle2 className="h-3.5 w-3.5" /> {t("sig_click_to_sign")}
-              </Button>
-              <Button
-                variant="gold"
-                onClick={() => {
-                  if (!sig) { toast.error(t("sig_required")); return; }
-                  onSigned(doc.id, sig);
-                }}
-              >
-                <PenTool className="h-3.5 w-3.5" /> {t("sig_apply")}
-              </Button>
-            </DialogFooter>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-const VaultView = ({ entries, t }: { entries: VaultEntry[]; t: (k: string) => string }) => {
-  const groups = useMemo(() => {
-    const m = new Map<string, VaultEntry[]>();
-    for (const e of entries) {
-      const arr = m.get(e.monthKey) || [];
-      arr.push(e);
-      m.set(e.monthKey, arr);
-    }
-    return [...m.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [entries]);
-
-  return (
-    <Card className="p-6 shadow-card">
-      <h2 className="text-lg font-bold text-primary mb-1 flex items-center gap-2">
-        <Archive className="h-4 w-4 text-gold-deep" /> {t("vault_title")}
-      </h2>
-      <p className="text-xs text-muted-foreground mb-5">{t("vault_subtitle")}</p>
-
-      {entries.length === 0 ? (
-        <div className="text-center py-10 border border-dashed border-border rounded-lg">
-          <p className="text-sm text-muted-foreground">{t("vault_empty")}</p>
-        </div>
-      ) : (
-        <div className="space-y-5">
-          {groups.map(([month, items]) => (
-            <div key={month}>
-              <div className="text-xs uppercase tracking-wide font-bold text-primary mb-2 border-b border-border/60 pb-1">
-                {new Date(month + "-01").toLocaleDateString("fr-DZ", { month: "long", year: "numeric" })}
-                <Badge variant="secondary" className="ms-2 text-[10px]">{items.length}</Badge>
-              </div>
-              <div className="space-y-1.5">
-                {items.map((e) => (
-                  <div key={e.id} className="flex items-center justify-between p-2.5 rounded border border-border/60 text-xs hover:border-primary/40 transition-smooth">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <Badge variant="outline" className="font-mono text-[10px]">{e.type}</Badge>
-                      <span className="font-medium truncate">{e.label}</span>
-                      {e.kind === "shared_doc" && (
-                        e.signed ? (
-                          <Badge className="bg-success/15 text-success border-success/40 text-[10px]">
-                            <CheckCircle2 className="h-3 w-3 me-0.5" /> {t("vault_signed")}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-[10px]">{t("vault_unsigned")}</Badge>
-                        )
-                      )}
-                    </div>
-                    <span className="text-muted-foreground text-[11px] ms-2 flex-shrink-0">
-                      {new Date(e.date).toLocaleDateString("fr-DZ")}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </Card>
   );
 };
 

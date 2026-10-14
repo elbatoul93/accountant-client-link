@@ -1,3 +1,4 @@
+import { useFormat } from "@/hooks/useFormat";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -26,6 +27,7 @@ interface Row {
 const BUCKET = "client-uploads";
 
 export const IncomingDocumentsLive = ({ t }: Props) => {
+  const fmt = useFormat();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,14 +149,14 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
                   <span className="truncate max-w-[180px]">{r.file_name}</span>
                   {r.mime_type && <Badge variant="outline" className="text-[10px] font-mono">{r.mime_type}</Badge>}
                   {typeof r.size === "number" && <span>{(r.size / 1024).toFixed(1)} KB</span>}
-                  <span>• {new Date(r.created_at).toLocaleString()}</span>
+                  <span>• {fmt.dateTime(r.created_at)}</span>
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => open(r.file_path)}>
+                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => open(r.file_path)} aria-label={t("common_open")}>
                   <ExternalLink className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => download(r.file_path, r.file_name)}>
+                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => download(r.file_path, r.file_name)} aria-label={t("common_download")}>
                   <Download className="h-3.5 w-3.5" />
                 </Button>
               </div>

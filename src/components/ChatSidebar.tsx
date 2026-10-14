@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useApp } from "@/contexts/AppContext";
+import { formatDateTime } from "@/lib/format";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -121,7 +123,7 @@ export const ChatSidebar = ({ t, role, selfName, activeClientEmail, contacts }: 
             placeholder={t("chat_placeholder")}
             disabled={!target}
           />
-          <Button variant="gold" size="icon" onClick={send} disabled={!target || !draft.trim()}>
+          <Button variant="gold" size="icon" onClick={send} disabled={!target || !draft.trim()} aria-label={t("common_send")}>
             <Send className="h-4 w-4" />
           </Button>
         </div>
@@ -130,7 +132,9 @@ export const ChatSidebar = ({ t, role, selfName, activeClientEmail, contacts }: 
   );
 };
 
-const Bubble = ({ m, mine }: { m: ChatMessage; mine: boolean }) => (
+const Bubble = ({ m, mine }: { m: ChatMessage; mine: boolean }) => {
+  const { lang } = useApp();
+  return (
   <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
     <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
       mine ? "bg-primary text-primary-foreground rounded-ee-sm" : "bg-card border rounded-es-sm"
@@ -138,8 +142,9 @@ const Bubble = ({ m, mine }: { m: ChatMessage; mine: boolean }) => (
       {!mine && <div className="text-[10px] font-semibold opacity-70 mb-0.5">{m.fromName}</div>}
       <div className="whitespace-pre-wrap break-words">{m.text}</div>
       <div className={`text-[9px] mt-1 ${mine ? "opacity-70" : "text-muted-foreground"}`}>
-        {new Date(m.createdAt).toLocaleString("fr-DZ", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })}
+        {formatDateTime(m.createdAt, lang, { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })}
       </div>
     </div>
   </div>
 );
+};

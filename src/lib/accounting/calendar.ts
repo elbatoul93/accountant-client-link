@@ -11,6 +11,9 @@ export interface FiscalEvent {
   openDate?: string;
   type: "G50" | "CNAS" | "CASNOS" | "CACOBATPH" | "BILAN" | "DAS" | "G12" | "CP" | "TAP" | "IBS" | "301bis";
   label: string;
+  /** Translation key + params for `label` (the French `label` stays as a fallback). */
+  labelKey?: string;
+  labelParams?: Record<string, string | number>;
   regimes: TaxRegime[];
   monthly?: boolean;
   quarterly?: boolean;
@@ -55,6 +58,7 @@ export const buildFiscalCalendar = (
       openDate: iso(open),
       type: "G50",
       label: `Dépôt G50 — période ${py}-${pm}`,
+      labelKey: "cal_g50", labelParams: { period: `${py}-${pm}` },
       regimes: ["REEL", "SIMPLIFIE"],
       monthly: true,
       severity: "warn",
@@ -76,6 +80,7 @@ export const buildFiscalCalendar = (
         date: iso(due), openDate: iso(open),
         type: "CNAS",
         label: `CNAS mensuelle — période ${py}-${pm}`,
+      labelKey: "cal_cnas_m", labelParams: { period: `${py}-${pm}` },
         regimes: ["REEL", "SIMPLIFIE", "IFU"],
         monthly: true, severity: "info",
       });
@@ -84,6 +89,7 @@ export const buildFiscalCalendar = (
         date: iso(due), openDate: iso(open),
         type: "CASNOS",
         label: `CASNOS mensuelle — période ${py}-${pm}`,
+      labelKey: "cal_casnos_m", labelParams: { period: `${py}-${pm}` },
         regimes: ["REEL", "SIMPLIFIE", "IFU"],
         monthly: true, severity: "info",
       });
@@ -93,6 +99,7 @@ export const buildFiscalCalendar = (
           date: iso(due), openDate: iso(open),
           type: "CACOBATPH",
           label: `CACOBATPH mensuelle — période ${py}-${pm}`,
+      labelKey: "cal_cacobatph_m", labelParams: { period: `${py}-${pm}` },
           regimes: ["REEL", "SIMPLIFIE", "IFU"],
           monthly: true, severity: "info",
         });
@@ -112,6 +119,7 @@ export const buildFiscalCalendar = (
         date: iso(due), openDate: iso(open),
         type: "CNAS",
         label: `CNAS trimestrielle — ${qLabel}`,
+      labelKey: "cal_cnas_q", labelParams: { quarter: qLabel },
         regimes: ["REEL", "SIMPLIFIE", "IFU"],
         quarterly: true, severity: "info",
       });
@@ -120,6 +128,7 @@ export const buildFiscalCalendar = (
         date: iso(due), openDate: iso(open),
         type: "CASNOS",
         label: `CASNOS trimestrielle — ${qLabel}`,
+      labelKey: "cal_casnos_q", labelParams: { quarter: qLabel },
         regimes: ["REEL", "SIMPLIFIE", "IFU"],
         quarterly: true, severity: "info",
       });
@@ -129,6 +138,7 @@ export const buildFiscalCalendar = (
           date: iso(due), openDate: iso(open),
           type: "CACOBATPH",
           label: `CACOBATPH trimestrielle — ${qLabel}`,
+      labelKey: "cal_cacobatph_q", labelParams: { quarter: qLabel },
           regimes: ["REEL", "SIMPLIFIE", "IFU"],
           quarterly: true, severity: "info",
         });
@@ -142,6 +152,7 @@ export const buildFiscalCalendar = (
     date: `${year}-04-30`,
     type: "BILAN",
     label: `Dépôt Bilan & Liasse fiscale — ${year - 1}`,
+      labelKey: "cal_bilan", labelParams: { year: year - 1 },
     regimes: ["REEL", "SIMPLIFIE"],
     severity: "danger",
   });
@@ -152,6 +163,7 @@ export const buildFiscalCalendar = (
     openDate: `${year}-01-01`,
     type: "DAS",
     label: `DAS (Déclaration Annuelle des Salaires) — exercice ${year - 1}`,
+      labelKey: "cal_das", labelParams: { year: year - 1 },
     regimes: ["REEL", "SIMPLIFIE"],
     severity: "danger",
   });
@@ -162,6 +174,7 @@ export const buildFiscalCalendar = (
     openDate: `${year + 1}-01-01`,
     type: "DAS",
     label: `DAS (Déclaration Annuelle des Salaires) — exercice ${year}`,
+      labelKey: "cal_das", labelParams: { year },
     regimes: ["REEL", "SIMPLIFIE"],
     severity: "danger",
   });
@@ -170,16 +183,29 @@ export const buildFiscalCalendar = (
     date: `${year}-04-30`,
     type: "301bis",
     label: `État 301 bis — récapitulatif annuel salaires ${year - 1}`,
+      labelKey: "cal_301bis", labelParams: { year: year - 1 },
     regimes: ["REEL", "SIMPLIFIE"],
     severity: "warn",
   });
 
   // IFU specific
+  // G12 (forecast declaration): 30 June unless the DGI extends it. G12 bis (definitive): 20 January.
   events.push({
     id: `g12-${year}`,
-    date: `${year}-02-01`,
+    date: `${year}-06-30`,
     type: "G12",
-    label: `Déclaration G12 (IFU) — ${year - 1}`,
+    label: `Déclaration G12 (IFU) — ${year}`,
+      labelKey: "cal_g12", labelParams: { year },
+    regimes: ["IFU"],
+    severity: "danger",
+  });
+  events.push({
+    id: `g12bis-${year + 1}`,
+    date: `${year + 1}-01-20`,
+    openDate: `${year + 1}-01-01`,
+    type: "G12",
+    label: `Déclaration G12 bis (IFU) — ${year}`,
+      labelKey: "cal_g12bis", labelParams: { year },
     regimes: ["IFU"],
     severity: "danger",
   });
@@ -189,6 +215,7 @@ export const buildFiscalCalendar = (
       date: `${year}-${m}-20`,
       type: "CP",
       label: `Acompte trimestriel IFU (CP) — ${year}-${m}`,
+      labelKey: "cal_cp", labelParams: { period: `${year}-${m}` },
       regimes: ["IFU"],
       severity: "warn",
     });
@@ -201,6 +228,7 @@ export const buildFiscalCalendar = (
       date: `${year}-${m}-20`,
       type: "IBS",
       label: `Acompte provisionnel IBS (${m}) — ${year}`,
+      labelKey: "cal_ibs", labelParams: { month: m, year },
       regimes: ["REEL", "SIMPLIFIE"],
       severity: "info",
     });

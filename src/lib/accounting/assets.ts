@@ -40,23 +40,35 @@ export interface AmortizationRow {
   vnc: number;         // valeur nette comptable
 }
 
-/** Build full linear amortization schedule for one asset. */
+/**
+ * Linear schedule with prorata temporis: depreciation starts in the month of
+ * acquisition (taken as the commissioning month), so the first and last years
+ * are partial. Monthly charge = cost x rate / 12; the total life is 12 / rate months.
+ */
 export const buildAmortizationSchedule = (a: FixedAsset): AmortizationRow[] => {
   const meta = ASSET_RATES[a.category];
   const rate = (a.rateOverride ?? meta.rate) / 100;
-  const years = Math.round(1 / rate);
-  const annuity = a.cost * rate;
+  if (!(rate > 0) || !(a.cost > 0)) return [];
+  const totalMonths = Math.round(12 / rate);
+  const monthly = a.cost / totalMonths;
   const startYear = parseInt(a.acquiredAt.slice(0, 4), 10);
+  const startMonth = Math.min(12, Math.max(1, parseInt(a.acquiredAt.slice(5, 7), 10) || 1));
   const rows: AmortizationRow[] = [];
   let cumulated = 0;
-  for (let i = 0; i < years; i++) {
-    cumulated = Math.min(a.cost, cumulated + annuity);
+  let remaining = totalMonths;
+  let monthsThisYear = 13 - startMonth;
+  for (let i = 0; remaining > 0; i++) {
+    const months = Math.min(remaining, monthsThisYear);
+    const annuity = months === remaining ? a.cost - cumulated : monthly * months;
+    cumulated += annuity;
     rows.push({
       year: startYear + i,
-      annuity: i === years - 1 ? a.cost - (cumulated - annuity) : annuity,
+      annuity,
       cumulated,
       vnc: Math.max(0, a.cost - cumulated),
     });
+    remaining -= months;
+    monthsThisYear = 12;
   }
   return rows;
 };
