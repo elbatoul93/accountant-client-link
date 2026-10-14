@@ -116,7 +116,12 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
         if (error) {
           if (error.message.toLowerCase().includes("already")) {
             toast.error(t("auth_account_exists"));
-          } else if (error.message.toLowerCase().includes("invit") || error.message.toLowerCase().includes("expired") || error.message.toLowerCase().includes("database error saving new user")) {
+          } else if (
+            error.message.toLowerCase().includes("invit") ||
+            error.message.toLowerCase().includes("expired") ||
+            // Supabase hides the trigger's RAISE EXCEPTION text behind this generic message
+            (isInvite && error.message.toLowerCase().includes("database error"))
+          ) {
             toast.error(t("auth_invite_link_expired"));
           } else {
             toast.error(error.message);
