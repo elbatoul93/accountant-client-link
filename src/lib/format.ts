@@ -34,3 +34,13 @@ export const detectBrowserLang = (prefs: readonly string[] | undefined): Lang | 
   }
   return null;
 };
+
+/**
+ * Translation key for a count: `${base}_${category}` using the language's CLDR plural category
+ * (en/fr: one, other; ar: zero, one, two, few, many, other). Each language defines
+ * `_one`, `_two`, `_few`, `_many` and `_other`; categories a language does not use repeat `_other`.
+ */
+export const pluralKey = (base: string, n: number, lang: Lang): string => {
+  const cat = new Intl.PluralRules(localeFor(lang)).select(n);
+  return `${base}_${cat === "zero" ? "other" : cat}`;
+};
