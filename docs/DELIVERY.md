@@ -7,6 +7,7 @@
 - Edge function secret: `CLOUDCONVERT_API_KEY` (`supabase secrets set CLOUDCONVERT_API_KEY=...`).
 
 ## Checks
+The `Verify production deploy` workflow runs after every push to `main`: it waits for the Cloudflare Pages check on that commit and checks that the live site serves the CSP and HSTS headers. A red run means production did not update. `SITE_URL` in the workflow is the default pages.dev address; change it if a custom domain is used.
 `.github/workflows/ci.yml` runs typecheck, lint, tests and build on every PR and push to `main`. Merge only when it is green.
 
 ## Releasing a change that needs a database change
