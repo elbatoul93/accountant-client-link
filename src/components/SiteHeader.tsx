@@ -62,6 +62,7 @@ export const SiteHeader = () => {
                 <DropdownMenuItem onClick={() => navigate(user.role === "accountant" ? "/dashboard/accountant" : "/dashboard/client")}>
                   <LayoutDashboard className="me-2 h-4 w-4" /> {t("nav_dashboard")}
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/account")}>{t("nav_account")}</DropdownMenuItem>
                 {isAdmin && (
                   <DropdownMenuItem onClick={() => navigate("/admin")}>Admin</DropdownMenuItem>
                 )}
