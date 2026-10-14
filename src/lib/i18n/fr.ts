@@ -732,6 +732,7 @@ export const fr: typeof en = {
   chat_label: "Messagerie",
   acc_client_inactive: "Ce client n'a pas encore activé son compte.",
   acc_deleted: "Supprimé",
+  acc_delete_has_records: "Supprimez ou archivez d'abord les documents de ce client.",
   acc_invite_copied: "Lien d'invitation copié pour {name}",
   acc_no_g50_data: "Aucune donnée G50 enregistrée pour cette période",
   acc_copy_invite_title: "Copier le lien d'invitation",
