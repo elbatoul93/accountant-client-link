@@ -41,6 +41,7 @@ import { ChatTab } from "@/components/ChatTab";
 import { DocChecklist } from "@/components/DocChecklist";
 import { DocPreviewDialog } from "@/components/DocPreviewDialog";
 import { WorkflowBadge, WorkflowStepper } from "@/components/WorkflowStatus";
+import { finalizePayrollRun } from "@/lib/payrollStore";
 import { lockPeriod, computeG50FromJournal, type JournalLine } from "@/lib/accounting/engine";
 import { buildG50Preview, TAP_RATE } from "@/lib/accounting/algerianTax";
 import {
@@ -998,7 +999,10 @@ const AccountantDashboard = () => {
               refId: shared.id,
             });
           }
-          if (lockOpts) setLocks((p) => lockPeriod(p, lockOpts));
+          if (lockOpts) {
+            setLocks((p) => lockPeriod(p, lockOpts));
+            void finalizePayrollRun(lockOpts.clientId, lockOpts.period);
+          }
           setOpenTool(null);
           setEditG50(null);
         }}

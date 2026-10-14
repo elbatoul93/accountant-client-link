@@ -13,6 +13,7 @@ import {
 import { Plus, Trash2, Inbox, Users, FileText, BookOpen, FileDown, Receipt, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { computePayslip } from "@/lib/accounting/payroll";
+import { recordPayslip } from "@/lib/payrollStore";
 import { PcnPicker } from "@/components/PcnPicker";
 import {
   type JournalLine, type PeriodLock,
@@ -146,6 +147,7 @@ export const PayrollView = ({
       hasCacobatph: client?.hasCacobatph,
     });
     setJournal((p) => [...lines, ...p]);
+    void recordPayslip(e, e.clientId, period, lines[0]?.batchId);
     toast.success(`${t("eng_payroll_posted")} — ${e.name}`);
     setSlip(e);
   };

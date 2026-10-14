@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,10 +17,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  computePayslip, computePayrollMass, buildCnasAvis, buildMovements, buildDAS,
+  computePayslip, computePayrollMass, buildCnasAvis, buildMovements, buildDAS, buildDASFromPayslips,
   downloadCSV, type PayrollEmployee,
 } from "@/lib/accounting/payroll";
 import { postPayrollRun, type JournalLine, type PeriodLock } from "@/lib/accounting/engine";
+import { recordPayslip, loadPayslips } from "@/lib/payrollStore";
 import type { Employee } from "./SuiteModules";
 
 const fmtDZD = (n: number) =>
@@ -60,6 +61,19 @@ export const PayrollAdvanced = ({
   const list = employees as PayrollEmployee[];
   const mass = useMemo(() => computePayrollMass(list), [list]);
 
+  // DAS: use payslips really paid (saved payroll runs); fall back to a projection.
+  const [paid, setPaid] = useState<Awaited<ReturnType<typeof loadPayslips>>>([]);
+  useEffect(() => {
+    let live = true;
+    void loadPayslips(year).then((r) => { if (live) setPaid(r); });
+    return () => { live = false; };
+  }, [year]);
+  const dasReal = paid.length > 0;
+  const dasRows = useMemo(
+    () => (dasReal ? buildDASFromPayslips(paid, year) : buildDAS(list, year)),
+    [dasReal, paid, list, year],
+  );
+
   const runPayroll = (e: Employee) => {
     const p = computePayslip(e as PayrollEmployee);
     const period = today.slice(0, 7);
@@ -75,6 +89,7 @@ export const PayrollAdvanced = ({
       hasCacobatph: client?.hasCacobatph,
     });
     setJournal((p) => [...lines, ...p]);
+    void recordPayslip(e as PayrollEmployee, e.clientId, period, lines[0]?.batchId);
     toast.success(`${t("eng_payroll_posted")} — ${e.name}`);
     setSlip(e);
   };
@@ -267,7 +282,7 @@ export const PayrollAdvanced = ({
             </div>
             <div className="sm:col-span-2 flex items-end">
               <Button variant="gold" className="w-full" onClick={() => {
-                const rows = buildDAS(list, year);
+                const rows = dasRows;
                 if (!rows.length) { toast.info(t("payx_no_employees")); return; }
                 downloadCSV(`DAS_${year}.csv`, rows.map((r) => ({
                   Matricule: r.nss || "", Nom: r.name, Poste: r.position || "",
@@ -281,6 +296,7 @@ export const PayrollAdvanced = ({
             </div>
           </div>
 
+          <Badge variant="outline" className="text-xs">{t(dasReal ? "payx_das_real" : "payx_das_estimate")}</Badge>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -294,7 +310,7 @@ export const PayrollAdvanced = ({
                 </tr>
               </thead>
               <tbody>
-                {buildDAS(list, year).map((r) => (
+                {dasRows.map((r) => (
                   <tr key={r.employeeId} className="border-b border-border/50 last:border-0">
                     <td className="py-2.5">
                       <div className="font-semibold">{r.name}</div>
