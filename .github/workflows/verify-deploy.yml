@@ -59,3 +59,12 @@ jobs:
             sleep 20
           done
           echo "::error::$PROD_URL did not serve the latest build ($want) within 10 minutes"; exit 1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Login page renders on the production domain
+        run: node scripts/verify-site.mjs "$PROD_URL"
