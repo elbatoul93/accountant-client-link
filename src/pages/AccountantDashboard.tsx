@@ -17,7 +17,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
   Users, FileText, TrendingUp, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2, Inbox, FileDown,
@@ -26,6 +26,8 @@ import {
   Eye, ListChecks, MessageCircle, Link2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { readJson } from "@/lib/safeStorage";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { BillingView, JournalView, useSuiteData, aggregateForG50 } from "./accountant/SuiteModules";
@@ -110,8 +112,8 @@ const KEY_SHARED = "mgmtk_acc_shared_docs";
 const KEY_LEGAL = "mgmtk_acc_legal_docs";
 
 const load = <T,>(k: string): T[] => {
-  const raw = localStorage.getItem(k);
-  return raw ? JSON.parse(raw) : [];
+  const v = readJson<T[]>(k, []);
+  return Array.isArray(v) ? v : [];
 };
 
 type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports" | "taxintel" | "liasse" | "assets" | "calendar" | "incoming" | "vault" | "tracking" | "chat";
@@ -223,6 +225,9 @@ const AccountantDashboard = () => {
   const [openAdd, setOpenAdd] = useState(false);
   // Secure edit flow: clicking Edit triggers a password lock; on success the form opens.
   const [pendingEditClient, setPendingEditClient] = useState<Client | null>(null);
+  // Destructive list actions wait here until the user confirms.
+  const [confirmDelete, setConfirmDelete] = useState<(() => void) | null>(null);
+  const askDelete = (action: () => void) => setConfirmDelete(() => action);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [previewIncoming, setPreviewIncoming] = useState<IncomingInvoice | null>(null);
   const [editingShared, setEditingShared] = useState<SharedDoc | null>(null);
@@ -578,7 +583,26 @@ const AccountantDashboard = () => {
               >
                 <Plus className="h-4 w-4" /> {t("acc_new_client")}
               </Button>
-              <nav className="space-y-3">
+              {/* Phones: one compact picker instead of a 20-item list above the content */}
+              <div className="lg:hidden">
+                <Select
+                  value={view === "profile" ? "clients" : view}
+                  onValueChange={(v) => { setView(v as View); if (v !== "clients") setActiveClientId(null); }}
+                >
+                  <SelectTrigger aria-label={t("nav_go_to")}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {sidebarGroups.map((grp) => (
+                      <SelectGroup key={grp.label}>
+                        <SelectLabel>{grp.label}</SelectLabel>
+                        {grp.items.map((it) => (
+                          <SelectItem key={it.key} value={it.key}>{it.label}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <nav className="hidden lg:block space-y-3">
                 {sidebarGroups.map((grp) => (
                   <div key={grp.label}>
                     <div className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-gold-deep/80">
@@ -701,13 +725,13 @@ const AccountantDashboard = () => {
                       toast.error(e?.message || t("i18n_error_generic"));
                     }
                   }}
-                  onDelete={(id) => {
+                  onDelete={(id) => askDelete(() => {
                     setClients((p) => p.filter((x) => x.id !== id));
                     setInvoices((p) => p.filter((x) => x.clientId !== id));
                     setDecls((p) => p.filter((x) => x.clientId !== id));
                     setLegalDocs((p) => p.filter((x) => x.clientId !== id));
                     toast.success(t("acc_deleted"));
-                  }}
+                  })}
                   onExtract={setObligationsClient}
                   
                   onCopyInvite={async (c) => {
@@ -793,7 +817,7 @@ const AccountantDashboard = () => {
                 {invoices.length === 0 ? (
                   <EmptyState label={t("empty_no_invoices")} />
                 ) : (
-                  <InvoiceTable invoices={invoices} t={t} onDelete={(id) => setInvoices((p) => p.filter((x) => x.id !== id))} />
+                  <InvoiceTable invoices={invoices} t={t} onDelete={(id) => askDelete(() => setInvoices((p) => p.filter((x) => x.id !== id)))} />
                 )}
               </Card>
             )}
@@ -812,7 +836,7 @@ const AccountantDashboard = () => {
                       onAdd={(d) => setDecls((p) => [d, ...p])} t={t} />
                   </div>
                   <DeclList items={decls.filter((d) => d.type === "G50")} t={t}
-                    onDelete={(id) => setDecls((p) => p.filter((x) => x.id !== id))}
+                    onDelete={(id) => askDelete(() => setDecls((p) => p.filter((x) => x.id !== id)))}
                     onSend={(d) => {
                       const c = clients.find((x) => x.id === d.clientId);
                       handleSendG50(d, c?.name || d.clientName, c?.taxId, c?.bp);
@@ -841,7 +865,7 @@ const AccountantDashboard = () => {
                       onAdd={(d) => setDecls((p) => [d, ...p])} t={t} social />
                   </div>
                   <DeclList items={decls.filter((d) => d.type !== "G50")} t={t}
-                    onDelete={(id) => setDecls((p) => p.filter((x) => x.id !== id))} showType />
+                    onDelete={(id) => askDelete(() => setDecls((p) => p.filter((x) => x.id !== id)))} showType />
                 </Card>
               </div>
             )}
@@ -920,6 +944,13 @@ const AccountantDashboard = () => {
           setOpenAdd(false);
           void persistClientProfileFields(c);
         }} t={t} />
+
+      <ConfirmDeleteDialog
+        open={!!confirmDelete}
+        onOpenChange={(o) => { if (!o) setConfirmDelete(null); }}
+        onConfirm={() => { confirmDelete?.(); setConfirmDelete(null); }}
+        t={t}
+      />
 
       {/* Secure edit: password lock then edit form */}
       <LockDialog
@@ -1207,7 +1238,7 @@ const ClientsListView = ({
                       <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => onOpen(c)}>
                         {t("client_open_profile")} <ChevronRight className="h-3.5 w-3.5" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(c.id)}>
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(c.id)} aria-label={t("common_delete")}>
                         <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                       </Button>
                     </div>
@@ -1297,7 +1328,7 @@ const ClientProfileView = ({
       </Card>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 sm:grid sm:grid-cols-5">
           <TabsTrigger value="overview">{t("profile_tab_overview")}</TabsTrigger>
           <TabsTrigger value="files">{t("acc_tab_files")}</TabsTrigger>
           <TabsTrigger value="legal">{t("profile_tab_legal")}</TabsTrigger>
@@ -1355,10 +1386,10 @@ const ClientProfileView = ({
                     </div>
                     {d.fileData && (
                       <a href={d.fileData} download={d.fileName || `${d.label}.bin`}>
-                        <Button size="icon" variant="ghost" className="h-8 w-8"><Download className="h-3.5 w-3.5" /></Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8" aria-label={t("common_download")}><Download className="h-3.5 w-3.5" /></Button>
                       </a>
                     )}
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onDeleteLegal(d.id)}>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onDeleteLegal(d.id)} aria-label={t("common_delete")}>
                       <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                     </Button>
                   </div>
@@ -1464,8 +1495,10 @@ const ClientProfileView = ({
                 const ext = fmt === "pdf" ? "pdf" : "xlsx";
                 const fileName = `G50_${payload.nif || "NIF"}_${yyyy}_${mm}.${ext}`;
                 try {
-                  if (fmt === "pdf") await generateG50Pdf({ ...payload, fileName });
-                  else await generateG50Xlsx({ ...payload, fileName });
+                  if (fmt === "pdf") {
+                    const saved = await generateG50Pdf({ ...payload, fileName });
+                    if (saved === "xlsx-fallback") toast.warning("Service PDF indisponible : le fichier Excel a été téléchargé à la place.");
+                  } else await generateG50Xlsx({ ...payload, fileName });
                 } catch (e) {
                   console.error(e);
                   toast.error(fmt === "pdf" ? "Export PDF échoué" : "Export G50 échoué");
@@ -1543,7 +1576,7 @@ const InvoiceTable = ({ invoices, t, onDelete, compact }: { invoices: Invoice[];
             <td className="py-3"><Badge variant="outline" className="capitalize text-[10px]">{inv.status}</Badge></td>
             {onDelete && (
               <td className="py-3 text-end">
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(inv.id)}>
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(inv.id)} aria-label={t("common_delete")}>
                   <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
               </td>
@@ -1803,14 +1836,20 @@ const LockDialog = ({
 
   useEffect(() => { if (!open) { setPw(""); setError(""); } }, [open]);
 
-  const verify = () => {
+  const [checking, setChecking] = useState(false);
+
+  // Re-authenticate with the signed-in account's password before allowing edits.
+  const verify = async () => {
     if (!user) { setError(t("edit_lock_no_account")); return; }
-    const raw = localStorage.getItem("mgmtk_accounts");
-    const accounts: Record<string, { password: string }> = raw ? JSON.parse(raw) : {};
-    const acc = accounts[user.email.toLowerCase()];
-    if (!acc) { setError(t("edit_lock_no_account")); return; }
-    if (acc.password !== pw) { setError(t("edit_lock_wrong")); return; }
-    onUnlock();
+    if (!pw) { setError(t("edit_lock_wrong")); return; }
+    setChecking(true);
+    try {
+      const { error: authErr } = await supabase.auth.signInWithPassword({ email: user.email, password: pw });
+      if (authErr) { setError(t("edit_lock_wrong")); return; }
+      onUnlock();
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
@@ -1824,9 +1863,11 @@ const LockDialog = ({
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">{t("edit_lock_subtitle")}</p>
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("edit_lock_password")}</Label>
+            <Label htmlFor="edit-lock-password" className="text-xs">{t("edit_lock_password")}</Label>
             <Input
+              id="edit-lock-password"
               type="password"
+              autoComplete="current-password"
               autoFocus
               value={pw}
               onChange={(e) => { setPw(e.target.value); setError(""); }}
@@ -1842,7 +1883,7 @@ const LockDialog = ({
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>{t("edit_lock_cancel")}</Button>
-          <Button variant="hero" onClick={verify} disabled={!pw}>
+          <Button variant="hero" onClick={verify} disabled={!pw || checking}>
             <Lock className="h-3.5 w-3.5" /> {t("edit_lock_unlock")}
           </Button>
         </DialogFooter>
@@ -2113,7 +2154,7 @@ const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onReview, 
                 </Button>
               );
             })()}
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(d.id)}>
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(d.id)} aria-label={t("common_delete")}>
               <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
           </div>
@@ -2315,7 +2356,8 @@ const G50GeneratorDialog = ({
         fileName: `G50_${c.taxId || "NIF"}_${yyyy}_${mm}.${ext}`,
       };
       if (format === "pdf") {
-        await generateG50Pdf(payload);
+        const saved = await generateG50Pdf(payload);
+        if (saved === "xlsx-fallback") toast.warning("Service PDF indisponible : le fichier Excel a été téléchargé à la place.");
       } else {
         await generateG50Xlsx(payload);
       }
@@ -2627,7 +2669,7 @@ const IncomingDocsView = ({ t, items, onMarkProcessed, onDelete, onPreview }: {
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => {
                     const a = document.createElement("a");
                     a.href = it.fileData!; a.download = it.fileName; a.target = "_blank"; a.click();
-                  }} title={t("incoming_open_file")}>
+                  }} title={t("incoming_open_file")} aria-label={t("incoming_open_file")}>
                     <Download className="h-3.5 w-3.5 text-gold-deep" />
                   </Button>
                 )}
@@ -2636,7 +2678,7 @@ const IncomingDocsView = ({ t, items, onMarkProcessed, onDelete, onPreview }: {
                     {t("incoming_mark_processed")}
                   </Button>
                 )}
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(it.id)}>
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(it.id)} aria-label={t("common_delete")}>
                   <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
               </div>
