@@ -581,9 +581,10 @@ const PayslipPdfDialog = ({ employee, onClose, t }: {
         <div>Édité le ${new Date().toLocaleDateString("fr-DZ")}</div>
         <div class="stamp">Signature & cachet</div>
       </div>
-      <script>window.onload=()=>setTimeout(()=>window.print(),200);</script>
       </body></html>`);
     w.document.close();
+    // Print from the opener: no inline script in the popup (CSP-friendly).
+    setTimeout(() => { w.focus(); w.print(); }, 300);
   };
 
   return (
