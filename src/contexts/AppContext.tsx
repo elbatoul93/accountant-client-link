@@ -65,10 +65,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [lang, setLangState] = useState<Lang>(() => {
     try {
       const saved = localStorage.getItem("mgmtk_lang");
-      return saved === "en" || saved === "fr" || saved === "ar" ? saved : "ar";
-    } catch {
-      return "ar";
-    }
+      if (saved === "ar" || saved === "fr" || saved === "en") return saved;
+    } catch { /* storage unavailable */ }
+    return "ar";
   });
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);

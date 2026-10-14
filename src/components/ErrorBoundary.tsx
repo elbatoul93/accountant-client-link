@@ -1,45 +1,36 @@
 import { Component, ErrorInfo, ReactNode } from "react";
-
+import { useApp } from "@/contexts/AppContext";
+import { Button } from "@/components/ui/button";
 import { reportError } from "@/lib/errorReporting";
 
-interface Props {
-  children: ReactNode;
-}
-interface State {
-  error: Error | null;
-}
+const Fallback = () => {
+  const { t } = useApp();
+  return (
+    <div className="min-h-screen grid place-items-center bg-background p-4">
+      <div className="max-w-sm text-center space-y-3" role="alert">
+        <h1 className="text-xl font-bold text-primary">{t("err_boundary_title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("err_boundary_msg")}</p>
+        <Button onClick={() => window.location.reload()}>{t("err_boundary_reload")}</Button>
+      </div>
+    </div>
+  );
+};
 
-/** Catches render errors so one broken view shows a recovery screen instead of a blank page. */
-class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
+/** Catches render errors and failed lazy chunks so users never see a blank page. */
+export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
 
-  static getDerivedStateFromError(error: Error): State {
-    return { error };
+  static getDerivedStateFromError() {
+    return { failed: true };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("[ErrorBoundary]", error, info.componentStack);
+    console.error("Unhandled UI error", error, info.componentStack);
     reportError(error, { componentStack: info.componentStack });
   }
 
   render() {
-    if (!this.state.error) return this.props.children;
-    return (
-      <div className="min-h-screen grid place-items-center bg-background p-6 text-center">
-        <div className="max-w-sm space-y-4">
-          <h1 className="text-xl font-semibold">Something went wrong</h1>
-          <p className="text-sm text-muted-foreground">
-            The page hit an unexpected error. Your saved data is safe. Reload to continue.
-          </p>
-          <button
-            className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"
-            onClick={() => window.location.reload()}
-          >
-            Reload
-          </button>
-        </div>
-      </div>
-    );
+    return this.state.failed ? <Fallback /> : this.props.children;
   }
 }
 
