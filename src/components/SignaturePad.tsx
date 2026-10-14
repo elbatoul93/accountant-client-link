@@ -19,9 +19,11 @@ export const SignaturePad = ({ width = 520, height = 180, onChange, t }: Props) 
     const canvas = ref.current;
     if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
+    // Fit the container so the whole pad is reachable on narrow phones.
+    const cssWidth = Math.min(width, canvas.parentElement?.clientWidth || width);
+    canvas.width = cssWidth * dpr;
     canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
+    canvas.style.width = "100%";
     canvas.style.height = `${height}px`;
     const ctx = canvas.getContext("2d")!;
     ctx.scale(dpr, dpr);
@@ -70,6 +72,8 @@ export const SignaturePad = ({ width = 520, height = 180, onChange, t }: Props) 
       <div className="rounded-md border-2 border-dashed border-primary/40 bg-card overflow-hidden">
         <canvas
           ref={ref}
+          role="img"
+          aria-label={t("sig_canvas_label")}
           onPointerDown={start}
           onPointerMove={move}
           onPointerUp={end}

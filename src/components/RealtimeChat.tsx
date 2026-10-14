@@ -415,7 +415,7 @@ const ChatComposer = ({
       placeholder={t("chat_type_message")}
       disabled={disabled}
     />
-    <Button variant="gold" size="icon" onClick={send} disabled={disabled || !draft.trim()}>
+    <Button variant="gold" size="icon" onClick={send} disabled={disabled || !draft.trim()} aria-label={t("common_send")}>
       <Send className="h-4 w-4" />
     </Button>
   </div>
