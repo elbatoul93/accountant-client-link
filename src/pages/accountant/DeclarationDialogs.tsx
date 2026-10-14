@@ -226,7 +226,7 @@ export const FinancialStatementsDialog = ({
 
 export const SendDocumentDialog = ({
   open, onOpenChange, clients, t, onSend,
-}: { open: boolean; onOpenChange: (o: boolean) => void; clients: Client[]; t: (k: string) => string; onSend: (d: SharedDoc) => void }) => {
+}: { open: boolean; onOpenChange: (o: boolean) => void; clients: Client[]; t: (k: string) => string; onSend: (d: SharedDoc) => void | boolean }) => {
   const [clientId, setClientId] = useState("");
   const [type, setType] = useState<SharedDoc["type"]>("G50");
   const [label, setLabel] = useState("");
@@ -245,12 +245,13 @@ export const SendDocumentDialog = ({
   const submit = () => {
     const c = clients.find((x) => x.id === clientId);
     if (!c || !label) { toast.error(t("i18n_required_fields")); return; }
-    onSend({
+    const ok = onSend({
       id: crypto.randomUUID(), clientId: c.id, clientName: c.name,
       clientEmail: c.contact, type, label,
       date: todayIso(),
       fileName: file?.name, mimeType: file?.type, fileData: fileData || undefined,
     });
+    if (ok === false) return;
     toast.success(t("acc_doc_shared"));
     setClientId(""); setLabel(""); setType("G50"); setFile(null); setFileData("");
   };

@@ -379,21 +379,33 @@ const AccountantDashboard = () => {
     if (!dbReadyRef.current || !accIdRef.current) return;
     const prev = prevInvoicesRef.current;
     prevInvoicesRef.current = invoices;
-    syncInvoices(prev, invoices, accIdRef.current).catch((e) => console.error("[sync invoices]", e));
+    syncInvoices(prev, invoices, accIdRef.current).catch(async (e) => {
+      console.error("[sync invoices]", e);
+      const fresh = await loadInvoices(accIdRef.current!).catch(() => null);
+      if (fresh) { prevInvoicesRef.current = fresh; setInvoices(fresh); }
+    });
   }, [invoices]);
 
   useEffect(() => {
     if (!dbReadyRef.current || !accIdRef.current) return;
     const prev = prevDeclsRef.current;
     prevDeclsRef.current = decls;
-    syncDecls(prev, decls, accIdRef.current).catch((e) => console.error("[sync decls]", e));
+    syncDecls(prev, decls, accIdRef.current).catch(async (e) => {
+      console.error("[sync decls]", e);
+      const fresh = await loadDecls(accIdRef.current!).catch(() => null);
+      if (fresh) { prevDeclsRef.current = fresh; setDecls(fresh); }
+    });
   }, [decls]);
 
   useEffect(() => {
     if (!dbReadyRef.current || !accIdRef.current) return;
     const prev = prevFsRef.current;
     prevFsRef.current = fsList;
-    syncFs(prev, fsList, accIdRef.current).catch((e) => console.error("[sync fs]", e));
+    syncFs(prev, fsList, accIdRef.current).catch(async (e) => {
+      console.error("[sync fs]", e);
+      const fresh = await loadFsList(accIdRef.current!).catch(() => null);
+      if (fresh) { prevFsRef.current = fresh; setFsList(fresh); }
+    });
   }, [fsList]);
 
   useEffect(() => {
@@ -409,7 +421,11 @@ const AccountantDashboard = () => {
           setSharedDocs(updated as typeof sharedDocs);
         }
       })
-      .catch((e) => console.error("[sync shared]", e));
+      .catch(async (e) => {
+        console.error("[sync shared]", e);
+        const fresh = await loadSharedDocs(accIdRef.current!).catch(() => null);
+        if (fresh) { prevSharedRef.current = fresh; setSharedDocs(fresh); }
+      });
   }, [sharedDocs]);
 
   useEffect(() => {
@@ -424,7 +440,11 @@ const AccountantDashboard = () => {
           setLegalDocs(updated as typeof legalDocs);
         }
       })
-      .catch((e) => console.error("[sync legal]", e));
+      .catch(async (e) => {
+        console.error("[sync legal]", e);
+        const fresh = await loadLegalDocs(accIdRef.current!).catch(() => null);
+        if (fresh) { prevLegalRef.current = fresh; setLegalDocs(fresh); }
+      });
   }, [legalDocs]);
 
 
@@ -1053,14 +1073,18 @@ const AccountantDashboard = () => {
           if (shared) {
             // The G50 dialog works with portal user ids; the rest of the dashboard uses client refs.
             setSharedDocs((p) => [{ ...shared, clientId: refOfUser(shared.clientId) }, ...p]);
-            void sendNotification({
-              recipientId: shared.clientId,
-              title: t("notif_g50_ready_title"),
-              message: t("notif_g50_ready_msg").replace("{label}", shared.label),
-              type: "g50_ready",
-              link: "/dashboard/client",
-              refId: shared.id,
-            }).catch((e) => console.error("[notify]", e));
+            if (!linkedFor(refOfUser(shared.clientId)) && !linkedFor(shared.clientId)) {
+              toast.error(t("send_client_not_linked"));
+            } else {
+              void sendNotification({
+                recipientId: shared.clientId,
+                title: t("notif_g50_ready_title"),
+                message: t("notif_g50_ready_msg").replace("{label}", shared.label),
+                type: "g50_ready",
+                link: "/dashboard/client",
+                refId: shared.id,
+              }).catch((e) => { console.error("[notify]", e); toast.error(t("send_not_delivered")); });
+            }
           }
           if (lockOpts) {
             setLocks((p) => lockPeriod(p, lockOpts));
@@ -1074,6 +1098,10 @@ const AccountantDashboard = () => {
         open={openTool === "send"} onOpenChange={(o) => !o && setOpenTool(null)}
         clients={clients} t={t}
         onSend={(doc) => {
+          if (!linkedFor(doc.clientId)) {
+            toast.error(t("send_client_not_linked"));
+            return false;
+          }
           setSharedDocs((p) => [doc, ...p]);
           void sendNotification({
             recipientId: userIdOf(doc.clientId),
@@ -1082,7 +1110,7 @@ const AccountantDashboard = () => {
             type: "g50_ready",
             link: "/dashboard/client",
             refId: doc.id,
-          }).catch((e) => console.error("[notify]", e));
+          }).catch((e) => { console.error("[notify]", e); toast.error(t("send_not_delivered")); });
           setOpenTool(null);
         }}
       />
