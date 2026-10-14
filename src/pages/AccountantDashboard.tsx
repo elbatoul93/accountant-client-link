@@ -24,6 +24,7 @@ import { AssetsView } from "./accountant/AssetsView";
 import { FiscalCalendar } from "@/components/FiscalCalendar";
 import { DocPreviewDialog } from "@/components/DocPreviewDialog";
 import { WorkflowBadge, WorkflowStepper } from "@/components/WorkflowStatus";
+import { finalizePayrollRun } from "@/lib/payrollStore";
 import { lockPeriod, computeG50FromJournal } from "@/lib/accounting/engine";
 import { getIncomingInvoices, pushNotification, getVault, onPortalChange, setSharedDocWorkflow, updateSharedDocPayload, runUploadReminderSweep, unreadChatCount, type IncomingInvoice, type VaultEntry, type WorkflowStatus } from "@/lib/portal";
 import { ClientInviteManager } from "@/components/ClientInviteManager";
@@ -921,7 +922,10 @@ const AccountantDashboard = () => {
               refId: shared.id,
             });
           }
-          if (lockOpts) setLocks((p) => lockPeriod(p, lockOpts));
+          if (lockOpts) {
+            setLocks((p) => lockPeriod(p, lockOpts));
+            void finalizePayrollRun(lockOpts.clientId, lockOpts.period);
+          }
           setOpenTool(null);
           setEditG50(null);
         }}

@@ -316,6 +316,8 @@ export const en = {
   payx_tab_employer: "Employer Share",
   payx_ss_emp: "Employee SS",
   payx_ss_employer: "Employer SS",
+  payx_das_real: "Based on payslips actually paid",
+  payx_das_estimate: "Estimate: current payslip projected over the months worked",
   payx_no_employees: "No employees to export.",
   payx_taxable: "Taxable salary",
   payx_payslip_pdf: "Payslip PDF",

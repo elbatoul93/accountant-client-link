@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  computeIRGSalaire, computePayslip, buildCnasAvis, toCSV, SS_EMPLOYER_RATE,
+  computeIRGSalaire, computePayslip, buildCnasAvis, toCSV, SS_EMPLOYER_RATE, buildDASFromPayslips,
 } from "@/lib/accounting/payroll";
 import { buildG50Preview, tapRateForPeriod } from "@/lib/accounting/algerianTax";
 import { computeG50FromJournal } from "@/lib/accounting/engine";
@@ -84,5 +84,22 @@ describe("IBS acomptes", () => {
   it("calendar lists exactly three IBS acomptes", () => {
     const ev = buildFiscalCalendar("REEL", new Date(2026, 0, 2)).filter((e) => e.type === "IBS");
     expect(ev.map((e) => e.date)).toEqual(["2026-03-20", "2026-06-20", "2026-11-20"]);
+  });
+});
+
+describe("DAS from real payslips", () => {
+  const rec = (period: string, gross: number, irg = 0) => ({
+    employeeKey: "c1:123", name: "A", nss: "123", period, gross, ssEmployee: gross * 0.09,
+    taxable: gross * 0.91, irg, net: gross * 0.91 - irg,
+  });
+  it("sums what was paid, counts each month once and ignores other years", () => {
+    const rows = buildDASFromPayslips(
+      [rec("2026-01", 100_000, 5_000), rec("2026-02", 120_000, 7_000), rec("2026-02", 120_000, 7_000), rec("2025-12", 999_999)],
+      2026,
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].monthsWorked).toBe(2);
+    expect(rows[0].grossAnnual).toBe(220_000);
+    expect(rows[0].irgAnnual).toBe(12_000);
   });
 });

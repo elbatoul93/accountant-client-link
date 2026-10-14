@@ -203,8 +203,8 @@ export interface DasRow {
   netAnnual: number;
 }
 
-/** Build DAS by projecting current monthly payslip × 12 (demo).
- *  In production, sum real monthly payroll runs from the journal. */
+/** Estimate the DAS by projecting the current monthly payslip over the months worked.
+ *  Use `buildDASFromPayslips` when real payroll runs exist. */
 export const buildDAS = (list: PayrollEmployee[], year: number): DasRow[] => {
   return list.map((e) => {
     const p = computePayslip(e);
@@ -230,6 +230,46 @@ export const buildDAS = (list: PayrollEmployee[], year: number): DasRow[] => {
       taxableAnnual: p.taxable * months,
       irgAnnual: p.irg * months,
       netAnnual: p.net * months,
+    };
+  });
+};
+
+/** One payslip actually paid (a row of acc_payslips joined with its run period). */
+export interface PayslipRecord {
+  employeeKey: string; // nss, else name
+  name: string;
+  nss?: string;
+  period: string; // YYYY-MM
+  gross: number;
+  ssEmployee: number;
+  taxable: number;
+  irg: number;
+  net: number;
+}
+
+/** Build the DAS from payslips that were really paid in `year` (one row per employee). */
+export const buildDASFromPayslips = (records: PayslipRecord[], year: number): DasRow[] => {
+  const byEmployee = new Map<string, { rec: PayslipRecord; periods: Map<string, PayslipRecord> }>();
+  for (const r of records) {
+    if (!r.period.startsWith(`${year}-`)) continue;
+    const cur = byEmployee.get(r.employeeKey) ?? { rec: r, periods: new Map() };
+    cur.periods.set(r.period, r); // a month counts once even if posted twice
+    byEmployee.set(r.employeeKey, cur);
+  }
+  return Array.from(byEmployee.entries()).map(([key, { rec, periods }]) => {
+    const slips = Array.from(periods.values());
+    const sum = (f: (x: PayslipRecord) => number) => slips.reduce((s, x) => s + f(x), 0);
+    return {
+      employeeId: key,
+      name: rec.name,
+      nss: rec.nss,
+      position: undefined,
+      monthsWorked: slips.length,
+      grossAnnual: sum((x) => x.gross),
+      ssAnnual: sum((x) => x.ssEmployee),
+      taxableAnnual: sum((x) => x.taxable),
+      irgAnnual: sum((x) => x.irg),
+      netAnnual: sum((x) => x.net),
     };
   });
 };

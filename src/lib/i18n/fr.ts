@@ -308,6 +308,8 @@ export const fr: typeof en = {
   payx_tab_employer: "Charges patronales",
   payx_ss_emp: "SS salariale",
   payx_ss_employer: "SS patronale",
+  payx_das_real: "Basé sur les fiches de paie réellement versées",
+  payx_das_estimate: "Estimation : fiche de paie actuelle projetée sur les mois travaillés",
   payx_no_employees: "Aucun employé à exporter.",
   payx_taxable: "Salaire imposable",
   payx_payslip_pdf: "Bulletin PDF",

@@ -308,6 +308,8 @@ export const ar: typeof en = {
   payx_tab_employer: "حصة رب العمل",
   payx_ss_emp: "اشتراك العامل",
   payx_ss_employer: "اشتراك رب العمل",
+  payx_das_real: "مبني على كشوف الرواتب المدفوعة فعلاً",
+  payx_das_estimate: "تقدير: كشف الراتب الحالي مضروباً في أشهر العمل",
   payx_no_employees: "لا يوجد موظفون للتصدير.",
   payx_taxable: "الراتب الخاضع للضريبة",
   payx_payslip_pdf: "كشف PDF",
