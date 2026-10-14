@@ -1169,6 +1169,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_activation_accountants: {
+        Args: { _since?: string }
+        Returns: {
+          account_status: string
+          activated_at: string | null
+          clients: number
+          company: string | null
+          email: string
+          first_client_at: string | null
+          first_g50_sent_at: string | null
+          first_payment_at: string | null
+          name: string
+          signed_up_at: string
+          user_id: string
+        }[]
+      }
+      admin_activation_funnel: {
+        Args: { _since?: string }
+        Returns: { activated: number; first_client: number; first_g50: number; paid: number; signed_up: number }[]
+      }
       admin_ack_security_alert: { Args: { _id: string }; Returns: undefined }
       admin_list_security_alerts: {
         Args: { _limit?: number; _only_open?: boolean }
