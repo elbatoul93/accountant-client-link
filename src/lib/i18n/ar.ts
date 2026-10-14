@@ -301,7 +301,7 @@ export const ar: typeof en = {
   side_reports: "التقارير",
   pay_run_post: "احتساب وترحيل",
   // Advanced Payroll
-  payx_engine: "حاسبة ذكية (الضمان 9% • الدخل تصاعدي • رب العمل 26%)",
+  payx_engine: "حاسبة ذكية (الضمان 9% • الدخل تصاعدي • رب العمل 25.5%)",
   payx_tab_employees: "العمال",
   payx_tab_cnas: "الضمان الاجتماعي",
   payx_tab_movements: "الحركات",
@@ -340,7 +340,7 @@ export const ar: typeof en = {
   payx_irg_total: "الضريبة المقتطعة",
   payx_net_mass: "كتلة الصافي",
   payx_employer_cost: "التكلفة الإجمالية على رب العمل",
-  payx_employer_cost_hint: "الإجمالي + 26% حصة رب العمل CNAS",
+  payx_employer_cost_hint: "الإجمالي + 25.5% حصة رب العمل CNAS",
   payx_nss: "رقم التسجيل CNAS",
   payx_client_optional: "العميل (اختياري)",
   payx_hire_date: "تاريخ التوظيف",
