@@ -1,4 +1,7 @@
 import { Card } from "@/components/ui/card";
+import { Children, cloneElement, isValidElement, useId } from "react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Inbox } from "lucide-react";
 
@@ -39,12 +42,21 @@ export const Section = ({ title, icon: Icon, children }: { title: string; icon: 
   </div>
 );
 
-export const Field = ({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) => (
-  <div className={`space-y-1.5 ${full ? "sm:col-span-2" : ""}`}>
-    <Label className="text-xs">{label}</Label>
-    {children}
-  </div>
-);
+export const Field = ({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) => {
+  const id = useId();
+  // Tie the label to a plain input/textarea so screen readers and tap-on-label work.
+  const wired = Children.map(children, (child) =>
+    isValidElement<{ id?: string }>(child) && (child.type === Input || child.type === Textarea) && !child.props.id
+      ? cloneElement(child, { id })
+      : child,
+  );
+  return (
+    <div className={`space-y-1.5 ${full ? "sm:col-span-2" : ""}`}>
+      <Label htmlFor={id} className="text-xs">{label}</Label>
+      {wired}
+    </div>
+  );
+};
 
 export const ToolCard = ({ icon: Icon, title, subtitle, cta, onClick, disabled }: {
   icon: any; title: string; subtitle: string; cta: string; onClick: () => void; disabled?: boolean;
