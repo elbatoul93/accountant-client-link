@@ -37,4 +37,4 @@ export const LegalLayout = ({ title, children }: { title: string; children: Reac
 };
 
 export const COMPANY = "Managementik SARL";
-export const CONTACT_EMAIL = "contact@managementik.dz";
+export const CONTACT_EMAIL = "contact@managementik.com";
