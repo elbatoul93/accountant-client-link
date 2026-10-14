@@ -212,7 +212,7 @@ export const PayrollAdvanced = ({
                     <Row label={t("payx_employees_count")} value={String(a.employees)} />
                     <Row label={t("payx_gross_mass")} value={fmtDZD(a.grossMass)} />
                     <Row label={`${t("payx_ss_emp")} (9%)`} value={fmtDZD(a.partSalariale)} muted />
-                    <Row label={`${t("payx_ss_employer")} (26%)`} value={fmtDZD(a.partPatronale)} muted />
+                    <Row label={`${t("payx_ss_employer")} (25,5%)`} value={fmtDZD(a.partPatronale)} muted />
                   </tbody>
                 </table>
                 <div className="mt-3 p-3 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 flex justify-between">
@@ -321,7 +321,7 @@ export const PayrollAdvanced = ({
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <Stat label={t("payx_employees_count")} value={String(mass.employees)} />
               <Stat label={t("payx_gross_mass")} value={fmtDZD(mass.grossMass)} />
-              <Stat label={`${t("payx_ss_employer")} (26%)`} value={fmtDZD(mass.ssEmployerMass)} accent />
+              <Stat label={`${t("payx_ss_employer")} (25,5%)`} value={fmtDZD(mass.ssEmployerMass)} accent />
               <Stat label={`${t("payx_ss_emp")} (9%)`} value={fmtDZD(mass.ssEmployeeMass)} muted />
               <Stat label={t("payx_irg_total")} value={fmtDZD(mass.irgMass)} muted />
               <Stat label={t("payx_net_mass")} value={fmtDZD(mass.netMass)} />
@@ -485,7 +485,7 @@ const AddEmployeeDialog = ({
                 <span className="font-semibold text-primary text-sm">{t("pay_net")}</span>
                 <span className="text-base font-bold text-gold-deep font-mono">{fmtDZD(preview.net)}</span>
               </div>
-              <Line label={`${t("payx_ss_employer")} (26%)`} value={fmtDZD(preview.ssEmployer)} muted />
+              <Line label={`${t("payx_ss_employer")} (25,5%)`} value={fmtDZD(preview.ssEmployer)} muted />
               <Line label={t("payx_employer_cost")} value={fmtDZD(preview.employerCost)} bold />
             </div>
           </Card>
@@ -575,7 +575,7 @@ const PayslipPdfDialog = ({ employee, onClose, t }: {
       </table>
       <div class="total"><b>NET À PAYER</b><span>${fmtNum(p.net)} DA</span></div>
       <div style="margin-top:20px; padding:10px; background:#f0fdfa; border-radius:6px; font-size:11px; color:#0f766e;">
-        <b>Charges patronales (à la charge employeur):</b> CNAS 26% = ${fmtNum(p.ssEmployer)} DA — Coût total employeur: <b>${fmtNum(p.employerCost)} DA</b>
+        <b>Charges patronales (à la charge employeur):</b> CNAS 25,5% = ${fmtNum(p.ssEmployer)} DA — Coût total employeur: <b>${fmtNum(p.employerCost)} DA</b>
       </div>
       <div class="foot">
         <div>Édité le ${new Date().toLocaleDateString("fr-DZ")}</div>
@@ -615,7 +615,7 @@ const PayslipPdfDialog = ({ employee, onClose, t }: {
             <span className="text-xl font-bold text-gold-deep">{fmtDZD(p.net)}</span>
           </div>
           <p className="text-xs text-muted-foreground pt-1">
-            {t("payx_ss_employer")} 26%: {fmtDZD(p.ssEmployer)} • {t("payx_employer_cost")}: {fmtDZD(p.employerCost)}
+            {t("payx_ss_employer")} 25,5%: {fmtDZD(p.ssEmployer)} • {t("payx_employer_cost")}: {fmtDZD(p.employerCost)}
           </p>
         </div>
         <DialogFooter>

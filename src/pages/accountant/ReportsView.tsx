@@ -218,10 +218,10 @@ export const ReportsView = ({ t, journal, locks, clients }: Props) => {
               <KpiBox label={t("g50_live_irg")} value={fmtDZD(g50.irgSalaries)} />
             </div>
             <div className="space-y-2">
-              <G50Row label={`TAP (${g50.tapRate}%)`} base={g50.caHt} value={g50.tap} />
+              {g50.tapRate > 0 && <G50Row label={`TAP (${g50.tapRate}%)`} base={g50.caHt} value={g50.tap} />}
               <G50Row label={`TVA`} base={g50.tvaCollected - g50.tvaDeductible} value={g50.tvaDue} />
               <G50Row label={`IRG / Salaires`} base={g50.salaries} value={g50.irgSalaries} />
-              <G50Row label={`IBS acompte (${g50.ibsRate}%)`} base={Math.max(0, tcr.result)} value={g50.ibs} />
+              {g50.ibs > 0 && <G50Row label={`IBS acompte (${g50.ibsRate}% IBS N-1)`} base={Math.round((g50.ibs * 100) / g50.ibsRate)} value={g50.ibs} />}
             </div>
             <div className="mt-4 p-4 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 flex items-center justify-between">
               <span className="font-bold text-primary">{t("tools_g50_total")}</span>
