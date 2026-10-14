@@ -236,7 +236,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="password">{t("auth_password")}</Label>
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
+                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={mode === "signup" ? 8 : undefined} />
               </div>
 
               <Button type="submit" variant="hero" size="lg" className="w-full" disabled={busy || (isInvite && inviteValid === null)}>
