@@ -14,6 +14,192 @@ export type Database = {
   }
   public: {
     Tables: {
+      acc_assets: {
+        Row: {
+          accountant_id: string
+          acquired_at: string
+          category: string
+          client_ref: string | null
+          cost: number
+          created_at: string
+          id: string
+          label: string
+          rate_override: number | null
+          updated_at: string
+        }
+        Insert: {
+          accountant_id: string
+          acquired_at: string
+          category: string
+          client_ref?: string | null
+          cost: number
+          created_at?: string
+          id?: string
+          label: string
+          rate_override?: number | null
+          updated_at?: string
+        }
+        Update: {
+          accountant_id?: string
+          acquired_at?: string
+          category?: string
+          client_ref?: string | null
+          cost?: number
+          created_at?: string
+          id?: string
+          label?: string
+          rate_override?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      acc_bills: {
+        Row: {
+          account: string | null
+          accountant_id: string
+          bill_date: string
+          client_ref: string | null
+          created_at: string
+          ht: number
+          id: string
+          kind: string
+          number: string
+          party: string
+          party_tax_id: string | null
+          posted_batch: string | null
+          ttc: number
+          tva: number
+          tva_rate: number
+          updated_at: string
+        }
+        Insert: {
+          account?: string | null
+          accountant_id: string
+          bill_date: string
+          client_ref?: string | null
+          created_at?: string
+          ht?: number
+          id?: string
+          kind: string
+          number: string
+          party: string
+          party_tax_id?: string | null
+          posted_batch?: string | null
+          ttc?: number
+          tva?: number
+          tva_rate?: number
+          updated_at?: string
+        }
+        Update: {
+          account?: string | null
+          accountant_id?: string
+          bill_date?: string
+          client_ref?: string | null
+          created_at?: string
+          ht?: number
+          id?: string
+          kind?: string
+          number?: string
+          party?: string
+          party_tax_id?: string | null
+          posted_batch?: string | null
+          ttc?: number
+          tva?: number
+          tva_rate?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      acc_checklist: {
+        Row: {
+          accountant_id: string
+          client_ref: string
+          created_at: string
+          id: string
+          kind: string
+          month_key: string
+          note: string | null
+          received_at: string | null
+          ref_document_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accountant_id: string
+          client_ref: string
+          created_at?: string
+          id?: string
+          kind: string
+          month_key: string
+          note?: string | null
+          received_at?: string | null
+          ref_document_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accountant_id?: string
+          client_ref?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          month_key?: string
+          note?: string | null
+          received_at?: string | null
+          ref_document_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      acc_clients: {
+        Row: {
+          accountant_id: string
+          client_ref: string
+          company: string | null
+          created_at: string
+          data: Json
+          email: string | null
+          id: string
+          linked_user_id: string | null
+          name: string
+          status: string
+          tax_id: string | null
+          tax_regime: string | null
+          updated_at: string
+        }
+        Insert: {
+          accountant_id: string
+          client_ref?: string
+          company?: string | null
+          created_at?: string
+          data?: Json
+          email?: string | null
+          id?: string
+          linked_user_id?: string | null
+          name: string
+          status?: string
+          tax_id?: string | null
+          tax_regime?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accountant_id?: string
+          client_ref?: string
+          company?: string | null
+          created_at?: string
+          data?: Json
+          email?: string | null
+          id?: string
+          linked_user_id?: string | null
+          name?: string
+          status?: string
+          tax_id?: string | null
+          tax_regime?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       acc_declarations: {
         Row: {
           accountant_id: string
@@ -49,6 +235,60 @@ export type Database = {
           due_date?: string | null
           id?: string
           status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      acc_employees: {
+        Row: {
+          accountant_id: string
+          basic: number
+          client_ref: string | null
+          created_at: string
+          dependents: number
+          end_date: string | null
+          hire_date: string | null
+          id: string
+          iew: number
+          name: string
+          nss: string | null
+          other: number
+          position: string | null
+          prc: number
+          updated_at: string
+        }
+        Insert: {
+          accountant_id: string
+          basic?: number
+          client_ref?: string | null
+          created_at?: string
+          dependents?: number
+          end_date?: string | null
+          hire_date?: string | null
+          id?: string
+          iew?: number
+          name: string
+          nss?: string | null
+          other?: number
+          position?: string | null
+          prc?: number
+          updated_at?: string
+        }
+        Update: {
+          accountant_id?: string
+          basic?: number
+          client_ref?: string | null
+          created_at?: string
+          dependents?: number
+          end_date?: string | null
+          hire_date?: string | null
+          id?: string
+          iew?: number
+          name?: string
+          nss?: string | null
+          other?: number
+          position?: string | null
+          prc?: number
           updated_at?: string
         }
         Relationships: []
@@ -134,6 +374,57 @@ export type Database = {
         }
         Relationships: []
       }
+      acc_journal_lines: {
+        Row: {
+          account: string
+          accountant_id: string
+          batch_id: string
+          client_ref: string | null
+          created_at: string
+          credit: number
+          debit: number
+          entry_date: string
+          id: string
+          label: string
+          period: string
+          source: string
+          source_ref: string | null
+          updated_at: string
+        }
+        Insert: {
+          account: string
+          accountant_id: string
+          batch_id: string
+          client_ref?: string | null
+          created_at?: string
+          credit?: number
+          debit?: number
+          entry_date: string
+          id?: string
+          label?: string
+          period: string
+          source: string
+          source_ref?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account?: string
+          accountant_id?: string
+          batch_id?: string
+          client_ref?: string | null
+          created_at?: string
+          credit?: number
+          debit?: number
+          entry_date?: string
+          id?: string
+          label?: string
+          period?: string
+          source?: string
+          source_ref?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       acc_legal_documents: {
         Row: {
           accountant_id: string
@@ -173,6 +464,159 @@ export type Database = {
           label?: string
           mime_type?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      acc_payroll_runs: {
+        Row: {
+          accountant_id: string
+          client_ref: string | null
+          created_at: string
+          finalized_at: string | null
+          id: string
+          journal_batch_id: string | null
+          period: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accountant_id: string
+          client_ref?: string | null
+          created_at?: string
+          finalized_at?: string | null
+          id?: string
+          journal_batch_id?: string | null
+          period: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accountant_id?: string
+          client_ref?: string | null
+          created_at?: string
+          finalized_at?: string | null
+          id?: string
+          journal_batch_id?: string | null
+          period?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      acc_payslips: {
+        Row: {
+          accountant_id: string
+          basic: number
+          client_ref: string | null
+          created_at: string
+          employee_id: string | null
+          employee_name: string
+          employer_cost: number
+          gross: number
+          id: string
+          iew: number
+          irg: number
+          net: number
+          nss: string | null
+          other: number
+          prc: number
+          run_id: string
+          ss_base: number
+          ss_employee: number
+          ss_employer: number
+          taxable: number
+        }
+        Insert: {
+          accountant_id: string
+          basic?: number
+          client_ref?: string | null
+          created_at?: string
+          employee_id?: string | null
+          employee_name: string
+          employer_cost?: number
+          gross?: number
+          id?: string
+          iew?: number
+          irg?: number
+          net?: number
+          nss?: string | null
+          other?: number
+          prc?: number
+          run_id: string
+          ss_base?: number
+          ss_employee?: number
+          ss_employer?: number
+          taxable?: number
+        }
+        Update: {
+          accountant_id?: string
+          basic?: number
+          client_ref?: string | null
+          created_at?: string
+          employee_id?: string | null
+          employee_name?: string
+          employer_cost?: number
+          gross?: number
+          id?: string
+          iew?: number
+          irg?: number
+          net?: number
+          nss?: string | null
+          other?: number
+          prc?: number
+          run_id?: string
+          ss_base?: number
+          ss_employee?: number
+          ss_employer?: number
+          taxable?: number
+        }
+        Relationships: []
+      }
+      acc_period_locks: {
+        Row: {
+          accountant_id: string
+          client_ref: string | null
+          id: string
+          period: string
+          reference: string | null
+          validated_at: string
+        }
+        Insert: {
+          accountant_id: string
+          client_ref?: string | null
+          id?: string
+          period: string
+          reference?: string | null
+          validated_at?: string
+        }
+        Update: {
+          accountant_id?: string
+          client_ref?: string | null
+          id?: string
+          period?: string
+          reference?: string | null
+          validated_at?: string
+        }
+        Relationships: []
+      }
+      acc_reminders_sent: {
+        Row: {
+          accountant_id: string
+          client_ref: string
+          month_key: string
+          sent_at: string
+        }
+        Insert: {
+          accountant_id: string
+          client_ref: string
+          month_key: string
+          sent_at?: string
+        }
+        Update: {
+          accountant_id?: string
+          client_ref?: string
+          month_key?: string
+          sent_at?: string
         }
         Relationships: []
       }
@@ -242,6 +686,63 @@ export type Database = {
         }
         Relationships: []
       }
+      acc_tva_precompte: {
+        Row: {
+          accountant_id: string
+          amount: number
+          client_ref: string
+          period: string
+          updated_at: string
+        }
+        Insert: {
+          accountant_id: string
+          amount?: number
+          client_ref?: string
+          period: string
+          updated_at?: string
+        }
+        Update: {
+          accountant_id?: string
+          amount?: number
+          client_ref?: string
+          period?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      audit_log: {
+        Row: {
+          accountant_id: string | null
+          action: string
+          actor_id: string | null
+          at: string
+          detail: Json | null
+          entity: string
+          entity_id: string | null
+          id: number
+        }
+        Insert: {
+          accountant_id?: string | null
+          action: string
+          actor_id?: string | null
+          at?: string
+          detail?: Json | null
+          entity: string
+          entity_id?: string | null
+          id?: number
+        }
+        Update: {
+          accountant_id?: string | null
+          action?: string
+          actor_id?: string | null
+          at?: string
+          detail?: Json | null
+          entity?: string
+          entity_id?: string | null
+          id?: number
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           created_at: string
@@ -249,8 +750,11 @@ export type Database = {
           file_name: string
           file_path: string
           id: string
+          kind: string
           mime_type: string | null
+          note: string | null
           size: number | null
+          status: string
           title: string
           updated_at: string
           user_id: string
@@ -261,8 +765,11 @@ export type Database = {
           file_name: string
           file_path: string
           id?: string
+          kind?: string
           mime_type?: string | null
+          note?: string | null
           size?: number | null
+          status?: string
           title?: string
           updated_at?: string
           user_id: string
@@ -273,8 +780,11 @@ export type Database = {
           file_name?: string
           file_path?: string
           id?: string
+          kind?: string
           mime_type?: string | null
+          note?: string | null
           size?: number | null
+          status?: string
           title?: string
           updated_at?: string
           user_id?: string
@@ -381,6 +891,7 @@ export type Database = {
           id: string
           is_read: boolean
           receiver_id: string
+          ref_doc_id: string | null
           sender_id: string
         }
         Insert: {
@@ -389,6 +900,7 @@ export type Database = {
           id?: string
           is_read?: boolean
           receiver_id: string
+          ref_doc_id?: string | null
           sender_id: string
         }
         Update: {
@@ -397,7 +909,47 @@ export type Database = {
           id?: string
           is_read?: boolean
           receiver_id?: string
+          ref_doc_id?: string | null
           sender_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          link: string | null
+          message: string
+          read: boolean
+          recipient_id: string
+          ref_id: string | null
+          sender_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string
+          read?: boolean
+          recipient_id: string
+          ref_id?: string | null
+          sender_id?: string | null
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string
+          read?: boolean
+          recipient_id?: string
+          ref_id?: string | null
+          sender_id?: string | null
+          title?: string
+          type?: string
         }
         Relationships: []
       }
@@ -507,15 +1059,7 @@ export type Database = {
           id?: string
           title?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "shared_documents_g50_declaration_id_fkey"
-            columns: ["g50_declaration_id"]
-            isOneToOne: false
-            referencedRelation: "g50_declarations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -543,6 +1087,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_address_email: { Args: { _email: string }; Returns: boolean }
       get_invitation_by_token: {
         Args: { _token: string }
         Returns: {
@@ -577,7 +1122,6 @@ export type Database = {
         }[]
       }
       get_my_linked_accountant_id: { Args: never; Returns: string }
-      get_user_type: { Args: { user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -589,10 +1133,11 @@ export type Database = {
         Args: { client_user_id: string }
         Returns: boolean
       }
-      is_linked_accountant_by_folder: {
-        Args: { folder_user_id: string }
+      is_my_client_ref: {
+        Args: { _accountant_id: string; _client_ref: string }
         Returns: boolean
       }
+      unlink_client: { Args: { _client_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "accountant" | "client"
