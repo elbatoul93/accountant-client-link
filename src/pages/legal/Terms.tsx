@@ -64,6 +64,68 @@ const TermsFr = () => (
   </>
 );
 
+const TermsEn = () => (
+  <>
+    <p>
+      These terms govern the use of the Managementik platform, published by {COMPANY}. By creating an
+      account, you accept them.
+    </p>
+
+    <h2>1. The service</h2>
+    <p>
+      Managementik lets an accounting firm invite its clients, exchange documents, prepare declarations and
+      track tax deadlines. Clients access the service by invitation from their firm.
+    </p>
+
+    <h2>2. A support tool, not advice</h2>
+    <p>
+      The calculations, templates and declarations generated are an aid to preparation. They are not tax,
+      accounting or legal advice. The firm alone remains responsible for the accuracy of the declarations
+      sent to the administration and for checking the results.
+    </p>
+
+    <h2>3. Accounts</h2>
+    <p>
+      You are responsible for keeping your credentials confidential and for activity on your account. The
+      information you provide must be accurate.
+    </p>
+
+    <h2>4. Data</h2>
+    <p>
+      The firm and its clients keep ownership of their data. We process it in line with the{" "}
+      <a className="text-primary underline" href="/privacy">privacy policy</a>. You can export your data and
+      ask for its deletion at the end of the contract.
+    </p>
+
+    <h2>5. Acceptable use</h2>
+    <p>
+      You must not use the service unlawfully, upload illegal or malicious content, or try to access
+      anyone else's data.
+    </p>
+
+    <h2>6. Availability and liability</h2>
+    <p>
+      We work to keep the service running but do not guarantee it. To the extent the law allows, our
+      liability is limited to the amount paid for the service over the last 12 months and excludes indirect
+      damages.
+    </p>
+
+    <h2>7. Termination</h2>
+    <p>
+      You can close your account at any time. We may suspend an account that breaches these terms.
+    </p>
+
+    <h2>8. Governing law</h2>
+    <p>Algerian law. Competent courts: those of the registered office of {COMPANY}.</p>
+
+    <h2>9. Legal notice and contact</h2>
+    <p>
+      {COMPANY}. Trade register, NIF and address: to be completed. Contact:{" "}
+      <a className="text-primary underline" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+    </p>
+  </>
+);
+
 const TermsAr = () => (
   <>
     <p>
@@ -124,9 +186,10 @@ const TermsAr = () => (
 const Terms = () => {
   const { lang } = useApp();
   const ar = lang === "ar";
+  const en = lang === "en";
   return (
-    <LegalLayout title={ar ? "شروط الاستخدام العامة" : "Conditions générales d'utilisation"}>
-      {ar ? <TermsAr /> : <TermsFr />}
+    <LegalLayout title={ar ? "شروط الاستخدام العامة" : en ? "Terms of Use" : "Conditions générales d'utilisation"}>
+      {ar ? <TermsAr /> : en ? <TermsEn /> : <TermsFr />}
     </LegalLayout>
   );
 };

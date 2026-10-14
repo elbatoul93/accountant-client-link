@@ -17,22 +17,41 @@ const dateInput = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
 
 const ISSUER_FIELDS = ["legal_name", "rc", "nif", "nis", "address", "phone", "email"] as const;
 
+// Receipts go to paying firms, so they are bilingual: French (reference) on the left, Arabic on the right.
+const ISSUER_LABELS: Record<(typeof ISSUER_FIELDS)[number], [string, string]> = {
+  legal_name: ["Raison sociale", "الاسم التجاري"],
+  rc: ["RC", "السجل التجاري"],
+  nif: ["NIF", "الرقم الجبائي"],
+  nis: ["NIS", "رقم التعريف الإحصائي"],
+  address: ["Adresse", "العنوان"],
+  phone: ["Tél.", "الهاتف"],
+  email: ["E-mail", "البريد الإلكتروني"],
+};
+
+const receiptDay = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("fr-DZ") : "-");
+
 const printReceipt = (r: Receipt) => {
-  const w = window.open("", "_blank", "width=720,height=900");
+  const w = window.open("", "_blank", "width=760,height=900");
   if (!w) { toast.error("Allow pop-ups to print the receipt."); return; }
-  const issuer = ISSUER_FIELDS.filter((k) => r.issuer?.[k]).map((k) => `<div>${esc(k.toUpperCase().replace("_", " "))}: ${esc(r.issuer[k])}</div>`).join("");
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(r.receipt_no)}</title>
-<style>body{font-family:sans-serif;padding:40px;max-width:640px;margin:auto}h1{font-size:20px}table{width:100%;border-collapse:collapse;margin-top:16px}td{padding:6px 0;border-bottom:1px solid #ddd}.void{color:#b00;font-weight:bold}</style></head><body>
-${issuer}<h1>Payment receipt ${esc(r.receipt_no)}</h1>${r.voided_at ? `<p class="void">VOIDED ${esc(day(r.voided_at))}: ${esc(r.void_reason)}</p>` : ""}
+  const row = (fr: string, value: string, ar: string) =>
+    `<tr><td>${fr}</td><td class="v" dir="auto">${value}</td><td dir="rtl" class="ar">${ar}</td></tr>`;
+  const issuer = ISSUER_FIELDS.filter((k) => r.issuer?.[k])
+    .map((k) => row(ISSUER_LABELS[k][0], esc(r.issuer[k]), ISSUER_LABELS[k][1])).join("");
+  const payer = `${esc(r.payer?.name)}${r.payer?.company ? ` (${esc(r.payer.company)})` : ""}`;
+  w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(r.receipt_no)}</title>
+<style>body{font-family:sans-serif;padding:40px;max-width:680px;margin:auto}h1{font-size:20px;display:flex;justify-content:space-between;gap:16px}table{width:100%;border-collapse:collapse;margin-top:16px}td{padding:6px 8px;border-bottom:1px solid #ddd}td.v{font-weight:600;text-align:center}td.ar{text-align:right}.void{color:#b00;font-weight:bold}.sig{margin-top:48px;display:flex;justify-content:space-between}</style></head><body>
+${issuer ? `<table>${issuer}</table>` : ""}
+<h1><span>Reçu de paiement ${esc(r.receipt_no)}</span><span dir="rtl">وصل دفع ${esc(r.receipt_no)}</span></h1>
+${r.voided_at ? `<p class="void">ANNULÉ / ملغى ${esc(receiptDay(r.voided_at))}: ${esc(r.void_reason)}</p>` : ""}
 <table>
-<tr><td>Received from</td><td>${esc(r.payer?.name)}${r.payer?.company ? ` (${esc(r.payer.company)})` : ""}</td></tr>
-<tr><td>Amount</td><td>${esc(r.amount)} ${esc(r.currency)}</td></tr>
-<tr><td>Method</td><td>${esc(r.method)}</td></tr>
-<tr><td>Plan</td><td>${esc(r.plan)}</td></tr>
-<tr><td>Period</td><td>${esc(day(r.period_start))} - ${esc(day(r.period_end))} (${esc(r.period_months)} month(s))</td></tr>
-<tr><td>Date paid</td><td>${esc(r.paid_at)}</td></tr>
-${r.note ? `<tr><td>Note</td><td>${esc(r.note)}</td></tr>` : ""}
-</table><p style="margin-top:48px">Signature and stamp</p></body></html>`);
+${row("Reçu de", payer, "تم الاستلام من")}
+${row("Montant", `${esc(r.amount)} ${esc(r.currency)}`, "المبلغ")}
+${row("Mode de paiement", esc(r.method), "طريقة الدفع")}
+${row("Formule", esc(r.plan), "الصيغة")}
+${row("Période", `${esc(receiptDay(r.period_start))} - ${esc(receiptDay(r.period_end))} (${esc(r.period_months)} mois / شهر)`, "الفترة")}
+${row("Date de paiement", esc(r.paid_at), "تاريخ الدفع")}
+${r.note ? row("Note", esc(r.note), "ملاحظة") : ""}
+</table><div class="sig"><span>Signature et cachet</span><span dir="rtl">الإمضاء والختم</span></div></body></html>`);
   w.document.close();
   w.focus();
   w.print();
