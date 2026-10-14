@@ -15,13 +15,14 @@ const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : 
 const toIso = (d: string) => (d ? new Date(`${d}T23:59:59`).toISOString() : null);
 const dateInput = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
 
-const ISSUER_FIELDS = ["legal_name", "rc", "nif", "nis", "address", "phone", "email"] as const;
+const ISSUER_FIELDS = ["legal_name", "rc", "nif", "ai", "nis", "address", "phone", "email"] as const;
 
 // Receipts go to paying firms, so they are bilingual: French (reference) on the left, Arabic on the right.
 const ISSUER_LABELS: Record<(typeof ISSUER_FIELDS)[number], [string, string]> = {
   legal_name: ["Raison sociale", "الاسم التجاري"],
   rc: ["RC", "السجل التجاري"],
   nif: ["NIF", "الرقم الجبائي"],
+  ai: ["Article d'imposition (AI)", "رقم المادة الجبائية"],
   nis: ["NIS", "رقم التعريف الإحصائي"],
   address: ["Adresse", "العنوان"],
   phone: ["Tél.", "الهاتف"],
@@ -35,8 +36,10 @@ const printReceipt = (r: Receipt) => {
   if (!w) { toast.error("Allow pop-ups to print the receipt."); return; }
   const row = (fr: string, value: string, ar: string) =>
     `<tr><td>${fr}</td><td class="v" dir="auto">${value}</td><td dir="rtl" class="ar">${ar}</td></tr>`;
-  const issuer = ISSUER_FIELDS.filter((k) => r.issuer?.[k])
-    .map((k) => row(ISSUER_LABELS[k][0], esc(r.issuer[k]), ISSUER_LABELS[k][1])).join("");
+  // The tax identifiers always print; a blank line is left to fill in by hand when not configured yet.
+  const ALWAYS: readonly string[] = ["rc", "nif", "ai", "nis"];
+  const issuer = ISSUER_FIELDS.filter((k) => r.issuer?.[k] || ALWAYS.includes(k))
+    .map((k) => row(ISSUER_LABELS[k][0], r.issuer?.[k] ? esc(r.issuer[k]) : "………………", ISSUER_LABELS[k][1])).join("");
   const payer = `${esc(r.payer?.name)}${r.payer?.company ? ` (${esc(r.payer.company)})` : ""}`;
   w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(r.receipt_no)}</title>
 <style>body{font-family:sans-serif;padding:40px;max-width:680px;margin:auto}h1{font-size:20px;display:flex;justify-content:space-between;gap:16px}table{width:100%;border-collapse:collapse;margin-top:16px}td{padding:6px 8px;border-bottom:1px solid #ddd}td.v{font-weight:600;text-align:center}td.ar{text-align:right}.void{color:#b00;font-weight:bold}.sig{margin-top:48px;display:flex;justify-content:space-between}</style></head><body>
@@ -174,7 +177,7 @@ const IssuerSettings = () => {
     <Card className="p-4 space-y-3">
       <div>
         <h2 className="font-semibold text-primary">Receipt issuer details</h2>
-        <p className="text-xs text-muted-foreground">Printed on every new receipt (company name, RC, NIF, NIS, address). Existing receipts keep the details they were issued with.</p>
+        <p className="text-xs text-muted-foreground">Printed on every new receipt (company name, RC, NIF, article d'imposition AI, NIS, address). Existing receipts keep the details they were issued with.</p>
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         {ISSUER_FIELDS.map((k) => (
