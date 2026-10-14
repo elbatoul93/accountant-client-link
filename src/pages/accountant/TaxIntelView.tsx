@@ -9,6 +9,8 @@
  *  5. G50 Preview — official-form layout aggregating the above
  */
 import { useEffect, useMemo, useState } from "react";
+import { useFmtDZD, useFmtNum } from "@/lib/useFormat";
+import { interpolate } from "@/lib/format";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,8 +33,6 @@ import {
 import { computeG50FromJournal, type JournalLine } from "@/lib/accounting/engine";
 import { type BillInvoice, type PrecompteMap, precompteKey } from "./SuiteModules";
 
-const fmtDZD = (n: number) =>
-  `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(n))} DA`;
 
 interface ClientLite { id: string; name: string; legalForm?: string }
 
@@ -60,6 +60,8 @@ const nextPeriod = (period: string): string => {
 };
 
 export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecompte }: Props) => {
+  const fmtNum = useFmtNum();
+  const fmtDZD = useFmtDZD();
   const [clientId, setClientId] = useState<string>("ALL");
   const [period, setPeriod] = useState<string>(new Date().toISOString().slice(0, 7));
 
@@ -265,7 +267,7 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
                     const active = !!d;
                     return (
                       <tr key={i} className={`border-t border-border/50 ${active ? "bg-gold/5" : ""}`}>
-                        <td className="py-2 px-3 text-xs">{b.label}</td>
+                        <td className="py-2 px-3 text-xs">{b.upTo === Infinity ? interpolate(t("irgb_above"), { amount: fmtNum(3_840_000) }) : b.label}</td>
                         <td className="py-2 px-3 text-end font-mono text-xs">{b.rate} %</td>
                         <td className="py-2 px-3 text-end font-mono text-xs">{d ? fmtDZD(d.slice) : "—"}</td>
                         <td className={`py-2 px-3 text-end font-mono text-xs font-semibold ${active ? "text-gold-deep" : "text-muted-foreground"}`}>
@@ -400,10 +402,10 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
             <div className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground p-5">
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div>
-                  <div className="text-xs opacity-80 uppercase tracking-wider">République Algérienne Démocratique et Populaire</div>
-                  <div className="text-xs opacity-80">Direction Générale des Impôts — DGI</div>
+                  <div className="text-xs opacity-80 uppercase tracking-wider">{t("ps_republic")}</div>
+                  <div className="text-xs opacity-80">{t("g50_dgi")}</div>
                   <h3 className="text-xl font-bold mt-2 flex items-center gap-2">
-                    <FileText className="h-5 w-5" /> {t("tax_g50_official")} — Série G n° 50
+                    <FileText className="h-5 w-5" /> {t("tax_g50_official")} — {t("g50_serie")}
                   </h3>
                 </div>
                 <div className="text-end">
@@ -435,10 +437,10 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
                 </div>
               )}
 
-              <G50SectionCard section={g50.sections.A} icon={<Receipt className="h-4 w-4" />} />
-              <G50SectionCard section={g50.sections.B} icon={<Calculator className="h-4 w-4" />} />
-              <G50SectionCard section={g50.sections.C} icon={<Briefcase className="h-4 w-4" />} />
-              <G50SectionCard section={g50.sections.D} icon={<Wallet className="h-4 w-4" />} />
+              <G50SectionCard section={g50.sections.A} t={t} titleKey="g50s_a" icon={<Receipt className="h-4 w-4" />} />
+              <G50SectionCard section={g50.sections.B} t={t} titleKey="g50s_b" icon={<Calculator className="h-4 w-4" />} />
+              <G50SectionCard section={g50.sections.C} t={t} titleKey="g50s_c" icon={<Briefcase className="h-4 w-4" />} />
+              <G50SectionCard section={g50.sections.D} t={t} titleKey="g50s_d" icon={<Wallet className="h-4 w-4" />} />
 
               {/* Grand total */}
               <div className="rounded-lg bg-gradient-to-r from-gold/15 to-gold/5 border-2 border-gold/40 p-4 flex items-center justify-between">
@@ -481,13 +483,13 @@ const KpiBox = ({ label, value, highlight }: { label: string; value: string; hig
   </Card>
 );
 
-const G50LineRow = ({ l }: { l: G50Line }) => {
-  const fmt = (n?: number) =>
-    n == null ? "—" : new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(n));
+const G50LineRow = ({ l, t }: { l: G50Line; t: (k: string) => string }) => {
+  const fmtNum = useFmtNum();
+  const fmt = (n?: number) => (n == null ? "—" : fmtNum(n));
   return (
     <tr className={`border-t border-border/50 hover:bg-muted/30 ${l.informational ? "text-muted-foreground" : ""}`}>
       <td className="py-2 px-3 font-mono text-xs font-bold text-primary">{l.code}</td>
-      <td className="py-2 px-3 text-xs">{l.label}</td>
+      <td className="py-2 px-3 text-xs">{l.labelKey ? t(l.labelKey) : l.label}</td>
       <td className="py-2 px-3 text-end font-mono text-xs hidden md:table-cell">{fmt(l.base)}</td>
       <td className="py-2 px-3 text-end font-mono text-xs hidden sm:table-cell">{l.rate != null ? `${l.rate} %` : "—"}</td>
       <td className={`py-2 px-3 text-end font-mono text-xs font-bold ${l.informational ? "text-muted-foreground italic" : "text-gold-deep"}`}>
@@ -498,24 +500,27 @@ const G50LineRow = ({ l }: { l: G50Line }) => {
 };
 
 const G50SectionCard = ({
-  section, icon,
+  section, icon, t, titleKey,
 }: {
   section: { title: string; lines: G50Line[]; subtotal: number };
   icon: React.ReactNode;
+  t: (k: string) => string;
+  titleKey: string;
 }) => {
+  const fmtNum = useFmtNum();
   if (section.lines.length === 0) return null;
   return (
     <Card className="p-0 overflow-hidden border-border/70">
       <div className="bg-muted/40 px-4 py-2 border-b border-border flex items-center justify-between">
-        <div className="font-bold text-primary text-sm flex items-center gap-2">{icon}{section.title}</div>
+        <div className="font-bold text-primary text-sm flex items-center gap-2">{icon}{t(titleKey)}</div>
         <Badge variant="outline" className="border-gold-deep/40 text-gold-deep bg-gold/5 font-mono text-xs">
-          {new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(section.subtotal))} DA
+          {fmtNum(section.subtotal)} DA
         </Badge>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <tbody>
-            {section.lines.map((l) => <G50LineRow key={l.code} l={l} />)}
+            {section.lines.map((l) => <G50LineRow key={l.code} l={l} t={t} />)}
           </tbody>
         </table>
       </div>

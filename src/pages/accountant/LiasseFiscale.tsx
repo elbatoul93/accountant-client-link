@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useFmtDZD } from "@/lib/useFormat";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +16,6 @@ import {
 import type { Employee } from "./SuiteModules";
 import { buildDAS } from "@/lib/accounting/payroll";
 
-const fmtDZD = (n: number) =>
-  `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(n))} DA`;
 
 interface ClientLite {
   id: string; name: string;
@@ -32,6 +31,7 @@ interface Props {
 }
 
 export const LiasseFiscaleView = ({ t, journal, employees, clients }: Props) => {
+  const fmtDZD = useFmtDZD();
   const [clientId, setClientId] = useState<string>(clients[0]?.id ?? "");
   const [year, setYear] = useState<number>(new Date().getFullYear() - 1);
   const client = clients.find((c) => c.id === clientId);
@@ -278,7 +278,9 @@ const FiscalHeader = ({ t, client, year, title }: { t: (k: string) => string; cl
 
 const FiscalTable = ({ t, title, rows, side, total }: {
   t: (k: string) => string; title: string; rows: any[]; side: "debit" | "credit"; total: number;
-}) => (
+}) => {
+  const fmtDZD = useFmtDZD();
+  return (
   <div className="border border-border rounded-lg overflow-hidden">
     <div className="px-3 py-2 bg-primary/5 border-b border-border">
       <h3 className="text-xs font-bold text-primary uppercase tracking-wider">{title}</h3>
@@ -304,6 +306,7 @@ const FiscalTable = ({ t, title, rows, side, total }: {
     </table>
   </div>
 );
+};
 
 const SmallStat = ({ label, value, tone }: { label: string; value: string; tone: "success" | "muted" | "gold" | "danger" }) => {
   const cls = {
