@@ -7,6 +7,8 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminBilling } from "@/pages/AdminBilling";
 
 type Status = "pending" | "active" | "suspended";
 interface AccountantRow {
@@ -52,6 +54,12 @@ const Admin = () => {
     <div className="min-h-screen bg-gradient-subtle">
       <SiteHeader />
       <main className="container max-w-4xl py-8 space-y-4">
+        <Tabs defaultValue="accounts">
+          <TabsList>
+            <TabsTrigger value="accounts">Accounts</TabsTrigger>
+            <TabsTrigger value="billing">Plans and receipts</TabsTrigger>
+          </TabsList>
+          <TabsContent value="accounts" className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-primary">Accountant accounts</h1>
           <p className="text-sm text-muted-foreground">{pending} waiting for activation</p>
@@ -81,6 +89,9 @@ const Admin = () => {
             </div>
           ))}
         </Card>
+          </TabsContent>
+          <TabsContent value="billing"><AdminBilling /></TabsContent>
+        </Tabs>
       </main>
     </div>
   );
