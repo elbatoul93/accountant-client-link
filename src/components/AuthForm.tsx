@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/Logo";
 import { LangSwitcher } from "@/components/LangSwitcher";
-import { ArrowLeft, Briefcase, Building2, Loader2 } from "lucide-react";
+import { ArrowLeft, Briefcase, Building2, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface AuthFormProps {
@@ -31,6 +31,10 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
   const [password, setPassword] = useState("");
   const [company, setCompany] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  // The invited address is fixed by the accountant; the signup trigger rejects any other.
+  const [emailLocked, setEmailLocked] = useState(false);
   const [inviteValid, setInviteValid] = useState<null | boolean>(isInvite ? null : true);
   const [accountantName, setAccountantName] = useState<string>("");
   const [prefillName, setPrefillName] = useState<string>("");
@@ -77,15 +81,24 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
       setInviteValid(true);
       setPrefillName(inv.prefill_name || "");
       setPrefillCompany(inv.prefill_company || "");
-      if (inv.email) setEmail(inv.email);
+      if (inv.email) {
+        setEmail(inv.email);
+        setEmailLocked(true);
+      }
       if (inv.accountant_name) setAccountantName(inv.accountant_name);
     })();
   }, [isInvite, token]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     if (!email || !password) {
-      toast.error(t("auth_fill_all_fields"));
+      setFormError(t("auth_fill_all_fields"));
+      return;
+    }
+    const needsName = mode === "signup" && !(isInvite && prefillName);
+    if (needsName && !name.trim()) {
+      setFormError(t("auth_name_required"));
       return;
     }
     setBusy(true);
@@ -93,12 +106,8 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
       if (mode === "signup") {
         const role = isInvite ? "client" : "accountant";
         const redirectUrl = `${window.location.origin}/login`;
-        const resolvedName = isInvite
-          ? (prefillName || email.split("@")[0])
-          : (name || email.split("@")[0]);
-        const resolvedCompany = isInvite
-          ? (prefillCompany || "My Business")
-          : (company || "Managementik & Co.");
+        const resolvedName = isInvite ? (prefillName || name.trim()) : name.trim();
+        const resolvedCompany = (isInvite ? prefillCompany : company).trim();
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -106,7 +115,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
             emailRedirectTo: redirectUrl,
             data: {
               name: resolvedName,
-              company: resolvedCompany,
+              ...(resolvedCompany ? { company: resolvedCompany } : {}),
               role,
               user_type: role,
               ...(isInvite ? { invite_token: token } : {}),
@@ -115,17 +124,22 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
         });
         if (error) {
           if (error.message.toLowerCase().includes("already")) {
-            toast.error(t("auth_account_exists"));
+            setFormError(t("auth_account_exists"));
           } else if (
             error.message.toLowerCase().includes("invit") ||
             error.message.toLowerCase().includes("expired") ||
             // Supabase hides the trigger's RAISE EXCEPTION text behind this generic message
             (isInvite && error.message.toLowerCase().includes("database error"))
           ) {
-            toast.error(t("auth_invite_link_expired"));
+            setFormError(t("auth_invite_link_expired"));
           } else {
-            toast.error(error.message);
+            setFormError(error.message);
           }
+          return;
+        }
+        // Supabase hides "already registered" behind a user with no identities
+        if (data.user && (data.user.identities?.length ?? 1) === 0) {
+          setFormError(t("auth_account_exists"));
           return;
         }
         if (!data.session) {
@@ -144,11 +158,11 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
         const msg = error.message.toLowerCase();
         if (error.code === "email_not_confirmed" || msg.includes("not confirmed")) {
           setUnconfirmedEmail(email);
-          toast.error(t("auth_email_not_confirmed"));
+          setFormError(t("auth_email_not_confirmed"));
         } else if (error.code === "invalid_credentials" || msg.includes("invalid")) {
-          toast.error(t("auth_invalid_credentials"));
+          setFormError(t("auth_invalid_credentials"));
         } else {
-          toast.error(error.message);
+          setFormError(error.message);
         }
         return;
       }
@@ -216,10 +230,10 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === "signup" && !isInvite && (
+              {mode === "signup" && !(isInvite && prefillName) && (
                 <div className="space-y-1.5">
                   <Label htmlFor="name">{t("auth_full_name")}</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("auth_ph_full_name")} />
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("auth_ph_full_name")} autoComplete="name" required />
                 </div>
               )}
               {isInvite && prefillName && (
@@ -232,12 +246,47 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
               )}
               <div className="space-y-1.5">
                 <Label htmlFor="email">{t("auth_email")}</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth_ph_email")} required />
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth_ph_email")} required autoComplete="email" readOnly={emailLocked} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="password">{t("auth_password")}</Label>
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={mode === "signup" ? 8 : undefined} />
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">{t("auth_password")}</Label>
+                  {mode === "login" && (
+                    <Link to="/forgot-password" className="text-xs text-primary hover:underline">{t("auth_forgot_password")}</Link>
+                  )}
+                </div>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    minLength={mode === "signup" ? 8 : undefined}
+                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                    aria-describedby={mode === "signup" ? "password-hint" : undefined}
+                    className="pe-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={t(showPassword ? "auth_hide_password" : "auth_show_password")}
+                    className="absolute inset-y-0 end-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {mode === "signup" && (
+                  <p id="password-hint" className="text-xs text-muted-foreground">{t("auth_password_hint")}</p>
+                )}
               </div>
+
+              {formError && (
+                <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {formError}
+                </p>
+              )}
 
               <Button type="submit" variant="hero" size="lg" className="w-full" disabled={busy || (isInvite && inviteValid === null)}>
                 {busy && <Loader2 className="me-2 h-4 w-4 animate-spin" />}

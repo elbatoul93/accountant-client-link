@@ -37,8 +37,11 @@ const clearLocalAppData = () => {
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [lang, setLangState] = useState<Lang>(() => {
-    const saved = localStorage.getItem("mgmtk_lang");
-    return (saved as Lang) || "ar";
+    try {
+      const saved = localStorage.getItem("mgmtk_lang");
+      if (saved === "ar" || saved === "fr" || saved === "en") return saved;
+    } catch { /* storage unavailable */ }
+    return "ar";
   });
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +51,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = dir;
-    localStorage.setItem("mgmtk_lang", lang);
+    try { localStorage.setItem("mgmtk_lang", lang); } catch { /* storage unavailable */ }
   }, [lang, dir]);
 
   // Hydrate user from a Supabase session
