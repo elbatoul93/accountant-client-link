@@ -20,18 +20,16 @@ import { DocChecklist } from "@/components/DocChecklist";
 import { DocPreviewDialog } from "@/components/DocPreviewDialog";
 import { WorkflowBadge } from "@/components/WorkflowStatus";
 import { FiscalCalendar } from "@/components/FiscalCalendar";
-import { addIncomingInvoice, pushNotification, getVault, onPortalChange, type VaultEntry } from "@/lib/portal";
-import { loadSharedDocsForClient, signSharedDocDb } from "@/lib/accountantStore";
-import { readJson } from "@/lib/safeStorage";
-import { Decl, DeclType, Doc, Invoice, MAX_UPLOAD_BYTES, REGIME_DECLS, STORAGE_KEY, SharedDoc, TaxRegime, fmtDZD, regimeShort, safeParse } from "@/pages/client/shared";
+import { loadSharedDocsForClient, signSharedDocDb, loadInvoices, loadDecls } from "@/lib/accountantStore";
+import { loadClients, loadEmployees } from "@/lib/businessStore";
+import { loadDocuments, myAccountantId, sendNotification } from "@/lib/portalStore";
+import { sortVault, vaultFromInvoiceDocs, vaultFromShared, type VaultEntry } from "@/lib/vault";
+import { Decl, DeclType, Doc, Invoice, MAX_UPLOAD_BYTES, REGIME_DECLS, SharedDoc, TaxRegime, fmtDZD, regimeShort, safeParse } from "@/pages/client/shared";
 import { SignDialog } from "@/pages/client/SignAndVault";
 
 const ClientDashboard = () => {
   const { t, user } = useApp();
-  const [docs, setDocs] = useState<Doc[]>(() => {
-    const cached = readJson<Doc[]>(STORAGE_KEY, []);
-    return Array.isArray(cached) ? cached : [];
-  });
+  const [docs, setDocs] = useState<Doc[]>([]);
   const [tick, setTick] = useState(0);
   const [signing, setSigning] = useState<SharedDoc | null>(null);
   const [previewDoc, setPreviewDoc] = useState<SharedDoc | null>(null);
@@ -94,10 +92,6 @@ const ClientDashboard = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
-  }, [docs]);
-
   // Hydrate the document list from Supabase so deletes can target real rows/files.
   useEffect(() => {
     let cancelled = false;
@@ -126,8 +120,36 @@ const ClientDashboard = () => {
     return () => { cancelled = true; };
   }, []);
 
-  // Listen to portal-wide changes (signatures, new shared docs, etc.)
-  useEffect(() => onPortalChange(() => setTick((x) => x + 1)), []);
+  // The accountant's records about this client. RLS limits every query to the signed-in client's own rows.
+  type Biz = {
+    clients: { id: string; taxRegime?: TaxRegime; hasCacobatph?: boolean }[];
+    decls: Decl[]; invoices: Invoice[]; employeeCount: number;
+    invoiceDocs: { id: string; fileName: string; createdAt: string }[];
+  };
+  const [biz, setBiz] = useState<Biz>({ clients: [], decls: [], invoices: [], employeeCount: 0, invoiceDocs: [] });
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: au } = await supabase.auth.getUser();
+        const accId = await myAccountantId();
+        if (!au.user || !accId) return;
+        const [cl, dc, iv, em, docsRows] = await Promise.all([
+          loadClients(accId), loadDecls(accId), loadInvoices(accId), loadEmployees(accId),
+          loadDocuments(au.user.id, "invoice"),
+        ]);
+        if (cancelled) return;
+        setBiz({
+          clients: cl as Biz["clients"], decls: dc, invoices: iv, employeeCount: em.length,
+          invoiceDocs: docsRows.map((d) => ({ id: d.id, fileName: d.fileName, createdAt: d.createdAt })),
+        });
+      } catch {
+        if (!cancelled) toast.error(t("load_failed"), { id: "load-failed" });
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tick]);
 
   const fileToDataUrl = (f: File) =>
     new Promise<string>((res, rej) => {
@@ -194,33 +216,28 @@ const ClientDashboard = () => {
         file_path: path,
         mime_type: pendingFile.type || "application/octet-stream",
         size: pendingFile.size,
+        kind: "invoice",
       }).select("id,file_path").single();
       if (dbErr) throw dbErr;
       setUploadProgress(90);
 
-      // 4) Mirror into the legacy local-portal stream so the accountant view stays in sync
+      // 4) Tell the accountant (portal notification addressed by account)
       try {
-        const dataUrl = pendingFile.size <= 5 * 1024 * 1024 ? await fileToDataUrl(pendingFile) : undefined;
-        addIncomingInvoice({
-          clientEmail: user.email,
-          clientName: user.name,
-          fileName: pendingFile.name,
-          mimeType: pendingFile.type || "application/octet-stream",
-          fileData: dataUrl,
-          size: pendingFile.size,
-          note: uploadDescription.trim() || undefined,
-        } as any);
-        pushNotification({
-          forRole: "accountant",
-          fromName: user.name,
-          title: t("notif_invoice_uploaded_title"),
-          message: t("notif_invoice_uploaded_msg")
-            .replace("{client}", user.name)
-            .replace("{file}", pendingFile.name),
-          type: "invoice_uploaded",
-          link: "/dashboard/accountant",
-        });
+        const accId = await myAccountantId();
+        if (accId) {
+          await sendNotification({
+            recipientId: accId,
+            title: t("notif_invoice_uploaded_title"),
+            message: t("notif_invoice_uploaded_msg")
+              .replace("{client}", user.name)
+              .replace("{file}", pendingFile.name),
+            type: "invoice_uploaded",
+            link: "/dashboard/accountant",
+            refId: inserted?.id,
+          });
+        }
       } catch { /* non-blocking */ }
+      setTick((x) => x + 1);
 
       setDocs((prev) => [{
         id: inserted?.id,
@@ -268,27 +285,21 @@ const ClientDashboard = () => {
       totalDue: 0, myRegime: undefined as TaxRegime | undefined, requiredTypes: [] as DeclType[], vault: [] as VaultEntry[],
       myEmpCount: 0, myHasCacobatph: false,
     };
-    const allClients: any[] = readJson("mgmtk_acc_clients", []);
-    const allDecls: Decl[] = readJson("mgmtk_acc_declarations", []);
-    const allInvoices: Invoice[] = readJson("mgmtk_acc_invoices", []);
-    const allEmployees: any[] = readJson("mgmtk_acc_employees", []);
-    const mine = allClients.filter(
-      (c) => c.contact?.toLowerCase() === user.email.toLowerCase()
-    );
+    const mine = biz.clients;
     const ids = new Set(mine.map((c) => c.id));
     const regime = mine.find((c) => c.taxRegime)?.taxRegime;
     const hasCaco = mine.some((c) => c.hasCacobatph);
-    const empCount = allEmployees.filter((e) => ids.has(e.clientId)).length;
+    const empCount = biz.employeeCount;
     const required = regime ? REGIME_DECLS[regime] : [];
     const requiredSet = new Set<DeclType>(required);
-    const ownDecls = allDecls.filter((d) => ids.has(d.clientId));
+    const ownDecls = biz.decls.filter((d) => ids.has(d.clientId));
     const myD = regime ? ownDecls.filter((d) => requiredSet.has(d.type)) : ownDecls;
-    const myI = allInvoices.filter((i) => ids.has(i.clientId));
+    const myI = biz.invoices.filter((i) => ids.has(i.clientId));
     const myS = dbSharedDocs;
     const due = myD.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
-    const v = getVault({ clientEmail: user.email });
+    const v = sortVault([...vaultFromShared(dbSharedDocs), ...vaultFromInvoiceDocs(biz.invoiceDocs, user.name, user.email)]);
     return { myDecls: myD, myInvoices: myI, mySharedDocs: myS, totalDue: due, myRegime: regime, requiredTypes: required, vault: v, myEmpCount: empCount, myHasCacobatph: hasCaco };
-  }, [user, docs, tick, dbSharedDocs]);
+  }, [user, biz, dbSharedDocs]);
 
   // Auth/role guard handled by ProtectedRoute wrapper — keep all hooks unconditional below.
 
@@ -559,7 +570,7 @@ const ClientDashboard = () => {
 
           {/* === MONTHLY CHECKLIST === */}
           <TabsContent value="checklist" className="mt-5">
-            <DocChecklist t={t} clientEmail={user.email} clientName={user.name} />
+            <DocChecklist t={t} />
           </TabsContent>
 
           {/* === DEADLINES === */}
@@ -652,14 +663,21 @@ const ClientDashboard = () => {
             signedBy: user.name,
           });
           await refreshSharedDocs();
-          pushNotification({
-            forRole: "accountant",
-            title: t("notif_doc_signed_title"),
-            message: t("notif_doc_signed_msg")
-              .replace("{client}", user.name)
-              .replace("{label}", signing?.label || ""),
-            type: "doc_signed",
-          });
+          try {
+            const accId = await myAccountantId();
+            if (accId) {
+              await sendNotification({
+                recipientId: accId,
+                title: t("notif_doc_signed_title"),
+                message: t("notif_doc_signed_msg")
+                  .replace("{client}", user.name)
+                  .replace("{label}", signing?.label || ""),
+                type: "doc_signed",
+                link: "/dashboard/accountant",
+                refId: id,
+              });
+            }
+          } catch { /* the signature itself is saved */ }
           toast.success(t("sig_success"));
           setSigning(null);
         }}

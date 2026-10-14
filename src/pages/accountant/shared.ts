@@ -1,4 +1,3 @@
-import { readJson } from "@/lib/safeStorage";
 import { type WorkflowStatus } from "@/lib/portal";
 
 export const fmtDZD = (n: number) =>
@@ -47,22 +46,5 @@ export interface FinStmt { id: string; clientId: string; clientName: string; yea
 export interface SharedDoc { id: string; clientId: string; clientName: string; clientEmail: string; type: "G50" | "CNAS" | "FS" | "OTHER"; label: string; date: string; payload?: string; fileName?: string; mimeType?: string; fileData?: string; signedAt?: string; signedBy?: string; signatureDataUrl?: string; workflow?: WorkflowStatus }
 
 export interface LegalDoc { id: string; clientId: string; label: string; kind: "RC" | "NIF" | "NIS" | "STATUTS" | "OTHER"; fileName?: string; mimeType?: string; fileData?: string; date: string }
-
-export const KEY_CLIENTS = "mgmtk_acc_clients";
-
-export const KEY_INVOICES = "mgmtk_acc_invoices";
-
-export const KEY_DECLS = "mgmtk_acc_declarations";
-
-export const KEY_FS = "mgmtk_acc_fs";
-
-export const KEY_SHARED = "mgmtk_acc_shared_docs";
-
-export const KEY_LEGAL = "mgmtk_acc_legal_docs";
-
-export const load = <T,>(k: string): T[] => {
-  const v = readJson<T[]>(k, []);
-  return Array.isArray(v) ? v : [];
-};
 
 export type View = "dashboard" | "clients" | "invoices" | "obligations" | "tools" | "profile" | "payroll" | "billing" | "journal" | "reports" | "taxintel" | "liasse" | "assets" | "calendar" | "incoming" | "vault" | "tracking" | "chat";

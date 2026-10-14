@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { CheckCircle2, PenTool, Archive, FileSignature } from "lucide-react";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/SignaturePad";
-import { type VaultEntry } from "@/lib/portal";
+import { type VaultEntry } from "@/lib/vault";
 import { SharedDoc } from "@/pages/client/shared";
 
 export const SignDialog = ({

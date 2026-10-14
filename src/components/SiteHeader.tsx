@@ -39,7 +39,7 @@ export const SiteHeader = () => {
         <div className="flex items-center gap-1 sm:gap-2">
           <LangSwitcher />
           {user && (
-            <NotificationBell role={user.role} email={user.role === "client" ? user.email : undefined} t={t} />
+            <NotificationBell t={t} />
           )}
           {user ? (
             <DropdownMenu>

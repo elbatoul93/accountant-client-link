@@ -1,33 +1,51 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ListChecks, CheckCircle2, AlertCircle, ShieldCheck } from "lucide-react";
-import {
-  ensureChecklist, getChecklistFor, setChecklistStatus, onPortalChange,
-  DEFAULT_CHECKLIST, type ChecklistEntry,
-} from "@/lib/portal";
+import { DEFAULT_CHECKLIST } from "@/lib/portal";
+import { ensureChecklist, loadChecklist, setChecklistStatus, type ChecklistRow, type ChecklistStatus } from "@/lib/portalStore";
 
 interface Props {
   t: (k: string) => string;
-  clientEmail: string;
-  clientName: string;
+  /** Accountant mode: the client's `client_ref`. Client mode: omit (the database only returns their own rows). */
+  clientRef?: string;
   /** When true, renders accountant variant (validate button). */
   accountantMode?: boolean;
   monthKey?: string;
 }
 
-const labelOf = (kind: ChecklistEntry["kind"]): string =>
+const labelOf = (kind: ChecklistRow["kind"]): string =>
   DEFAULT_CHECKLIST.find((d) => d.kind === kind)?.labelFr || kind;
 
-export const DocChecklist = ({ t, clientEmail, clientName, accountantMode, monthKey }: Props) => {
+export const DocChecklist = ({ t, clientRef, accountantMode, monthKey }: Props) => {
   const month = monthKey || new Date().toISOString().slice(0, 7);
-  const [tick, setTick] = useState(0);
-  useEffect(() => { ensureChecklist(clientEmail, clientName, month); }, [clientEmail, clientName, month]);
-  useEffect(() => onPortalChange(() => setTick((x) => x + 1)), []);
+  const [entries, setEntries] = useState<ChecklistRow[]>([]);
 
-  const entries = useMemo(() => getChecklistFor(clientEmail, month), [clientEmail, month, tick]);
+  const refresh = useCallback(async () => {
+    try {
+      if (accountantMode && clientRef) {
+        const { data: au } = await supabase.auth.getUser();
+        if (au.user) await ensureChecklist(au.user.id, clientRef, month);
+      }
+      setEntries(await loadChecklist(month, accountantMode ? clientRef : undefined));
+    } catch {
+      toast.error(t("load_failed"), { id: "load-failed" });
+    }
+  }, [accountantMode, clientRef, month, t]);
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const setStatus = async (id: string, status: ChecklistStatus) => {
+    try {
+      await setChecklistStatus(id, status);
+      await refresh();
+    } catch {
+      toast.error(t("i18n_error_generic"));
+    }
+  };
   const received = entries.filter((e) => e.status !== "missing").length;
   const validated = entries.filter((e) => e.status === "validated").length;
   const total = entries.length || DEFAULT_CHECKLIST.length;
@@ -74,19 +92,19 @@ export const DocChecklist = ({ t, clientEmail, clientName, accountantMode, month
                 <div className="flex items-center gap-1 flex-wrap justify-end">
                   {e.status !== "received" && (
                     <Button size="sm" variant="outline" className="h-7 text-[11px]"
-                      onClick={() => setChecklistStatus(e.id, "received")}>
+                      onClick={() => setStatus(e.id, "received")}>
                       {t("chk_mark_received")}
                     </Button>
                   )}
                   {e.status !== "validated" && (
                     <Button size="sm" variant="outlineGold" className="h-7 text-[11px]"
-                      onClick={() => setChecklistStatus(e.id, "validated")}>
+                      onClick={() => setStatus(e.id, "validated")}>
                       {t("chk_validate")}
                     </Button>
                   )}
                   {e.status !== "missing" && (
                     <Button size="sm" variant="ghost" className="h-7 text-[11px]"
-                      onClick={() => setChecklistStatus(e.id, "missing")}>
+                      onClick={() => setStatus(e.id, "missing")}>
                       {t("chk_reset")}
                     </Button>
                   )}
