@@ -5,6 +5,7 @@
 // - Performs a one-time migration of existing localStorage rows into the DB.
 
 import { supabase } from "@/integrations/supabase/client";
+import { toIsoDay, todayIso } from "@/lib/isoDate";
 import type { WorkflowStatus } from "@/lib/portal";
 import { loadTranslations, type Lang } from "@/lib/i18n";
 import { toast } from "sonner";
@@ -189,13 +190,13 @@ export const syncInvoices = async (prev: Invoice[], next: Invoice[], accId: stri
   if (adds.length) {
     must(await supabase.from("acc_invoices").insert(adds.map((x) => ({
       id: x.id, accountant_id: accId, client_ref: x.clientId, client_name: x.clientName,
-      amount: x.amount, invoice_date: x.date, status: x.status,
+      amount: x.amount, invoice_date: toIsoDay(x.date) ?? todayIso(), status: x.status,
     }))));
   }
   for (const x of updates) {
     must(await supabase.from("acc_invoices").update({
       client_ref: x.clientId, client_name: x.clientName, amount: x.amount,
-      invoice_date: x.date, status: x.status,
+      invoice_date: toIsoDay(x.date) ?? todayIso(), status: x.status,
     }).eq("id", x.id));
   }
   if (deletes.length) must(await supabase.from("acc_invoices").delete().in("id", deletes));
@@ -265,7 +266,7 @@ export const syncShared = async (
     must(await supabase.from("acc_shared_documents").insert([{
       id: x.id, accountant_id: accId, client_ref: x.clientId, client_name: x.clientName,
       client_email: x.clientEmail || null, doc_type: x.type, label: x.label,
-      doc_date: x.date && x.date.length >= 10 ? x.date.slice(0, 10) : null,
+      doc_date: toIsoDay(x.date),
       payload: x.payload ?? null, file_name: x.fileName ?? null, mime_type: x.mimeType ?? null,
       file_path: filePath ?? null, signed_at: x.signedAt ?? null, signed_by: x.signedBy ?? null,
       signature_data_url: x.signatureDataUrl ?? null,
@@ -284,7 +285,7 @@ export const syncShared = async (
     must(await supabase.from("acc_shared_documents").update({
       client_ref: x.clientId, client_name: x.clientName, client_email: x.clientEmail || null,
       doc_type: x.type, label: x.label,
-      doc_date: x.date && x.date.length >= 10 ? x.date.slice(0, 10) : null,
+      doc_date: toIsoDay(x.date),
       payload: x.payload ?? null, file_name: x.fileName ?? null, mime_type: x.mimeType ?? null,
       file_path: filePath ?? null, signed_at: x.signedAt ?? null, signed_by: x.signedBy ?? null,
       signature_data_url: x.signatureDataUrl ?? null,
@@ -315,7 +316,7 @@ export const syncLegal = async (
     must(await supabase.from("acc_legal_documents").insert({
       id: x.id, accountant_id: accId, client_ref: x.clientId, label: x.label, kind: x.kind,
       file_name: x.fileName ?? null, mime_type: x.mimeType ?? null, file_path: filePath ?? null,
-      doc_date: x.date && x.date.length >= 10 ? x.date.slice(0, 10) : null,
+      doc_date: toIsoDay(x.date),
     }));
   }
   for (const x of updates) {
@@ -330,7 +331,7 @@ export const syncLegal = async (
     must(await supabase.from("acc_legal_documents").update({
       client_ref: x.clientId, label: x.label, kind: x.kind,
       file_name: x.fileName ?? null, mime_type: x.mimeType ?? null, file_path: filePath ?? null,
-      doc_date: x.date && x.date.length >= 10 ? x.date.slice(0, 10) : null,
+      doc_date: toIsoDay(x.date),
     }).eq("id", x.id));
   }
   if (deletes.length) must(await supabase.from("acc_legal_documents").delete().in("id", deletes));

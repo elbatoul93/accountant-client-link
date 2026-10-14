@@ -12,6 +12,7 @@ import { FileText, AlertCircle, ShieldCheck, Plus, Building2, IdCard, Mail, Uplo
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Client, Invoice, LegalDoc, REGIME_DECLS, TaxRegime } from "@/pages/accountant/shared";
+import { todayIso } from "@/lib/isoDate";
 import { Field, Section } from "@/pages/accountant/ui";
 
 export const AddClientDialog = ({
@@ -314,7 +315,7 @@ export const UploadLegalDialog = ({ clientId, onAdd, t }: { clientId: string; on
     onAdd({
       id: crypto.randomUUID(), clientId, label: label.trim(), kind,
       fileName: file?.name, mimeType: file?.type, fileData: fileData || undefined,
-      date: new Date().toLocaleDateString("fr-DZ"),
+      date: todayIso(),
     });
     toast.success(t("acc_doc_added"));
     setLabel(""); setKind("RC"); setFile(null); setFileData(""); setOpen(false);
@@ -363,7 +364,7 @@ export const AddInvoiceDialog = ({ clients, onAdd, t }: { clients: Client[]; onA
       id: `INV-${Date.now().toString().slice(-5)}`,
       clientId: c.id, clientName: c.name,
       amount: Number(amount),
-      date: new Date().toLocaleDateString("fr-DZ"),
+      date: todayIso(),
       status: "pending",
     });
     toast.success(t("acc_invoice_added"));
