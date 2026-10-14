@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { LangSwitcher } from "./LangSwitcher";
 import { Logo } from "./Logo";
 import { NotificationBell } from "./NotificationBell";
@@ -17,6 +18,7 @@ import { toast } from "sonner";
 export const SiteHeader = () => {
   const { t, user, logout } = useApp();
   const navigate = useNavigate();
+  const isAdmin = useIsAdmin(!!user) === "yes";
   const onLanding = useLocation().pathname === "/";
 
   const handleLogout = async () => {
@@ -60,6 +62,9 @@ export const SiteHeader = () => {
                 <DropdownMenuItem onClick={() => navigate(user.role === "accountant" ? "/dashboard/accountant" : "/dashboard/client")}>
                   <LayoutDashboard className="me-2 h-4 w-4" /> {t("nav_dashboard")}
                 </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem onClick={() => navigate("/admin")}>Admin</DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                   <LogOut className="me-2 h-4 w-4" /> {t("nav_logout")}

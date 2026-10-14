@@ -5,6 +5,7 @@ import {
   loadBills, loadEmployees, loadJournal, loadLocks, loadPrecompte,
   syncBills, syncEmployees, syncJournal, syncLocks, syncPrecompte,
 } from "@/lib/businessStore";
+import { useFmtDZD } from "@/lib/useFormat";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ import {
 import { Plus, Trash2, Inbox, Users, FileText, BookOpen, FileDown, Receipt, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { computePayslip } from "@/lib/accounting/payroll";
+import { recordPayslip } from "@/lib/payrollStore";
 import { PcnPicker } from "@/components/PcnPicker";
 import {
   type JournalLine, type PeriodLock,
@@ -26,8 +28,6 @@ import {
   isLineLocked,
 } from "@/lib/accounting/engine";
 
-const fmtDZD = (n: number) =>
-  `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(n)} DA`;
 
 /* ===== Types ===== */
 export interface Employee {
@@ -183,6 +183,7 @@ export const PayrollView = ({
   setJournal: React.Dispatch<React.SetStateAction<JournalEntry[]>>;
   locks: PeriodLock[];
 }) => {
+  const fmtDZD = useFmtDZD();
   const [open, setOpen] = useState(false);
   const [slip, setSlip] = useState<Employee | null>(null);
 
@@ -204,6 +205,7 @@ export const PayrollView = ({
       hasCacobatph: client?.hasCacobatph,
     });
     setJournal((p) => [...lines, ...p]);
+    void recordPayslip(e, e.clientId, period, lines[0]?.batchId);
     toast.success(`${t("eng_payroll_posted")} — ${e.name}`);
     setSlip(e);
   };
@@ -333,6 +335,7 @@ const AddEmployeeDialog = ({
 };
 
 const PayslipDialog = ({ employee, onClose, t }: { employee: Employee | null; onClose: () => void; t: (k: string) => string }) => {
+  const fmtDZD = useFmtDZD();
   if (!employee) return null;
   const { gross, ssEmployee: ss, irg, net } = computePayslip(employee);
   const print = () => window.print();
@@ -380,6 +383,7 @@ export const BillingView = ({
   setJournal: React.Dispatch<React.SetStateAction<JournalEntry[]>>;
   locks: PeriodLock[];
 }) => {
+  const fmtDZD = useFmtDZD();
   const [open, setOpen] = useState(false);
   const sales = bills.filter((b) => b.kind === "sales");
   const purchases = bills.filter((b) => b.kind === "purchase");
@@ -513,6 +517,7 @@ const AddBillDialog = ({
   open, onOpenChange, clients, onAdd, t,
 }: { open: boolean; onOpenChange: (o: boolean) => void; clients: ClientLite[];
      onAdd: (b: BillInvoice) => void; t: (k: string) => string }) => {
+  const fmtDZD = useFmtDZD();
   const [kind, setKind] = useState<"purchase" | "sales">("sales");
   const [number, setNumber] = useState("");
   const [party, setParty] = useState("");
@@ -636,6 +641,7 @@ export const JournalView = ({
   clients: ClientLite[];
   locks: PeriodLock[];
 }) => {
+  const fmtDZD = useFmtDZD();
   const [open, setOpen] = useState(false);
   const totalDebit = journal.reduce((s, j) => s + j.debit, 0);
   const totalCredit = journal.reduce((s, j) => s + j.credit, 0);
@@ -727,6 +733,7 @@ const AddJournalDialog = ({
   open, onOpenChange, clients, onAdd, t, locks,
 }: { open: boolean; onOpenChange: (o: boolean) => void; clients: ClientLite[];
      onAdd: (rows: JournalEntry[]) => void; t: (k: string) => string; locks: PeriodLock[] }) => {
+  const fmtDZD = useFmtDZD();
   type Row = { account: string; label: string; debit: string; credit: string };
   const blank: Row = { account: "", label: "", debit: "", credit: "" };
   const [rows, setRows] = useState<Row[]>([{ ...blank }, { ...blank }]);

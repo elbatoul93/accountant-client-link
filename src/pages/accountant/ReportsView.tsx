@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useFmtDZD } from "@/lib/useFormat";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,8 +14,6 @@ import {
   computeTrialBalance, computeBilan, computeTCR, computeG50FromJournal,
 } from "@/lib/accounting/engine";
 
-const fmtDZD = (n: number) =>
-  `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(n))} DA`;
 
 interface ClientLite { id: string; name: string }
 
@@ -26,6 +25,7 @@ interface Props {
 }
 
 export const ReportsView = ({ t, journal, locks, clients }: Props) => {
+  const fmtDZD = useFmtDZD();
   const [clientId, setClientId] = useState<string>("ALL");
   const [period, setPeriod] = useState<string>(new Date().toISOString().slice(0, 7));
   const from = `${period}-01`;
@@ -238,14 +238,19 @@ const EmptyMsg = ({ label }: { label: string }) => (
   <div className="text-center py-8 text-sm text-muted-foreground">{label}</div>
 );
 
-const Total = ({ label, value }: { label: string; value: number }) => (
-  <div className="border-t-2 border-border mt-2 pt-3 flex items-center justify-between font-bold">
-    <span className="text-xs uppercase text-muted-foreground">{label}</span>
-    <span className="text-base text-primary font-mono">{fmtDZD(value)}</span>
-  </div>
-);
+const Total = ({ label, value }: { label: string; value: number }) => {
+  const fmtDZD = useFmtDZD();
+  return (
+    <div className="border-t-2 border-border mt-2 pt-3 flex items-center justify-between font-bold">
+      <span className="text-xs uppercase text-muted-foreground">{label}</span>
+      <span className="text-base text-primary font-mono">{fmtDZD(value)}</span>
+    </div>
+  );
+};
 
-const BilanCol = ({ rows, side, t }: { rows: any[]; side: "actif" | "passif"; t: (k: string) => string }) => (
+const BilanCol = ({ rows, side, t }: { rows: any[]; side: "actif" | "passif"; t: (k: string) => string }) => {
+  const fmtDZD = useFmtDZD();
+  return (
   <div className="space-y-1">
     {rows.length === 0 ? <EmptyMsg label={t("rep_no_data")} /> : rows.map((r) => {
       const v = side === "actif" ? Math.max(0, r.balance) : Math.max(0, -r.balance);
@@ -261,9 +266,12 @@ const BilanCol = ({ rows, side, t }: { rows: any[]; side: "actif" | "passif"; t:
       );
     })}
   </div>
-);
+  );
+};
 
-const TcrCol = ({ rows, side }: { rows: any[]; side: "debit" | "credit" }) => (
+const TcrCol = ({ rows, side }: { rows: any[]; side: "debit" | "credit" }) => {
+  const fmtDZD = useFmtDZD();
+  return (
   <div className="space-y-1">
     {rows.length === 0 ? <EmptyMsg label="—" /> : rows.map((r) => {
       const v = side === "credit" ? r.credit - r.debit : r.debit - r.credit;
@@ -279,7 +287,8 @@ const TcrCol = ({ rows, side }: { rows: any[]; side: "debit" | "credit" }) => (
       );
     })}
   </div>
-);
+  );
+};
 
 const KpiBox = ({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) => (
   <Card className={`p-3 shadow-card ${highlight ? "border-gold/40 bg-gradient-to-br from-gold/10 to-card" : ""}`}>
@@ -288,10 +297,13 @@ const KpiBox = ({ label, value, highlight }: { label: string; value: string; hig
   </Card>
 );
 
-const G50Row = ({ label, base, value }: { label: string; base: number; value: number }) => (
+const G50Row = ({ label, base, value }: { label: string; base: number; value: number }) => {
+  const fmtDZD = useFmtDZD();
+  return (
   <div className="grid grid-cols-12 gap-2 items-center text-xs p-2 rounded border border-border/60 bg-card">
     <div className="col-span-5 font-semibold">{label}</div>
     <div className="col-span-4 text-end text-muted-foreground font-mono">Base: {fmtDZD(base)}</div>
     <div className="col-span-3 text-end font-bold text-gold-deep font-mono">{fmtDZD(value)}</div>
   </div>
 );
+};

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { en } from "@/lib/i18n/en";
 import { fr } from "@/lib/i18n/fr";
 import { ar } from "@/lib/i18n/ar";
-import { detectBrowserLang, formatDZD, interpolate } from "@/lib/format";
+import { detectBrowserLang, formatDZD, interpolate, pluralKey } from "@/lib/format";
 
 const placeholders = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort().join(",");
 
@@ -20,6 +20,8 @@ describe("translations", () => {
   it("keeps {placeholders} identical across languages", () => {
     for (const [name, d] of Object.entries(dicts)) {
       for (const k of Object.keys(en)) {
+        // Plural forms may legitimately drop {n} ("1 reminder", Arabic dual).
+        if (/_(one|two|few|many)$/.test(k)) continue;
         expect(placeholders(d[k]), `${name}.${k}`).toBe(placeholders((en as Record<string, string>)[k]));
       }
     }
@@ -50,6 +52,16 @@ describe("format helpers", () => {
     expect(detectBrowserLang(["ar-DZ"])).toBe("ar");
     expect(detectBrowserLang(["de"])).toBeNull();
     expect(detectBrowserLang(undefined)).toBeNull();
+  });
+
+  it("picks the plural form per language", () => {
+    expect(pluralKey("k", 1, "en")).toBe("k_one");
+    expect(pluralKey("k", 5, "en")).toBe("k_other");
+    expect(pluralKey("k", 1, "ar")).toBe("k_one");
+    expect(pluralKey("k", 2, "ar")).toBe("k_two");
+    expect(pluralKey("k", 5, "ar")).toBe("k_few");
+    expect(pluralKey("k", 15, "ar")).toBe("k_many");
+    expect(pluralKey("k", 100, "ar")).toBe("k_other");
   });
 
   it("formats dinars with whole numbers in every language", () => {

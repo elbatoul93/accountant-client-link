@@ -1,7 +1,8 @@
+import { useApp } from "@/contexts/AppContext";
 import { LegalLayout, COMPANY, CONTACT_EMAIL } from "./LegalLayout";
 
-const Terms = () => (
-  <LegalLayout title="Conditions générales d'utilisation">
+const TermsFr = () => (
+  <>
     <p>
       Les présentes conditions régissent l'utilisation de la plateforme Managementik, éditée par {COMPANY}.
       En créant un compte, vous les acceptez.
@@ -60,7 +61,74 @@ const Terms = () => (
       {COMPANY}. Registre du commerce, NIF et adresse : à compléter. Contact :{" "}
       <a className="text-primary underline" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
     </p>
-  </LegalLayout>
+  </>
 );
+
+const TermsAr = () => (
+  <>
+    <p>
+      تحكم هذه الشروط استخدام منصة Managementik التي تنشرها {COMPANY}. بإنشائكم حسابًا فإنكم تقبلونها.
+    </p>
+
+    <h2>1. الخدمة</h2>
+    <p>
+      تتيح Managementik لمكتب المحاسبة دعوة عملائه وتبادل الوثائق وإعداد التصريحات ومتابعة الآجال الجبائية.
+      ويصل العملاء إلى الخدمة بدعوة من مكتبهم.
+    </p>
+
+    <h2>2. أداة مساعدة وليست استشارة</h2>
+    <p>
+      الحسابات والنماذج والتصريحات المُنشأة هي مساعدة على الإعداد، ولا تشكّل استشارة جبائية أو محاسبية أو
+      قانونية. ويبقى المكتب وحده مسؤولًا عن صحة التصريحات المرسلة إلى الإدارة وعن التحقق من النتائج.
+    </p>
+
+    <h2>3. الحسابات</h2>
+    <p>
+      أنتم مسؤولون عن سرية معرّفاتكم وعن النشاط الجاري على حسابكم. ويجب أن تكون المعلومات المقدَّمة صحيحة.
+    </p>
+
+    <h2>4. المعطيات</h2>
+    <p>
+      يحتفظ المكتب وعملاؤه بملكية معطياتهم. ونعالجها وفق{" "}
+      <a className="text-primary underline" href="/privacy">سياسة الخصوصية</a>. يمكنكم تصدير معطياتكم
+      وطلب حذفها عند انتهاء العقد.
+    </p>
+
+    <h2>5. الاستخدام المقبول</h2>
+    <p>
+      يُمنع استخدام الخدمة بشكل غير مشروع، أو رفع محتويات غير قانونية أو ضارة، أو محاولة الوصول إلى معطيات الغير.
+    </p>
+
+    <h2>6. التوفر والمسؤولية</h2>
+    <p>
+      نسعى إلى ضمان خدمة مستمرة دون أن نضمنها. وفي الحدود التي يسمح بها القانون، تقتصر مسؤوليتنا على المبلغ المدفوع
+      مقابل الخدمة خلال الاثني عشر شهرًا الأخيرة، وتستثني الأضرار غير المباشرة.
+    </p>
+
+    <h2>7. الإنهاء</h2>
+    <p>
+      يمكنكم إغلاق حسابكم في أي وقت. ويجوز لنا تعليق حساب عند مخالفة هذه الشروط.
+    </p>
+
+    <h2>8. القانون المطبّق</h2>
+    <p>القانون الجزائري. المحاكم المختصة: محاكم مقر {COMPANY}.</p>
+
+    <h2>9. الإشارات القانونية والاتصال</h2>
+    <p>
+      {COMPANY}. السجل التجاري والرقم الجبائي والعنوان: يُستكمل لاحقًا. للاتصال:{" "}
+      <a className="text-primary underline" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+    </p>
+  </>
+);
+
+const Terms = () => {
+  const { lang } = useApp();
+  const ar = lang === "ar";
+  return (
+    <LegalLayout title={ar ? "شروط الاستخدام العامة" : "Conditions générales d'utilisation"}>
+      {ar ? <TermsAr /> : <TermsFr />}
+    </LegalLayout>
+  );
+};
 
 export default Terms;

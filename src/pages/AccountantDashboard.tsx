@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,6 +18,7 @@ import { Users, FileText, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2,
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { toast } from "sonner";
+import { pluralKey } from "@/lib/format";
 import { BillingView, JournalView, useSuiteData, aggregateForG50 } from "./accountant/SuiteModules";
 import { PayrollAdvanced } from "./accountant/PayrollAdvanced";
 import { ReportsView } from "./accountant/ReportsView";
@@ -26,6 +28,7 @@ import { AssetsView } from "./accountant/AssetsView";
 import { FiscalCalendar } from "@/components/FiscalCalendar";
 import { DocPreviewDialog } from "@/components/DocPreviewDialog";
 import { WorkflowBadge, WorkflowStepper } from "@/components/WorkflowStatus";
+import { finalizePayrollRun } from "@/lib/payrollStore";
 import { lockPeriod, computeG50FromJournal } from "@/lib/accounting/engine";
 import { type WorkflowStatus } from "@/lib/portal";
 import { ClientInviteManager } from "@/components/ClientInviteManager";
@@ -44,7 +47,7 @@ import { ClientsListView, DashboardView, InvoiceTable } from "@/pages/accountant
 import { AccountantVaultView, ChatHubView, TrackingView } from "@/pages/accountant/InboxViews";
 
 const AccountantDashboard = () => {
-  const { t, user } = useApp();
+  const { t, user, lang } = useApp();
   const [clients, setClients] = useState<Client[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [decls, setDecls] = useState<Decl[]>([]);
@@ -472,7 +475,7 @@ const AccountantDashboard = () => {
           });
           sent++;
         }
-        if (sent > 0 && !cancelled) toast.message(t("toast_reminders_sent", { n: sent }));
+        if (sent > 0 && !cancelled) toast.message(t(pluralKey("toast_reminders_sent", sent, lang), { n: sent }));
       } catch (e) {
         console.error("[reminders]", e);
       }
@@ -602,6 +605,7 @@ const AccountantDashboard = () => {
     <div className="min-h-screen bg-gradient-subtle">
       <SiteHeader />
       <div className="container py-6">
+        <SubscriptionBanner t={t} />
         <div className="grid lg:grid-cols-[240px_1fr] gap-6">
           {/* Sidebar */}
           <aside className="lg:sticky lg:top-24 self-start">
@@ -1028,7 +1032,10 @@ const AccountantDashboard = () => {
               refId: shared.id,
             }).catch((e) => console.error("[notify]", e));
           }
-          if (lockOpts) setLocks((p) => lockPeriod(p, lockOpts));
+          if (lockOpts) {
+            setLocks((p) => lockPeriod(p, lockOpts));
+            void finalizePayrollRun(lockOpts.clientId, lockOpts.period);
+          }
           setOpenTool(null);
           setEditG50(null);
         }}

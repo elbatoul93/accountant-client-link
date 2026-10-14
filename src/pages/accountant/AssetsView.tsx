@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadAssets, syncAssets } from "@/lib/businessStore";
+import { useFmtDZD } from "@/lib/useFormat";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,12 +20,11 @@ import {
   type FixedAsset, type AssetCategory,
 } from "@/lib/accounting/assets";
 
-const fmtDZD = (n: number) =>
-  `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(n))} DA`;
 
 interface ClientLite { id: string; name: string }
 
 export const AssetsView = ({ t, clients }: { t: (k: string) => string; clients: ClientLite[] }) => {
+  const fmtDZD = useFmtDZD();
   const [assets, setAssets] = useState<FixedAsset[]>([]);
   const [loaded, setLoaded] = useState(false);
   const accId = useRef<string | null>(null);
@@ -170,6 +170,7 @@ const Stat = ({ label, value, accent }: { label: string; value: string; accent?:
 );
 
 const ScheduleTable = ({ asset, t }: { asset: FixedAsset; t: (k: string) => string }) => {
+  const fmtDZD = useFmtDZD();
   const sch = buildAmortizationSchedule(asset);
   return (
     <div>
