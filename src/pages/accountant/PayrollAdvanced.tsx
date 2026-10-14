@@ -520,10 +520,12 @@ const PayslipPdfDialog = ({ employee, onClose, t }: {
   const p = computePayslip(employee as PayrollEmployee);
   const period = new Date().toISOString().slice(0, 7);
 
+  const esc = (v: unknown) =>
+    String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
   const printSlip = () => {
     const w = window.open("", "_blank", "width=800,height=900");
     if (!w) return;
-    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Fiche de Paie — ${employee.name}</title>
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Fiche de Paie — ${esc(employee.name)}</title>
       <style>
         body { font-family: 'Helvetica', Arial, sans-serif; padding: 32px; color: #1f2937; }
         .head { display:flex; justify-content:space-between; border-bottom:2px solid #0f766e; padding-bottom:12px; margin-bottom:18px; }
@@ -553,10 +555,10 @@ const PayslipPdfDialog = ({ employee, onClose, t }: {
         </div>
       </div>
       <div class="meta">
-        <div><b>Employé :</b> ${employee.name}</div>
-        <div><b>Matricule CNAS :</b> ${employee.nss || "—"}</div>
-        <div><b>Poste :</b> ${employee.position || "—"}</div>
-        <div><b>Date d'embauche :</b> ${employee.hireDate || "—"}</div>
+        <div><b>Employé :</b> ${esc(employee.name)}</div>
+        <div><b>Matricule CNAS :</b> ${esc(employee.nss || "—")}</div>
+        <div><b>Poste :</b> ${esc(employee.position || "—")}</div>
+        <div><b>Date d'embauche :</b> ${esc(employee.hireDate || "—")}</div>
       </div>
       <table>
         <thead><tr><th>Désignation</th><th class="num">Gain (DA)</th><th class="num">Retenue (DA)</th></tr></thead>

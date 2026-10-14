@@ -72,7 +72,7 @@ const uploadIfDataUrl = async (
   if (!fileData || !fileData.startsWith("data:")) return undefined;
   const blob = dataUrlToBlob(fileData);
   if (!blob) return undefined;
-  const safeName = (fileName || "file").replace(/[^\w.\-]+/g, "_");
+  const safeName = (fileName || "file").replace(/[^\w.-]+/g, "_");
   const path = `${folder}/${accountantId}/${clientRef}/${crypto.randomUUID()}-${safeName}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
     contentType: blob.type, upsert: false,

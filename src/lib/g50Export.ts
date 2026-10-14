@@ -205,9 +205,12 @@ export async function generateG50PdfBytes(input: G50ExportInput): Promise<Uint8A
     body: { xlsxBase64, fileName: xlsxName },
   });
   if (error) {
-    console.error("g50-pdf invoke error:", error, "data:", data);
-    const detail = data?.error || data?.details || error.message;
-    const hint = data?.hint ? ` (${data.hint})` : "";
+    // Non-2xx responses put the JSON body on error.context
+    let body: { error?: string; hint?: string } | undefined = data ?? undefined;
+    try { body = body ?? (await (error as { context?: Response }).context?.json()); } catch { /* not JSON */ }
+    console.error("g50-pdf invoke error:", error, "body:", body);
+    const detail = body?.error || error.message;
+    const hint = body?.hint ? ` (${body.hint})` : "";
     throw new Error(`PDF conversion failed: ${detail}${hint}`);
   }
   if (data?.error) {

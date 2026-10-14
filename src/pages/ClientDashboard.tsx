@@ -196,7 +196,7 @@ const ClientDashboard = () => {
       const uid = au.user?.id;
       if (!uid) throw new Error(t("upload_session_expired"));
 
-      const safeName = pendingFile.name.replace(/[^\w.\-]+/g, "_");
+      const safeName = pendingFile.name.replace(/[^\w.-]+/g, "_");
       const path = `${uid}/${Date.now()}_${safeName}`;
       setUploadProgress(20);
 
