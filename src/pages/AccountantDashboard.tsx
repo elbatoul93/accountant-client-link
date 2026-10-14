@@ -684,7 +684,7 @@ const AccountantDashboard = () => {
             </Card>
 
             <Card className="p-4 mt-3 bg-gradient-to-br from-gold/10 to-card border-gold/30 shadow-card">
-              <div className="text-xs text-muted-foreground mb-1">{user.name}</div>
+              <div className="text-xs text-muted-foreground mb-1">{user?.name}</div>
               <div className="text-xs font-semibold text-gold-deep">{t("auth_role_accountant")}</div>
             </Card>
           </aside>
@@ -1027,8 +1027,8 @@ const AccountantDashboard = () => {
         editing={editG50}
         getAggregates={(cid) => aggregateForG50(refOfUser(cid), bills, employees)}
         getLiveG50={(cid, period) => computeG50FromJournal(journal, {
-          clientId: refOfUser(cid), period,
-          precompteFromPrev: precompte[precompteKey(refOfUser(cid), prevPeriod(period))] ?? 0,
+          clientId: cid ? refOfUser(cid) : undefined, period,
+          precompteFromPrev: precompte[precompteKey(cid ? refOfUser(cid) : undefined, prevPeriod(period))] ?? 0,
         })}
         onGenerate={(d, shared, lockOpts) => {
           setDecls((p) => [{ ...d, clientId: refOfUser(d.clientId) }, ...p]);
