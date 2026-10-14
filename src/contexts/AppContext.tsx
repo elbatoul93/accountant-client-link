@@ -10,6 +10,8 @@ export interface User {
   email: string;
   role: Role;
   company?: string;
+  /** Accountant activation state (profiles.account_status). Anything but "active" blocks the dashboard. */
+  accountStatus?: "pending" | "active" | "suspended";
 }
 
 interface AppContextValue {
@@ -127,6 +129,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         .select("name,email,company,user_type")
         .eq("user_id", uid)
         .maybeSingle();
+      // Separate query so a database without the activation column yet still loads the profile.
+      // Any error means "no gate" (active); the database rejects a pending account's data anyway.
+      const { data: statusRow, error: statusErr } = await supabase
+        .from("profiles")
+        .select("account_status" as never)
+        .eq("user_id", uid)
+        .maybeSingle();
+      const rawStatus = statusErr ? null : (statusRow as { account_status?: string } | null)?.account_status;
+      const accountStatus: User["accountStatus"] =
+        rawStatus === "pending" || rawStatus === "suspended" ? rawStatus : "active";
       if (activeUid.current !== uid) return; // signed out or switched account meanwhile
       profileUid.current = uid;
       const resolvedName =
@@ -139,6 +151,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         // profiles.user_type is the source of truth; user_metadata is user-editable.
         role: profile?.user_type ?? role,
         company: profile?.company ?? meta2.company ?? undefined,
+        accountStatus,
       });
       setLoading(false);
     }, 0);
