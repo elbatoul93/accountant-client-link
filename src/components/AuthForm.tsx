@@ -18,7 +18,7 @@ interface AuthFormProps {
 }
 
 export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
-  const { t } = useApp();
+  const { t, user, loading } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const pendingEmail = (location.state as { pendingConfirmationEmail?: string } | null)?.pendingConfirmationEmail;
@@ -38,6 +38,12 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
   // Email of an account that exists but hasn't confirmed its address yet
   const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(pendingEmail ?? null);
   const [resending, setResending] = useState(false);
+
+  // Already signed in (e.g. arriving from the email confirmation link): skip the form.
+  useEffect(() => {
+    if (mode !== "login" || loading || !user) return;
+    navigate(user.role === "accountant" ? "/dashboard/accountant" : "/dashboard/client", { replace: true });
+  }, [mode, loading, user, navigate]);
 
   const handleResend = async () => {
     if (!unconfirmedEmail) return;
