@@ -13,6 +13,7 @@ import RecoveryRedirect from "./components/RecoveryRedirect";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Privacy from "./pages/legal/Privacy.tsx";
 import Terms from "./pages/legal/Terms.tsx";
+import Help from "./pages/help/Help.tsx";
 import ForgotPassword from "./pages/ForgotPassword.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/help" element={<Help />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/invite/:token" element={<InviteSignup />} />
