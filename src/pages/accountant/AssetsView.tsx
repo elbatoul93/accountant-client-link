@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useFmtDZD } from "@/lib/useFormat";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,8 +18,6 @@ import {
   type FixedAsset, type AssetCategory,
 } from "@/lib/accounting/assets";
 
-const fmtDZD = (n: number) =>
-  `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(n))} DA`;
 
 interface ClientLite { id: string; name: string }
 
@@ -29,6 +28,7 @@ const load = (): FixedAsset[] => {
 };
 
 export const AssetsView = ({ t, clients }: { t: (k: string) => string; clients: ClientLite[] }) => {
+  const fmtDZD = useFmtDZD();
   const [assets, setAssets] = useState<FixedAsset[]>(() => load());
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -145,6 +145,7 @@ const Stat = ({ label, value, accent }: { label: string; value: string; accent?:
 );
 
 const ScheduleTable = ({ asset, t }: { asset: FixedAsset; t: (k: string) => string }) => {
+  const fmtDZD = useFmtDZD();
   const sch = buildAmortizationSchedule(asset);
   return (
     <div>

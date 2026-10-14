@@ -1,4 +1,7 @@
 import { useMemo, useState } from "react";
+import { useFmtDZD, useFmtNum, useEmployerRate } from "@/lib/useFormat";
+import { formatDate } from "@/lib/format";
+import { useApp } from "@/contexts/AppContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,8 +26,6 @@ import {
 import { postPayrollRun, type JournalLine, type PeriodLock } from "@/lib/accounting/engine";
 import type { Employee } from "./SuiteModules";
 
-const fmtDZD = (n: number) =>
-  `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(n))} DA`;
 
 type ClientLite = { id: string; name: string; hasCacobatph?: boolean };
 
@@ -47,6 +48,8 @@ export const PayrollAdvanced = ({
   setJournal: React.Dispatch<React.SetStateAction<JournalLine[]>>;
   locks: PeriodLock[];
 }) => {
+  const employerRate = useEmployerRate();
+  const fmtDZD = useFmtDZD();
   const [open, setOpen] = useState(false);
   const [slip, setSlip] = useState<Employee | null>(null);
   const [tab, setTab] = useState("employees");
@@ -212,7 +215,7 @@ export const PayrollAdvanced = ({
                     <Row label={t("payx_employees_count")} value={String(a.employees)} />
                     <Row label={t("payx_gross_mass")} value={fmtDZD(a.grossMass)} />
                     <Row label={`${t("payx_ss_emp")} (9%)`} value={fmtDZD(a.partSalariale)} muted />
-                    <Row label={`${t("payx_ss_employer")} (25,5%)`} value={fmtDZD(a.partPatronale)} muted />
+                    <Row label={`${t("payx_ss_employer")} (${employerRate}%)`} value={fmtDZD(a.partPatronale)} muted />
                   </tbody>
                 </table>
                 <div className="mt-3 p-3 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 flex justify-between">
@@ -321,7 +324,7 @@ export const PayrollAdvanced = ({
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <Stat label={t("payx_employees_count")} value={String(mass.employees)} />
               <Stat label={t("payx_gross_mass")} value={fmtDZD(mass.grossMass)} />
-              <Stat label={`${t("payx_ss_employer")} (25,5%)`} value={fmtDZD(mass.ssEmployerMass)} accent />
+              <Stat label={`${t("payx_ss_employer")} (${employerRate}%)`} value={fmtDZD(mass.ssEmployerMass)} accent />
               <Stat label={`${t("payx_ss_emp")} (9%)`} value={fmtDZD(mass.ssEmployeeMass)} muted />
               <Stat label={t("payx_irg_total")} value={fmtDZD(mass.irgMass)} muted />
               <Stat label={t("payx_net_mass")} value={fmtDZD(mass.netMass)} />
@@ -392,6 +395,8 @@ const AddEmployeeDialog = ({
   open: boolean; onOpenChange: (o: boolean) => void; clients: ClientLite[];
   onAdd: (e: Employee) => void; t: (k: string) => string;
 }) => {
+  const employerRate = useEmployerRate();
+  const fmtDZD = useFmtDZD();
   const [name, setName] = useState("");
   const [nss, setNss] = useState("");
   const [position, setPosition] = useState("");
@@ -485,7 +490,7 @@ const AddEmployeeDialog = ({
                 <span className="font-semibold text-primary text-sm">{t("pay_net")}</span>
                 <span className="text-base font-bold text-gold-deep font-mono">{fmtDZD(preview.net)}</span>
               </div>
-              <Line label={`${t("payx_ss_employer")} (25,5%)`} value={fmtDZD(preview.ssEmployer)} muted />
+              <Line label={`${t("payx_ss_employer")} (${employerRate}%)`} value={fmtDZD(preview.ssEmployer)} muted />
               <Line label={t("payx_employer_cost")} value={fmtDZD(preview.employerCost)} bold />
             </div>
           </Card>
@@ -516,6 +521,10 @@ const Line = ({ label, value, bold, muted }: { label: string; value: string; bol
 const PayslipPdfDialog = ({ employee, onClose, t }: {
   employee: Employee | null; onClose: () => void; t: (k: string) => string;
 }) => {
+  const fmtDZD = useFmtDZD();
+  const { lang, dir } = useApp();
+  const fmtNum = useFmtNum();
+  const employerRate = useEmployerRate();
   if (!employee) return null;
   const p = computePayslip(employee as PayrollEmployee);
   const period = new Date().toISOString().slice(0, 7);
@@ -525,7 +534,7 @@ const PayslipPdfDialog = ({ employee, onClose, t }: {
   const printSlip = () => {
     const w = window.open("", "_blank", "width=800,height=900");
     if (!w) return;
-    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Fiche de Paie — ${esc(employee.name)}</title>
+    w.document.write(`<!doctype html><html lang="${lang}" dir="${dir}"><head><meta charset="utf-8"><title>${esc(t("ps_title"))} — ${esc(employee.name)}</title>
       <style>
         body { font-family: 'Helvetica', Arial, sans-serif; padding: 32px; color: #1f2937; }
         .head { display:flex; justify-content:space-between; border-bottom:2px solid #0f766e; padding-bottom:12px; margin-bottom:18px; }
@@ -546,40 +555,40 @@ const PayslipPdfDialog = ({ employee, onClose, t }: {
       </style></head><body>
       <div class="head">
         <div>
-          <div class="h-title">FICHE DE PAIE</div>
-          <div class="h-sub">كشف الراتب — Période ${period}</div>
+          <div class="h-title">${esc(t("ps_title"))}</div>
+          <div class="h-sub">${esc(t("ps_period"))} ${period}</div>
         </div>
-        <div style="text-align:right;">
+        <div style="text-align:end;">
           <div class="h-title" style="font-size:14px;">Managementik</div>
-          <div class="h-sub">République Algérienne</div>
+          <div class="h-sub">${esc(t("ps_republic"))}</div>
         </div>
       </div>
       <div class="meta">
-        <div><b>Employé :</b> ${esc(employee.name)}</div>
-        <div><b>Matricule CNAS :</b> ${esc(employee.nss || "—")}</div>
-        <div><b>Poste :</b> ${esc(employee.position || "—")}</div>
-        <div><b>Date d'embauche :</b> ${esc(employee.hireDate || "—")}</div>
+        <div><b>${esc(t("pay_employee"))} :</b> ${esc(employee.name)}</div>
+        <div><b>${esc(t("ps_cnas_id"))} :</b> ${esc(employee.nss || "—")}</div>
+        <div><b>${esc(t("pay_position"))} :</b> ${esc(employee.position || "—")}</div>
+        <div><b>${esc(t("ps_hire_date"))} :</b> ${esc(employee.hireDate || "—")}</div>
       </div>
       <table>
-        <thead><tr><th>Désignation</th><th class="num">Gain (DA)</th><th class="num">Retenue (DA)</th></tr></thead>
+        <thead><tr><th>${esc(t("ps_designation"))}</th><th class="num">${esc(t("ps_gain"))}</th><th class="num">${esc(t("ps_deduction"))}</th></tr></thead>
         <tbody>
-          <tr><td>Salaire de base</td><td class="num">${fmtNum(p.basic)}</td><td></td></tr>
-          <tr><td>Indemnité d'expérience (IEP)</td><td class="num">${fmtNum(p.iew)}</td><td></td></tr>
-          <tr><td>Prime de rendement collectif</td><td class="num">${fmtNum(p.prc)}</td><td></td></tr>
-          ${p.other ? `<tr><td>Autres indemnités</td><td class="num">${fmtNum(p.other)}</td><td></td></tr>` : ""}
-          <tr style="background:#f9fafb;"><td><b>Salaire brut</b></td><td class="num"><b>${fmtNum(p.gross)}</b></td><td></td></tr>
-          <tr><td>Cotisation Sécurité Sociale (9%)</td><td></td><td class="num neg">${fmtNum(p.ssEmployee)}</td></tr>
-          <tr><td>Salaire imposable</td><td class="num">${fmtNum(p.taxable)}</td><td></td></tr>
-          <tr><td>IRG / Salaires (barème progressif)</td><td></td><td class="num neg">${fmtNum(p.irg)}</td></tr>
+          <tr><td>${esc(t("pay_basic"))}</td><td class="num">${fmtNum(p.basic)}</td><td></td></tr>
+          <tr><td>${esc(t("pay_iew"))}</td><td class="num">${fmtNum(p.iew)}</td><td></td></tr>
+          <tr><td>${esc(t("pay_prc"))}</td><td class="num">${fmtNum(p.prc)}</td><td></td></tr>
+          ${p.other ? `<tr><td>${esc(t("payx_other_indemnities"))}</td><td class="num">${fmtNum(p.other)}</td><td></td></tr>` : ""}
+          <tr style="background:#f9fafb;"><td><b>${esc(t("pay_gross"))}</b></td><td class="num"><b>${fmtNum(p.gross)}</b></td><td></td></tr>
+          <tr><td>${esc(t("pay_ss"))}</td><td></td><td class="num neg">${fmtNum(p.ssEmployee)}</td></tr>
+          <tr><td>${esc(t("payx_taxable"))}</td><td class="num">${fmtNum(p.taxable)}</td><td></td></tr>
+          <tr><td>${esc(t("pay_irg"))}</td><td></td><td class="num neg">${fmtNum(p.irg)}</td></tr>
         </tbody>
       </table>
-      <div class="total"><b>NET À PAYER</b><span>${fmtNum(p.net)} DA</span></div>
+      <div class="total"><b>${esc(t("ps_net_to_pay"))}</b><span>${fmtNum(p.net)} DA</span></div>
       <div style="margin-top:20px; padding:10px; background:#f0fdfa; border-radius:6px; font-size:11px; color:#0f766e;">
-        <b>Charges patronales (à la charge employeur):</b> CNAS 25,5% = ${fmtNum(p.ssEmployer)} DA — Coût total employeur: <b>${fmtNum(p.employerCost)} DA</b>
+        <b>${esc(t("ps_employer_charges"))}:</b> ${esc(t("payx_ss_employer"))} ${employerRate}% = ${fmtNum(p.ssEmployer)} DA — ${esc(t("payx_employer_cost"))}: <b>${fmtNum(p.employerCost)} DA</b>
       </div>
       <div class="foot">
-        <div>Édité le ${new Date().toLocaleDateString("fr-DZ")}</div>
-        <div class="stamp">Signature & cachet</div>
+        <div>${esc(t("ps_issued"))} ${formatDate(new Date(), lang)}</div>
+        <div class="stamp">${esc(t("ps_stamp"))}</div>
       </div>
       </body></html>`);
     w.document.close();
@@ -616,7 +625,7 @@ const PayslipPdfDialog = ({ employee, onClose, t }: {
             <span className="text-xl font-bold text-gold-deep">{fmtDZD(p.net)}</span>
           </div>
           <p className="text-xs text-muted-foreground pt-1">
-            {t("payx_ss_employer")} 25,5%: {fmtDZD(p.ssEmployer)} • {t("payx_employer_cost")}: {fmtDZD(p.employerCost)}
+            {t("payx_ss_employer")} {employerRate}%: {fmtDZD(p.ssEmployer)} • {t("payx_employer_cost")}: {fmtDZD(p.employerCost)}
           </p>
         </div>
         <DialogFooter>
@@ -627,4 +636,3 @@ const PayslipPdfDialog = ({ employee, onClose, t }: {
   );
 };
 
-const fmtNum = (n: number) => new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(n));

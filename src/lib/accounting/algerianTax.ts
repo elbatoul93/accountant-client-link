@@ -267,6 +267,8 @@ export interface G50Line {
   /** Official article / section ref shown on the form */
   code: string;
   label: string;
+  /** Translation key for `label` (French `label` kept as fallback). */
+  labelKey?: string;
   base?: number;
   rate?: number;
   amount: number;
@@ -321,6 +323,7 @@ export const buildG50Preview = (input: G50PreviewInput): G50Preview => {
   lines.push({
     code: "A-CA",
     label: "Chiffre d'affaires HT",
+    labelKey: "g50l_ca",
     base: input.caHt,
     amount: 0,
     group: "TAP",
@@ -331,6 +334,7 @@ export const buildG50Preview = (input: G50PreviewInput): G50Preview => {
     lines.push({
       code: "A-TAP",
       label: "TAP — Taxe sur l'Activité Professionnelle",
+      labelKey: "g50l_tap",
       base: input.caHt,
       rate: tapRate,
       amount: tap,
@@ -343,6 +347,7 @@ export const buildG50Preview = (input: G50PreviewInput): G50Preview => {
   lines.push({
     code: "B-TVA-COL",
     label: "TVA collectée (sur ventes)",
+    labelKey: "g50l_tva_col",
     base: input.caHt,
     amount: tva.tvaCollected,
     group: "TVA",
@@ -352,6 +357,7 @@ export const buildG50Preview = (input: G50PreviewInput): G50Preview => {
   lines.push({
     code: "B-TVA-DED",
     label: "TVA déductible (sur achats)",
+    labelKey: "g50l_tva_ded",
     amount: tva.tvaDeductible,
     group: "TVA",
     section: "B",
@@ -361,6 +367,7 @@ export const buildG50Preview = (input: G50PreviewInput): G50Preview => {
     lines.push({
       code: "B-PRECOMPTE-N1",
       label: "Précompte reporté du mois précédent (رصيد دائن سابق)",
+      labelKey: "g50l_precompte_in",
       amount: tva.precompteFromPrev,
       group: "TVA",
       section: "B",
@@ -370,6 +377,7 @@ export const buildG50Preview = (input: G50PreviewInput): G50Preview => {
   lines.push({
     code: "B-TVA-DUE",
     label: tva.hasPrecompte ? "TVA — Crédit (rien à payer)" : "TVA — Net à payer",
+    labelKey: tva.hasPrecompte ? "g50l_tva_credit" : "g50l_tva_due",
     amount: tva.tvaDue,
     group: "TVA",
     section: "B",
@@ -378,6 +386,7 @@ export const buildG50Preview = (input: G50PreviewInput): G50Preview => {
     lines.push({
       code: "B-PRECOMPTE-N",
       label: "Précompte à reporter au mois suivant (رصيد دائن للترحيل)",
+      labelKey: "g50l_precompte_out",
       amount: tva.precompteToNext,
       group: "TVA",
       section: "B",
@@ -389,6 +398,7 @@ export const buildG50Preview = (input: G50PreviewInput): G50Preview => {
   lines.push({
     code: "C-IRG-SAL",
     label: "IRG — Retenue sur Salaires",
+    labelKey: "g50l_irg_sal",
     base: input.irgSalaries,
     amount: input.irgSalaries,
     group: "IRG",
@@ -400,6 +410,7 @@ export const buildG50Preview = (input: G50PreviewInput): G50Preview => {
     lines.push({
       code: "D-IBS-ACPT",
       label: "IBS — Acompte Provisionnel",
+      labelKey: "g50l_ibs_acompte",
       amount: Math.round(input.ibsAcompte),
       group: "IBS",
       section: "D",
