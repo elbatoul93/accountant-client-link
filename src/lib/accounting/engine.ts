@@ -11,6 +11,8 @@
  * that period can be deleted or back-dated.
  */
 import { classOf, getPcnByPrefix, PCN } from "./pcn";
+import { SS_EMPLOYER_RATE } from "./payroll";
+import { tapRateForPeriod, IBS_ACOMPTE_MONTHS, IBS_ACOMPTE_RATE } from "./algerianTax";
 
 export type EntrySource = "manual" | "sales" | "purchase" | "payroll" | "tax";
 
@@ -101,9 +103,9 @@ export const postPurchaseInvoice = (
 /**
  * Payroll posting (per employee, per month):
  *   D 631  Rémunérations           Gross
- *   D 6451 CNAS part patronale     ~26% Gross (employer)
+ *   D 6451 CNAS part patronale     25,5% Gross (employer)
  *     C 421  Personnel rémun. dues  Net
- *     C 431  CNAS                   9% Gross + 26% Gross
+ *     C 431  CNAS                   9% Gross + 25,5% Gross
  *     C 4422 IRG/Salaires           IRG
  */
 export const postPayrollRun = (run: PostInput & {
@@ -114,7 +116,7 @@ export const postPayrollRun = (run: PostInput & {
   const batchId = newId();
   const period = ymOf(run.date);
   const base = { date: run.date, period, batchId, source: "payroll" as const, clientId: run.clientId, sourceRef: run.sourceRef ?? run.employeeId };
-  const ssEmployer = Math.round(run.gross * 0.26); // employer CNAS share
+  const ssEmployer = Math.round(run.gross * SS_EMPLOYER_RATE); // employer CNAS share
   const sociauxAcc = run.hasCacobatph ? "432" : "431";
   return [
     { ...base, id: newId(), account: "631", label: `Salaire brut — ${run.employeeName}`, debit: run.gross, credit: 0 },
@@ -252,13 +254,17 @@ const sumMovementsBetween = (
 /** Compute the G50 of one client for one month, live from the journal. */
 export const computeG50FromJournal = (
   lines: JournalLine[],
-  opts: { clientId?: string; period: string; tapRate?: number; ibsRate?: number },
+  opts: {
+    clientId?: string; period: string; tapRate?: number;
+    /** IBS due for the previous financial year; drives the acomptes. */
+    ibsPriorYear?: number;
+  },
 ): G50Computation => {
   const period = opts.period;
   const from = `${period}-01`;
   const to = `${period}-31`;
-  const tapRate = opts.tapRate ?? 2;
-  const ibsRate = opts.ibsRate ?? 23;
+  const tapRate = opts.tapRate ?? tapRateForPeriod(period);
+  const ibsRate = IBS_ACOMPTE_RATE;
 
   const isClass = (code: string, c: number) => classOf(code) === c;
   const caHtCredit = sumMovementsBetween(lines, (l) => isClass(l.account, 7), "credit", from, to, opts.clientId);
@@ -273,10 +279,12 @@ export const computeG50FromJournal = (
   const irgSalaries  = sumMovementsBetween(lines, (l) => l.account === "4422", "credit", from, to, opts.clientId);
 
   const tap = Math.round((caHt * tapRate) / 100);
-  // IBS instalment: simplified monthly approximation (tax engine uses
-  // tcr result for the period to keep the demo accurate).
-  const tcr = computeTCR(lines, { clientId: opts.clientId, from, to });
-  const ibs = Math.max(0, Math.round((Math.max(0, tcr.result) * ibsRate) / 100));
+  // IBS acomptes are 30 % of the previous year's IBS, due in March, June and
+  // November only (CIDTA art. 356); other months carry no IBS line.
+  const month = Number(period.slice(5, 7));
+  const ibs = IBS_ACOMPTE_MONTHS.includes(month)
+    ? Math.max(0, Math.round(((opts.ibsPriorYear ?? 0) * ibsRate) / 100))
+    : 0;
 
   return {
     period, caHt, tvaCollected, tvaDeductible, tvaDue, salaries, irgSalaries,
