@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DEMO_CLIENT_ID, OnboardingChecklist, buildSampleData } from "@/pages/accountant/Onboarding";
 import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -691,6 +692,26 @@ const AccountantDashboard = () => {
 
           {/* Main */}
           <main className="space-y-6 min-w-0">
+            {view === "dashboard" && (
+              <OnboardingChecklist
+                t={t} clients={clients} invoices={invoices} decls={decls}
+                hasProfile={!!(user?.name && user?.company)}
+                hasInvitedClient={dbLinkedClients.length > 0}
+                onAddClient={() => setOpenAdd(true)}
+                onGoClients={() => setView("clients")}
+                onGoObligations={() => setView("obligations")}
+                onAddSample={() => {
+                  const { client, invoice } = buildSampleData();
+                  setClients((p) => (p.some((c) => c.id === client.id) ? p : [...p, client]));
+                  setInvoices((p) => [...p, invoice]);
+                }}
+                onRemoveSample={() => {
+                  setInvoices((p) => p.filter((x) => x.clientId !== DEMO_CLIENT_ID));
+                  setDecls((p) => p.filter((x) => x.clientId !== DEMO_CLIENT_ID));
+                  setClients((p) => p.filter((x) => x.id !== DEMO_CLIENT_ID));
+                }}
+              />
+            )}
             {view === "dashboard" && (
               <DashboardView
                 t={t} user={user} clients={clients} invoices={invoices} decls={decls}
