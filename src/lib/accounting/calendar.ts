@@ -175,11 +175,21 @@ export const buildFiscalCalendar = (
   });
 
   // IFU specific
+  // G12 (forecast declaration): 30 June unless the DGI extends it. G12 bis (definitive): 20 January.
   events.push({
     id: `g12-${year}`,
-    date: `${year}-02-01`,
+    date: `${year}-06-30`,
     type: "G12",
-    label: `Déclaration G12 (IFU) — ${year - 1}`,
+    label: `Déclaration G12 (IFU) — ${year}`,
+    regimes: ["IFU"],
+    severity: "danger",
+  });
+  events.push({
+    id: `g12bis-${year + 1}`,
+    date: `${year + 1}-01-20`,
+    openDate: `${year + 1}-01-01`,
+    type: "G12",
+    label: `Déclaration G12 bis (IFU) — ${year}`,
     regimes: ["IFU"],
     severity: "danger",
   });

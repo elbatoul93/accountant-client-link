@@ -11,6 +11,8 @@ import Signup from "./pages/Signup.tsx";
 import InviteSignup from "./pages/InviteSignup.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Privacy from "./pages/legal/Privacy.tsx";
+import Terms from "./pages/legal/Terms.tsx";
 import ForgotPassword from "./pages/ForgotPassword.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -41,6 +43,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/invite/:token" element={<InviteSignup />} />

@@ -710,6 +710,21 @@ export type Database = {
         }
         Relationships: []
       }
+      admins: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           accountant_id: string | null
@@ -955,6 +970,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: string
           activity: string | null
           address: string | null
           bp: string | null
@@ -980,6 +996,7 @@ export type Database = {
           user_type: Database["public"]["Enums"]["app_role"]
         }
         Insert: {
+          account_status?: string
           activity?: string | null
           address?: string | null
           bp?: string | null
@@ -1005,6 +1022,7 @@ export type Database = {
           user_type?: Database["public"]["Enums"]["app_role"]
         }
         Update: {
+          account_status?: string
           activity?: string | null
           address?: string | null
           bp?: string | null
@@ -1087,6 +1105,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_accountants: {
+        Args: never
+        Returns: {
+          account_status: string
+          company: string | null
+          created_at: string
+          email: string
+          name: string
+          user_id: string
+        }[]
+      }
+      admin_set_accountant_status: {
+        Args: { _status: string; _user_id: string }
+        Returns: undefined
+      }
       can_address_email: { Args: { _email: string }; Returns: boolean }
       get_invitation_by_token: {
         Args: { _token: string }
@@ -1129,6 +1162,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_active_accountant: { Args: never; Returns: boolean }
+      is_admin: { Args: never; Returns: boolean }
       is_linked_accountant: {
         Args: { client_user_id: string }
         Returns: boolean
