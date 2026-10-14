@@ -20,10 +20,20 @@ interface AppContextValue {
   loading: boolean;
   login: (u: User) => void; // legacy no-op shim (kept for compat)
   logout: () => Promise<void>;
-  switchRole: (r: Role) => void;
 }
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
+
+const LAST_UID_KEY = "mgmtk_last_uid";
+
+/** Per-browser caches (mgmtk_*) are not account-scoped, so wipe them when the account changes. */
+const clearLocalAppData = () => {
+  try {
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith("mgmtk_") && k !== "mgmtk_lang")
+      .forEach((k) => localStorage.removeItem(k));
+  } catch { /* storage unavailable */ }
+};
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [lang, setLangState] = useState<Lang>(() => {
@@ -48,6 +58,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       return;
     }
+    try {
+      const last = localStorage.getItem(LAST_UID_KEY);
+      if (last && last !== session.user.id) clearLocalAppData();
+      localStorage.setItem(LAST_UID_KEY, session.user.id);
+    } catch { /* storage unavailable */ }
     // Provisional role from user_metadata (user-editable); replaced by profiles.user_type below
     const meta = (session.user.user_metadata ?? {}) as { user_type?: string; role?: string };
     const role: Role = (meta.user_type ?? meta.role) === "accountant" ? "accountant" : "client";
@@ -106,16 +121,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     await supabase.auth.signOut();
+    clearLocalAppData();
     setUser(null);
   };
 
-  const switchRole = (r: Role) => {
-    if (!user) return;
-    setUser({ ...user, role: r });
-  };
-
   return (
-    <AppContext.Provider value={{ lang, setLang, t, dir, user, loading, login, logout, switchRole }}>
+    <AppContext.Provider value={{ lang, setLang, t, dir, user, loading, login, logout }}>
       {children}
     </AppContext.Provider>
   );
