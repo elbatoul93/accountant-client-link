@@ -197,6 +197,7 @@ const en = {
   g50_sent_label: "Sent",
   g50_sending_label: "Sending…",
   g50_sent_success: "G50 sent to client",
+  sync_failed: "Your last change could not be saved. Check your connection and try again.",
   g50_send_failed: "Failed to send G50",
   g50_send_no_pdf: "Generate the G50 first before sending.",
 
@@ -1063,6 +1064,7 @@ const fr: typeof en = {
   g50_sent_label: "Envoyé",
   g50_sending_label: "Envoi…",
   g50_sent_success: "G50 envoyé au client",
+  sync_failed: "Votre dernière modification n’a pas pu être enregistrée. Vérifiez votre connexion et réessayez.",
   g50_send_failed: "Échec de l'envoi du G50",
   g50_send_no_pdf: "Générez d'abord le G50 avant l'envoi.",
 
@@ -1915,6 +1917,7 @@ const ar: typeof en = {
   g50_sent_label: "تم الإرسال",
   g50_sending_label: "جارٍ الإرسال…",
   g50_sent_success: "تم إرسال G50 إلى العميل",
+  sync_failed: "تعذر حفظ آخر تعديل. تحقق من الاتصال وحاول مرة أخرى.",
   g50_send_failed: "فشل إرسال G50",
   g50_send_no_pdf: "قم بإنشاء G50 أولاً قبل الإرسال.",
 

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { translations, Lang } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
@@ -18,7 +18,6 @@ interface AppContextValue {
   dir: "ltr" | "rtl";
   user: User | null;
   loading: boolean;
-  login: (u: User) => void; // legacy no-op shim (kept for compat)
   logout: () => Promise<void>;
 }
 
@@ -72,6 +71,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   });
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  // Id of the session currently hydrated; lets late profile fetches detect they are stale.
+  const activeUid = useRef<string | null>(null);
+  // Uid whose profile (the trusted source of the role) has been loaded.
+  const profileUid = useRef<string | null>(null);
 
   const dir: "ltr" | "rtl" = lang === "ar" ? "rtl" : "ltr";
 
@@ -84,10 +87,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // Hydrate user from a Supabase session
   const hydrate = async (session: Session | null) => {
     if (!session?.user) {
+      activeUid.current = null;
+      profileUid.current = null;
       setUser(null);
       setLoading(false);
       return;
     }
+    activeUid.current = session.user.id;
     try {
       const last = localStorage.getItem(LAST_UID_KEY);
       if (last && last !== session.user.id) stashLocalAppData(last);
@@ -106,7 +112,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       role,
       company: prev?.company ?? meta2.company ?? undefined,
     }));
-    setLoading(false);
+    // Until profiles.user_type is known the role above is only a guess from user-editable
+    // metadata, so keep route guards on the spinner (not on /login) to avoid flashing the wrong dashboard.
+    // Token refreshes for an already-loaded profile skip this so open pages are not unmounted.
+    if (profileUid.current !== session.user.id) setLoading(true);
+    else setLoading(false);
     // Defer DB calls outside the auth callback to avoid deadlocks
     setTimeout(async () => {
       const uid = session.user.id;
@@ -115,6 +125,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         .select("name,email,company,user_type")
         .eq("user_id", uid)
         .maybeSingle();
+      if (activeUid.current !== uid) return; // signed out or switched account meanwhile
+      profileUid.current = uid;
       const resolvedName =
         (profile?.name && profile.name.trim()) ||
         (meta2.name && meta2.name.trim()) ||
@@ -126,6 +138,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         role: profile?.user_type ?? role,
         company: profile?.company ?? meta2.company ?? undefined,
       });
+      setLoading(false);
     }, 0);
   };
 
@@ -139,27 +152,28 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const setLang = (l: Lang) => setLangState(l);
+  const setLang = useCallback((l: Lang) => setLangState(l), []);
 
-  const t = (key: string) => {
+  const t = useCallback((key: string) => {
     const dict = translations[lang] as Record<string, string>;
     return dict[key] ?? translations.en[key as keyof typeof translations.en] ?? key;
-  };
+  }, [lang]);
 
-  const login = (_u: User) => {
-    // Legacy shim — actual auth is handled by Supabase in AuthForm.
-  };
-
-  const logout = async () => {
+  const logout = useCallback(async () => {
     let uid: string | null = null;
     try { uid = localStorage.getItem(LAST_UID_KEY); } catch { /* storage unavailable */ }
     await supabase.auth.signOut();
     stashLocalAppData(uid);
     setUser(null);
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({ lang, setLang, t, dir, user, loading, logout }),
+    [lang, setLang, t, dir, user, loading, logout],
+  );
 
   return (
-    <AppContext.Provider value={{ lang, setLang, t, dir, user, loading, login, logout }}>
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );

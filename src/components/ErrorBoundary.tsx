@@ -1,6 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
+import { reportError } from "@/lib/errorReporting";
 
 const Fallback = () => {
   const { t } = useApp();
@@ -25,6 +26,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: 
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("Unhandled UI error", error, info.componentStack);
+    reportError(error, { componentStack: info.componentStack });
   }
 
   render() {

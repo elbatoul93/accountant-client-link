@@ -6,6 +6,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { WorkflowStatus } from "@/lib/portal";
+import { translations } from "@/lib/i18n";
+import { toast } from "sonner";
 
 const BUCKET = "client-uploads";
 const MIGRATION_FLAG = "mgmtk_db_migrated_v1";
@@ -160,6 +162,18 @@ export const loadLegalDocs = async (accId: string): Promise<LegalDoc[]> => {
 
 // ============ SYNC (diff prev vs next, apply changes to DB) ============
 
+/** Throw when a Supabase write failed so callers can tell the user instead of losing edits silently. */
+const must = (res: { error: { message: string } | null }) => {
+  if (!res.error) return;
+  let lang: keyof typeof translations = "en";
+  try {
+    const saved = localStorage.getItem("mgmtk_lang");
+    if (saved === "fr" || saved === "ar") lang = saved;
+  } catch { /* storage unavailable */ }
+  toast.error((translations[lang] as Record<string, string>).sync_failed);
+  throw new Error(res.error.message);
+};
+
 type Indexed<T extends { id: string }> = Map<string, T>;
 const indexBy = <T extends { id: string }>(arr: T[]): Indexed<T> => {
   const m = new Map<string, T>();
@@ -173,18 +187,18 @@ export const syncInvoices = async (prev: Invoice[], next: Invoice[], accId: stri
   for (const [id, v] of b) { if (!a.has(id)) adds.push(v); else if (JSON.stringify(a.get(id)) !== JSON.stringify(v)) updates.push(v); }
   for (const id of a.keys()) if (!b.has(id)) deletes.push(id);
   if (adds.length) {
-    await supabase.from("acc_invoices").insert(adds.map((x) => ({
+    must(await supabase.from("acc_invoices").insert(adds.map((x) => ({
       id: x.id, accountant_id: accId, client_ref: x.clientId, client_name: x.clientName,
       amount: x.amount, invoice_date: x.date, status: x.status,
-    })));
+    }))));
   }
   for (const x of updates) {
-    await supabase.from("acc_invoices").update({
+    must(await supabase.from("acc_invoices").update({
       client_ref: x.clientId, client_name: x.clientName, amount: x.amount,
       invoice_date: x.date, status: x.status,
-    }).eq("id", x.id);
+    }).eq("id", x.id));
   }
-  if (deletes.length) await supabase.from("acc_invoices").delete().in("id", deletes);
+  if (deletes.length) must(await supabase.from("acc_invoices").delete().in("id", deletes));
 };
 
 export const syncDecls = async (prev: Decl[], next: Decl[], accId: string) => {
@@ -193,18 +207,18 @@ export const syncDecls = async (prev: Decl[], next: Decl[], accId: string) => {
   for (const [id, v] of b) { if (!a.has(id)) adds.push(v); else if (JSON.stringify(a.get(id)) !== JSON.stringify(v)) updates.push(v); }
   for (const id of a.keys()) if (!b.has(id)) deletes.push(id);
   if (adds.length) {
-    await supabase.from("acc_declarations").insert(adds.map((x) => ({
+    must(await supabase.from("acc_declarations").insert(adds.map((x) => ({
       id: x.id, accountant_id: accId, client_ref: x.clientId, client_name: x.clientName,
       decl_type: x.type, amount: x.amount, due_date: x.due || null, status: x.status,
-    })));
+    }))));
   }
   for (const x of updates) {
-    await supabase.from("acc_declarations").update({
+    must(await supabase.from("acc_declarations").update({
       client_ref: x.clientId, client_name: x.clientName, decl_type: x.type,
       amount: x.amount, due_date: x.due || null, status: x.status,
-    }).eq("id", x.id);
+    }).eq("id", x.id));
   }
-  if (deletes.length) await supabase.from("acc_declarations").delete().in("id", deletes);
+  if (deletes.length) must(await supabase.from("acc_declarations").delete().in("id", deletes));
 };
 
 export const syncFs = async (prev: FinStmt[], next: FinStmt[], accId: string) => {
@@ -213,20 +227,20 @@ export const syncFs = async (prev: FinStmt[], next: FinStmt[], accId: string) =>
   for (const [id, v] of b) { if (!a.has(id)) adds.push(v); else if (JSON.stringify(a.get(id)) !== JSON.stringify(v)) updates.push(v); }
   for (const id of a.keys()) if (!b.has(id)) deletes.push(id);
   if (adds.length) {
-    await supabase.from("acc_financial_statements").insert(adds.map((x) => ({
+    must(await supabase.from("acc_financial_statements").insert(adds.map((x) => ({
       id: x.id, accountant_id: accId, client_ref: x.clientId, client_name: x.clientName,
       fiscal_year: x.year, assets: x.assets, liabilities: x.liabilities,
       equity: x.equity, revenue: x.revenue, net_result: x.netResult,
-    })));
+    }))));
   }
   for (const x of updates) {
-    await supabase.from("acc_financial_statements").update({
+    must(await supabase.from("acc_financial_statements").update({
       client_ref: x.clientId, client_name: x.clientName, fiscal_year: x.year,
       assets: x.assets, liabilities: x.liabilities, equity: x.equity,
       revenue: x.revenue, net_result: x.netResult,
-    }).eq("id", x.id);
+    }).eq("id", x.id));
   }
-  if (deletes.length) await supabase.from("acc_financial_statements").delete().in("id", deletes);
+  if (deletes.length) must(await supabase.from("acc_financial_statements").delete().in("id", deletes));
 };
 
 export const syncShared = async (
@@ -248,7 +262,7 @@ export const syncShared = async (
     }
     const updated = { ...x, filePath, fileData };
     replaced.set(x.id, updated);
-    await supabase.from("acc_shared_documents").insert([{
+    must(await supabase.from("acc_shared_documents").insert([{
       id: x.id, accountant_id: accId, client_ref: x.clientId, client_name: x.clientName,
       client_email: x.clientEmail || null, doc_type: x.type, label: x.label,
       doc_date: x.date && x.date.length >= 10 ? x.date.slice(0, 10) : null,
@@ -256,7 +270,7 @@ export const syncShared = async (
       file_path: filePath ?? null, signed_at: x.signedAt ?? null, signed_by: x.signedBy ?? null,
       signature_data_url: x.signatureDataUrl ?? null,
       workflow: (x.workflow ?? null) as never,
-    }] as never);
+    }] as never));
   }
   for (const x of updates) {
     let filePath = x.filePath;
@@ -267,7 +281,7 @@ export const syncShared = async (
     }
     const updated = { ...x, filePath, fileData };
     replaced.set(x.id, updated);
-    await supabase.from("acc_shared_documents").update({
+    must(await supabase.from("acc_shared_documents").update({
       client_ref: x.clientId, client_name: x.clientName, client_email: x.clientEmail || null,
       doc_type: x.type, label: x.label,
       doc_date: x.date && x.date.length >= 10 ? x.date.slice(0, 10) : null,
@@ -275,9 +289,9 @@ export const syncShared = async (
       file_path: filePath ?? null, signed_at: x.signedAt ?? null, signed_by: x.signedBy ?? null,
       signature_data_url: x.signatureDataUrl ?? null,
       workflow: (x.workflow ?? null) as never,
-    }).eq("id", x.id);
+    }).eq("id", x.id));
   }
-  if (deletes.length) await supabase.from("acc_shared_documents").delete().in("id", deletes);
+  if (deletes.length) must(await supabase.from("acc_shared_documents").delete().in("id", deletes));
   return next.map((x) => replaced.get(x.id) ?? x);
 };
 
@@ -298,11 +312,11 @@ export const syncLegal = async (
     }
     const updated = { ...x, filePath, fileData };
     replaced.set(x.id, updated);
-    await supabase.from("acc_legal_documents").insert({
+    must(await supabase.from("acc_legal_documents").insert({
       id: x.id, accountant_id: accId, client_ref: x.clientId, label: x.label, kind: x.kind,
       file_name: x.fileName ?? null, mime_type: x.mimeType ?? null, file_path: filePath ?? null,
       doc_date: x.date && x.date.length >= 10 ? x.date.slice(0, 10) : null,
-    });
+    }));
   }
   for (const x of updates) {
     let filePath = x.filePath;
@@ -313,13 +327,13 @@ export const syncLegal = async (
     }
     const updated = { ...x, filePath, fileData };
     replaced.set(x.id, updated);
-    await supabase.from("acc_legal_documents").update({
+    must(await supabase.from("acc_legal_documents").update({
       client_ref: x.clientId, label: x.label, kind: x.kind,
       file_name: x.fileName ?? null, mime_type: x.mimeType ?? null, file_path: filePath ?? null,
       doc_date: x.date && x.date.length >= 10 ? x.date.slice(0, 10) : null,
-    }).eq("id", x.id);
+    }).eq("id", x.id));
   }
-  if (deletes.length) await supabase.from("acc_legal_documents").delete().in("id", deletes);
+  if (deletes.length) must(await supabase.from("acc_legal_documents").delete().in("id", deletes));
   return next.map((x) => replaced.get(x.id) ?? x);
 };
 

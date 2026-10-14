@@ -1,4 +1,4 @@
-import ExcelJS from "exceljs";
+import type ExcelJS from "exceljs";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface G50ExportInput {
@@ -117,7 +117,8 @@ async function buildG50Buffer(input: G50ExportInput, precalcForPdf = false): Pro
   const res = await fetch("/templates/G50_template.xlsx");
   if (!res.ok) throw new Error("G50 template not found");
   const buf = await res.arrayBuffer();
-  const wb = new ExcelJS.Workbook();
+  const { default: ExcelJSLib } = await import("exceljs");
+  const wb = new ExcelJSLib.Workbook();
   await wb.xlsx.load(buf);
 
   const ibs = wb.getWorksheet("IBS-IRG");
