@@ -10,6 +10,9 @@
 The `Verify production deploy` workflow runs after every push to `main`: it waits for the Cloudflare Pages check on that commit and checks that the live site serves the CSP and HSTS headers. A red run means production did not update. `SITE_URL` in the workflow is the default pages.dev address; change it if a custom domain is used.
 `.github/workflows/ci.yml` runs typecheck, lint, tests and build on every PR and push to `main`. Merge only when it is green.
 
+## Database tests
+`scripts/test-db.sh` (`npm run test:db`) applies every file in `supabase/migrations` to an empty PostgreSQL database, using stand-ins for Supabase's `auth` and `storage` schemas (`supabase/tests/bootstrap.sql`), then runs `supabase/tests/*.test.sql`. CI runs it as the `database` job against a Postgres 15 service container; locally it starts a throwaway server if PostgreSQL is installed (or set `DATABASE_URL`). `rls.test.sql` covers signup, invite and activation flows and tenant isolation. Add a check there whenever a policy or trigger changes. Migrations must apply cleanly from scratch, so write new ones to be safe on a fresh database.
+
 ## Releasing a change that needs a database change
 Order matters, because `main` goes live as soon as it is merged and the database does not:
 
