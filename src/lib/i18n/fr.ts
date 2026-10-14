@@ -806,6 +806,7 @@ export const fr: typeof en = {
   auth_reset_save: "Enregistrer le mot de passe",
   auth_reset_done: "Mot de passe mis à jour. Vous êtes connecté.",
   auth_reset_mismatch: "Les deux mots de passe ne correspondent pas.",
+  auth_password_pwned: "Ce mot de passe apparaît dans des fuites de données connues. Veuillez en choisir un autre.",
   auth_reset_invalid_link: "Ce lien de réinitialisation est invalide ou a expiré. Demandez-en un nouveau.",
   auth_password_hint: "Au moins 8 caractères.",
   auth_consent_prefix: "J'accepte les",

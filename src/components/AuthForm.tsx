@@ -1,3 +1,4 @@
+import { isPasswordPwned } from "@/lib/pwnedPassword";
 import { useState, FormEvent, useEffect } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
@@ -110,6 +111,10 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
     }
     setBusy(true);
     try {
+      if (mode === "signup" && (await isPasswordPwned(password))) {
+        setFormError(t("auth_password_pwned"));
+        return;
+      }
       if (mode === "signup") {
         const role = isInvite ? "client" : "accountant";
         const redirectUrl = `${window.location.origin}/login`;

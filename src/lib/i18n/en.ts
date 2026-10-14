@@ -826,6 +826,7 @@ export const en = {
   auth_reset_save: "Save password",
   auth_reset_done: "Password updated. You are signed in.",
   auth_reset_mismatch: "The two passwords do not match.",
+  auth_password_pwned: "This password appears in known data breaches. Please choose a different one.",
   auth_reset_invalid_link: "This reset link is invalid or has expired. Request a new one.",
   auth_password_hint: "At least 8 characters.",
   auth_consent_prefix: "I accept the",

@@ -806,6 +806,7 @@ export const ar: typeof en = {
   auth_reset_save: "حفظ كلمة المرور",
   auth_reset_done: "تم تحديث كلمة المرور. تم تسجيل دخولك.",
   auth_reset_mismatch: "كلمتا المرور غير متطابقتين.",
+  auth_password_pwned: "كلمة المرور هذه ظهرت في تسريبات بيانات معروفة. يرجى اختيار كلمة مرور أخرى.",
   auth_reset_invalid_link: "رابط إعادة التعيين غير صالح أو منتهي الصلاحية. اطلب رابطًا جديدًا.",
   auth_password_hint: "8 أحرف على الأقل.",
   auth_consent_prefix: "أوافق على",
