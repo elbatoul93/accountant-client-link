@@ -19,6 +19,7 @@ import ResetPassword from "./pages/ResetPassword.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const AccountantDashboard = lazy(() => import("./pages/AccountantDashboard.tsx"));
+const Admin = lazy(() => import("./pages/Admin.tsx"));
 const ClientDashboard = lazy(() => import("./pages/ClientDashboard.tsx"));
 
 const PageSpinner = () => (
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/invite/:token" element={<InviteSignup />} />
             <Route path="/dashboard/accountant" element={<ProtectedRoute role="accountant"><AccountantDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/client" element={<ProtectedRoute role="client"><ClientDashboard /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
