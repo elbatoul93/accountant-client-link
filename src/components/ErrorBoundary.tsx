@@ -31,3 +31,5 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: 
     return this.state.failed ? <Fallback /> : this.props.children;
   }
 }
+
+export default ErrorBoundary;

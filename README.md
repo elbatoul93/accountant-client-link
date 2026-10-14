@@ -10,7 +10,8 @@ npm test
 npm run lint
 npm run build
 ```
-Requires `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env`.
+Copy `.env.example` to `.env` and fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+CI, releases and database deploys are described in [docs/DELIVERY.md](docs/DELIVERY.md).
 
 ## Database
 Schema lives in `supabase/migrations`. Apply with `supabase link --project-ref <ref> && supabase db push`.

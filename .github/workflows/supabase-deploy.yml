@@ -1,0 +1,48 @@
+name: Supabase deploy
+
+# Manual only. Applies pending migrations, then (optionally) deploys edge functions
+# to the live project. Database first, then merge the frontend that depends on it.
+# Protect it by adding required reviewers to the "production" environment in
+# GitHub: Settings > Environments > production.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only list pending migrations, change nothing"
+        type: boolean
+        default: true
+      deploy_functions:
+        description: "Also deploy edge functions"
+        type: boolean
+        default: false
+
+concurrency:
+  group: supabase-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: kjdokftgjldqriwyeuox
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+      - name: Pending migrations (dry run)
+        run: supabase db push --dry-run
+      - name: Apply migrations
+        if: ${{ !inputs.dry_run }}
+        run: supabase db push
+      - name: Deploy edge functions
+        if: ${{ !inputs.dry_run && inputs.deploy_functions }}
+        run: supabase functions deploy --project-ref "$PROJECT_REF"

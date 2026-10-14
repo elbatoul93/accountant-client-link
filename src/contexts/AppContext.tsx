@@ -26,12 +26,39 @@ const AppContext = createContext<AppContextValue | undefined>(undefined);
 
 const LAST_UID_KEY = "mgmtk_last_uid";
 
-/** Per-browser caches (mgmtk_*) are not account-scoped, so wipe them when the account changes. */
-const clearLocalAppData = () => {
+const BACKUP_PREFIX = "mgmtkbak_";
+
+/**
+ * Per-browser data (mgmtk_*) is not account-scoped and some of it exists nowhere else yet,
+ * so never delete it. Move it into a per-account backup on logout / account switch and
+ * move it back when that account signs in again.
+ */
+const stashLocalAppData = (uid: string | null) => {
+  if (!uid) return;
   try {
     Object.keys(localStorage)
-      .filter((k) => k.startsWith("mgmtk_") && k !== "mgmtk_lang")
-      .forEach((k) => localStorage.removeItem(k));
+      .filter((k) => k.startsWith("mgmtk_") && k !== "mgmtk_lang" && k !== LAST_UID_KEY)
+      .forEach((k) => {
+        const v = localStorage.getItem(k);
+        if (v !== null) localStorage.setItem(`${BACKUP_PREFIX}${uid}__${k}`, v);
+        localStorage.removeItem(k);
+      });
+  } catch { /* storage unavailable or full */ }
+};
+
+const restoreLocalAppData = (uid: string) => {
+  try {
+    const prefix = `${BACKUP_PREFIX}${uid}__`;
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith(prefix))
+      .forEach((k) => {
+        const orig = k.slice(prefix.length);
+        if (localStorage.getItem(orig) === null) {
+          const v = localStorage.getItem(k);
+          if (v !== null) localStorage.setItem(orig, v);
+        }
+        localStorage.removeItem(k);
+      });
   } catch { /* storage unavailable */ }
 };
 
@@ -63,7 +90,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
     try {
       const last = localStorage.getItem(LAST_UID_KEY);
-      if (last && last !== session.user.id) clearLocalAppData();
+      if (last && last !== session.user.id) stashLocalAppData(last);
+      restoreLocalAppData(session.user.id);
       localStorage.setItem(LAST_UID_KEY, session.user.id);
     } catch { /* storage unavailable */ }
     // Provisional role from user_metadata (user-editable); replaced by profiles.user_type below
@@ -123,8 +151,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
+    let uid: string | null = null;
+    try { uid = localStorage.getItem(LAST_UID_KEY); } catch { /* storage unavailable */ }
     await supabase.auth.signOut();
-    clearLocalAppData();
+    stashLocalAppData(uid);
     setUser(null);
   };
 
