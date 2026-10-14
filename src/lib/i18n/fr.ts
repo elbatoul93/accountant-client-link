@@ -175,6 +175,8 @@ export const fr: typeof en = {
   g50_sending_label: "Envoi…",
   g50_sent_success: "G50 envoyé au client",
   sync_failed: "Votre dernière modification n’a pas pu être enregistrée. Vérifiez votre connexion et réessayez.",
+  send_client_not_linked: "Ce client n'a pas encore accepté l'invitation, rien n'a été envoyé. Demandez-lui d'accepter l'invitation d'abord.",
+  send_not_delivered: "Le document est enregistré, mais le client n'a pas reçu la notification. Réessayez plus tard.",
   g50_send_failed: "Échec de l'envoi du G50",
   g50_send_no_pdf: "Générez d'abord le G50 avant l'envoi.",
 

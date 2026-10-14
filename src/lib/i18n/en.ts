@@ -181,6 +181,8 @@ export const en = {
   g50_sending_label: "Sending…",
   g50_sent_success: "G50 sent to client",
   sync_failed: "Your last change could not be saved. Check your connection and try again.",
+  send_client_not_linked: "This client has not accepted the invitation yet, so nothing was sent. Ask them to accept the invitation first.",
+  send_not_delivered: "The document was saved, but the client did not receive the notification. Try again later.",
   g50_send_failed: "Failed to send G50",
   g50_send_no_pdf: "Generate the G50 first before sending.",
 
