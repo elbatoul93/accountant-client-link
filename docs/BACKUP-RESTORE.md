@@ -10,10 +10,10 @@ It does nothing until the secrets below exist, so it can be merged safely.
 
 ## One-time setup (Mo)
 1. Generate a key pair on your own computer: `age-keygen -o backup-key.txt`. **Keep `backup-key.txt` safe and offline (password manager). Without it the backups cannot be read; anyone who has it can read them.** The line starting `age1...` is the public key.
-2. GitHub > Settings > Secrets and variables > Actions, add (all in the `production` environment):
+2. GitHub > Settings > Secrets and variables > Actions, add as repository secrets:
    - `BACKUP_AGE_PUBLIC_KEY`: the `age1...` public key.
-   - `SUPABASE_DB_URL`: Supabase dashboard > Connect > Session pooler connection string, with the database password filled in.
-   - `SUPABASE_ACCESS_TOKEN` (already needed by the deploy workflow): used for the storage copy. Without it only the database is backed up.
+   - `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD`: the same two secrets the deploy workflow uses. The workflow links the project with them and connects through the Supabase session pooler (GitHub runners have no IPv6), so no connection string is needed. If the database password is ever reset, update `SUPABASE_DB_PASSWORD` in GitHub too.
+   The workflow stays inert until all three exist.
 3. Run the workflow once by hand (Actions > Nightly backup > Run workflow) and confirm an artifact appears.
 4. Paid Supabase plans also take their own daily backups (dashboard > Database > Backups); keep both.
 
