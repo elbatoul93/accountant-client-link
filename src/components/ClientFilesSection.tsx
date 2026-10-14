@@ -1,3 +1,4 @@
+import { useFormat } from "@/hooks/useFormat";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -30,6 +31,7 @@ interface DocRow {
 const BUCKET = "client-uploads";
 
 export const ClientFilesSection = ({ clientId, clientEmail, clientName, t }: Props) => {
+  const fmt = useFormat();
   const [resolvedId, setResolvedId] = useState<string | undefined>(clientId);
   const [files, setFiles] = useState<DocRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -177,7 +179,7 @@ export const ClientFilesSection = ({ clientId, clientEmail, clientName, t }: Pro
                     <Badge variant="outline" className="text-[10px] font-mono">{f.mime_type}</Badge>
                   )}
                   {typeof f.size === "number" && <span>{(f.size / 1024).toFixed(1)} KB</span>}
-                  <span>• {new Date(f.created_at).toLocaleDateString()}</span>
+                  <span>• {fmt.date(f.created_at)}</span>
                 </div>
               </div>
               <div className="flex flex-col gap-1">

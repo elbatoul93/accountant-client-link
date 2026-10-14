@@ -725,6 +725,54 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_settings: {
+        Row: { id: boolean; issuer: Json; updated_at: string }
+        Insert: { id?: boolean; issuer?: Json; updated_at?: string }
+        Update: { id?: boolean; issuer?: Json; updated_at?: string }
+        Relationships: []
+      }
+      payment_receipts: {
+        Row: {
+          accountant_id: string | null
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          issued_by: string | null
+          issuer: Json
+          method: string
+          note: string | null
+          paid_at: string
+          payer: Json
+          period_end: string
+          period_months: number
+          period_start: string
+          plan: string
+          receipt_no: string
+          seq: number
+          void_reason: string | null
+          voided_at: string | null
+          year: number
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          accountant_id: string
+          grace_days: number
+          notes: string | null
+          paid_until: string | null
+          plan: string
+          trial_ends_at: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       audit_log: {
         Row: {
           accountant_id: string | null
@@ -1105,6 +1153,62 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_get_billing_settings: { Args: never; Returns: Json }
+      admin_list_receipts: {
+        Args: { _accountant_id?: string }
+        Returns: Database["public"]["Tables"]["payment_receipts"]["Row"][]
+      }
+      admin_list_subscriptions: {
+        Args: never
+        Returns: {
+          account_status: string
+          company: string | null
+          email: string
+          grace_days: number
+          name: string
+          paid_until: string | null
+          plan: string
+          state: string
+          trial_ends_at: string | null
+          user_id: string
+        }[]
+      }
+      admin_record_payment: {
+        Args: {
+          _accountant_id: string
+          _amount: number
+          _method?: string
+          _note?: string
+          _paid_at?: string
+          _period_months: number
+          _plan?: string
+        }
+        Returns: Database["public"]["Tables"]["payment_receipts"]["Row"]
+      }
+      admin_set_billing_settings: { Args: { _issuer: Json }; Returns: undefined }
+      admin_set_subscription: {
+        Args: {
+          _accountant_id: string
+          _grace_days?: number
+          _paid_until: string | null
+          _plan: string
+          _trial_ends_at: string | null
+        }
+        Returns: undefined
+      }
+      admin_void_receipt: { Args: { _reason: string; _receipt_id: string }; Returns: undefined }
+      my_subscription: {
+        Args: never
+        Returns: {
+          ends_at: string | null
+          grace_days: number
+          paid_until: string | null
+          plan: string
+          state: string
+          trial_ends_at: string | null
+        }[]
+      }
+      subscription_read_only: { Args: never; Returns: boolean }
       admin_list_accountants: {
         Args: never
         Returns: {

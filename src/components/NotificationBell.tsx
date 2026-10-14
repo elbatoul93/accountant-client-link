@@ -1,3 +1,4 @@
+import { useFormat } from "@/hooks/useFormat";
 import { useEffect, useState } from "react";
 import { Bell, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import {
 } from "@/lib/portal";
 
 export const NotificationBell = ({ role, email, t }: { role: NotifRole; email?: string; t: (k: string) => string }) => {
+  const fmt = useFormat();
   const [items, setItems] = useState<PortalNotification[]>([]);
   const refresh = () => setItems(getNotifications(role, email));
   useEffect(() => {
@@ -59,7 +61,7 @@ export const NotificationBell = ({ role, email, t }: { role: NotifRole; email?: 
                     <div className="text-xs font-semibold text-foreground truncate">{n.title}</div>
                     <div className="text-[11px] text-muted-foreground line-clamp-2">{n.message}</div>
                     <div className="text-[10px] text-muted-foreground mt-0.5">
-                      {new Date(n.createdAt).toLocaleString("fr-DZ")}
+                      {fmt.dateTime(n.createdAt)}
                     </div>
                   </div>
                 </div>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useFmtDZD } from "@/lib/useFormat";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +16,6 @@ import {
 import type { Employee } from "./SuiteModules";
 import { buildDAS } from "@/lib/accounting/payroll";
 
-const fmtDZD = (n: number) =>
-  `${new Intl.NumberFormat("fr-DZ", { maximumFractionDigits: 0 }).format(Math.round(n))} DA`;
 
 interface ClientLite {
   id: string; name: string;
@@ -32,6 +31,7 @@ interface Props {
 }
 
 export const LiasseFiscaleView = ({ t, journal, employees, clients }: Props) => {
+  const fmtDZD = useFmtDZD();
   const [clientId, setClientId] = useState<string>(clients[0]?.id ?? "");
   const [year, setYear] = useState<number>(new Date().getFullYear() - 1);
   const client = clients.find((c) => c.id === clientId);
@@ -141,8 +141,8 @@ export const LiasseFiscaleView = ({ t, journal, employees, clients }: Props) => 
           <div id="liasse-bilan">
             <FiscalHeader t={t} client={client} year={year} title={t("liasse_doc_bilan")} />
             <div className="grid md:grid-cols-2 gap-4">
-              <FiscalTable title={`ACTIF — ${t("liasse_assets")}`} rows={bilan.actif} side="debit" total={bilan.totalActif} />
-              <FiscalTable title={`PASSIF — ${t("liasse_liabilities")}`} rows={bilan.passif} side="credit" total={bilan.totalPassif} />
+              <FiscalTable t={t} title={t("liasse_assets")} rows={bilan.actif} side="debit" total={bilan.totalActif} />
+              <FiscalTable t={t} title={t("liasse_liabilities")} rows={bilan.passif} side="credit" total={bilan.totalPassif} />
             </div>
             <div className="mt-3 p-3 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 flex justify-between text-sm">
               <span className="font-semibold">{t("liasse_period_result")}</span>
@@ -163,8 +163,8 @@ export const LiasseFiscaleView = ({ t, journal, employees, clients }: Props) => 
           <div id="liasse-tcr">
             <FiscalHeader t={t} client={client} year={year} title={t("liasse_doc_tcr")} />
             <div className="grid md:grid-cols-2 gap-4">
-              <FiscalTable title={`PRODUITS (Class 7)`} rows={tcr.produits} side="credit" total={tcr.totalProduits} />
-              <FiscalTable title={`CHARGES (Class 6)`} rows={tcr.charges} side="debit" total={tcr.totalCharges} />
+              <FiscalTable t={t} title={t("liasse_income_class7")} rows={tcr.produits} side="credit" total={tcr.totalProduits} />
+              <FiscalTable t={t} title={t("liasse_expenses_class6")} rows={tcr.charges} side="debit" total={tcr.totalCharges} />
             </div>
             <div className="mt-3 grid sm:grid-cols-3 gap-2">
               <SmallStat label={t("liasse_total_produits")} value={fmtDZD(tcr.totalProduits)} tone="success" />
@@ -187,10 +187,10 @@ export const LiasseFiscaleView = ({ t, journal, employees, clients }: Props) => 
               <thead>
                 <tr className="text-xs uppercase text-muted-foreground border-b border-border">
                   <th className="text-start font-medium py-2.5">{t("eng_pcn_account")}</th>
-                  <th className="text-start font-medium py-2.5 hidden md:table-cell">Libellé</th>
-                  <th className="num text-end font-medium py-2.5">Débit</th>
-                  <th className="num text-end font-medium py-2.5">Crédit</th>
-                  <th className="num text-end font-medium py-2.5">Solde</th>
+                  <th className="text-start font-medium py-2.5 hidden md:table-cell">{t("rep_label")}</th>
+                  <th className="num text-end font-medium py-2.5">{t("jrn_debit")}</th>
+                  <th className="num text-end font-medium py-2.5">{t("jrn_credit")}</th>
+                  <th className="num text-end font-medium py-2.5">{t("jrn_balance")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -216,17 +216,17 @@ export const LiasseFiscaleView = ({ t, journal, employees, clients }: Props) => 
             </Button>
           </div>
           <div id="liasse-301bis">
-            <FiscalHeader t={t} client={client} year={year} title={`État 301 bis — ${t("liasse_301_subtitle")}`} />
+            <FiscalHeader t={t} client={client} year={year} title={`${t("liasse_etat_301bis")} — ${t("liasse_301_subtitle")}`} />
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs uppercase text-muted-foreground border-b border-border">
-                  <th className="text-start font-medium py-2.5">Matricule</th>
-                  <th className="text-start font-medium py-2.5">Nom</th>
-                  <th className="num text-end font-medium py-2.5">Mois</th>
-                  <th className="num text-end font-medium py-2.5">Brut Annuel</th>
-                  <th className="num text-end font-medium py-2.5">SS retenue</th>
-                  <th className="num text-end font-medium py-2.5">IRG retenu</th>
-                  <th className="num text-end font-medium py-2.5">Net</th>
+                  <th className="text-start font-medium py-2.5">{t("liasse_col_matricule")}</th>
+                  <th className="text-start font-medium py-2.5">{t("liasse_col_name")}</th>
+                  <th className="num text-end font-medium py-2.5">{t("liasse_col_months")}</th>
+                  <th className="num text-end font-medium py-2.5">{t("liasse_col_gross_year")}</th>
+                  <th className="num text-end font-medium py-2.5">{t("liasse_col_ss")}</th>
+                  <th className="num text-end font-medium py-2.5">{t("liasse_col_irg")}</th>
+                  <th className="num text-end font-medium py-2.5">{t("liasse_col_net")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -242,7 +242,7 @@ export const LiasseFiscaleView = ({ t, journal, employees, clients }: Props) => 
                   </tr>
                 ))}
                 <tr className="total bg-muted/40 font-semibold">
-                  <td colSpan={3} className="py-2 text-xs uppercase">TOTAUX</td>
+                  <td colSpan={3} className="py-2 text-xs uppercase">{t("rep_totals")}</td>
                   <td className="num py-2 text-xs font-mono">{fmtDZD(dasTotals.gross)}</td>
                   <td className="num py-2 text-xs font-mono">{fmtDZD(dasTotals.ss)}</td>
                   <td className="num py-2 text-xs font-mono">{fmtDZD(dasTotals.irg)}</td>
@@ -276,9 +276,11 @@ const FiscalHeader = ({ t, client, year, title }: { t: (k: string) => string; cl
   </div>
 );
 
-const FiscalTable = ({ title, rows, side, total }: {
-  title: string; rows: any[]; side: "debit" | "credit"; total: number;
-}) => (
+const FiscalTable = ({ t, title, rows, side, total }: {
+  t: (k: string) => string; title: string; rows: any[]; side: "debit" | "credit"; total: number;
+}) => {
+  const fmtDZD = useFmtDZD();
+  return (
   <div className="border border-border rounded-lg overflow-hidden">
     <div className="px-3 py-2 bg-primary/5 border-b border-border">
       <h3 className="text-xs font-bold text-primary uppercase tracking-wider">{title}</h3>
@@ -297,13 +299,14 @@ const FiscalTable = ({ title, rows, side, total }: {
           </tr>
         ))}
         <tr className="total bg-gradient-to-br from-gold/15 to-gold/5 border-t border-gold/40">
-          <td className="py-2 px-3 text-xs font-bold uppercase">Total</td>
+          <td className="py-2 px-3 text-xs font-bold uppercase">{t("liasse_total")}</td>
           <td className="num py-2 px-3 text-xs font-mono font-bold text-gold-deep">{fmtDZD(total)}</td>
         </tr>
       </tbody>
     </table>
   </div>
 );
+};
 
 const SmallStat = ({ label, value, tone }: { label: string; value: string; tone: "success" | "muted" | "gold" | "danger" }) => {
   const cls = {

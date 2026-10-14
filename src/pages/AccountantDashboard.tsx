@@ -14,6 +14,7 @@ import { Users, FileText, AlertCircle, Bell, Receipt, ShieldCheck, Plus, Trash2,
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { toast } from "sonner";
+import { pluralKey } from "@/lib/format";
 import { BillingView, JournalView, useSuiteData, aggregateForG50 } from "./accountant/SuiteModules";
 import { PayrollAdvanced } from "./accountant/PayrollAdvanced";
 import { ReportsView } from "./accountant/ReportsView";
@@ -42,7 +43,7 @@ import { ClientsListView, DashboardView, InvoiceTable } from "@/pages/accountant
 import { AccountantVaultView, ChatHubView, TrackingView } from "@/pages/accountant/InboxViews";
 
 const AccountantDashboard = () => {
-  const { t, user } = useApp();
+  const { t, user, lang } = useApp();
   const [clients, setClients] = useState<Client[]>(() => load<Client>(KEY_CLIENTS));
   const [invoices, setInvoices] = useState<Invoice[]>(() => load<Invoice>(KEY_INVOICES));
   const [decls, setDecls] = useState<Decl[]>(() => load<Decl>(KEY_DECLS));
@@ -399,7 +400,7 @@ const AccountantDashboard = () => {
       clients.map((c) => ({ email: c.contact, name: c.name })),
       user?.name || "Cabinet Comptable",
     );
-    if (sent > 0) toast.message(`${sent} rappel(s) envoyé(s) aux clients sans dépôt ce mois-ci.`);
+    if (sent > 0) toast.message(t(pluralKey("toast_reminders_sent", sent, lang), { n: sent }));
     // run again every hour while the dashboard stays open
     const id = setInterval(() => {
       runUploadReminderSweep(
@@ -1270,7 +1271,7 @@ const ClientProfileView = ({
                 try {
                   if (fmt === "pdf") {
                     const saved = await generateG50Pdf({ ...payload, fileName });
-                    if (saved === "xlsx-fallback") toast.warning("Service PDF indisponible : le fichier Excel a été téléchargé à la place.");
+                    if (saved === "xlsx-fallback") toast.warning(t("toast_pdf_unavailable_xlsx"));
                   } else await generateG50Xlsx({ ...payload, fileName });
                 } catch (e) {
                   console.error(e);
@@ -1646,7 +1647,7 @@ const G50GeneratorDialog = ({
       };
       if (format === "pdf") {
         const saved = await generateG50Pdf(payload);
-        if (saved === "xlsx-fallback") toast.warning("Service PDF indisponible : le fichier Excel a été téléchargé à la place.");
+        if (saved === "xlsx-fallback") toast.warning(t("toast_pdf_unavailable_xlsx"));
       } else {
         await generateG50Xlsx(payload);
       }

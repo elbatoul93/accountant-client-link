@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useDropzone } from "react-dropzone";
+import { formatDateTime } from "@/lib/format";
 import { useApp } from "@/contexts/AppContext";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Card } from "@/components/ui/card";
@@ -27,7 +28,7 @@ import { Decl, DeclType, Doc, Invoice, MAX_UPLOAD_BYTES, REGIME_DECLS, STORAGE_K
 import { SignDialog } from "@/pages/client/SignAndVault";
 
 const ClientDashboard = () => {
-  const { t, user } = useApp();
+  const { t, user, lang } = useApp();
   const [docs, setDocs] = useState<Doc[]>(() => {
     const cached = readJson<Doc[]>(STORAGE_KEY, []);
     return Array.isArray(cached) ? cached : [];
@@ -451,7 +452,7 @@ const ClientDashboard = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-semibold text-sm truncate">{p.title}</div>
-                            <div className="text-[11px] text-muted-foreground">{new Date(p.created_at).toLocaleString()}</div>
+                            <div className="text-[11px] text-muted-foreground">{formatDateTime(p.created_at, lang)}</div>
                           </div>
                           <Button
                             size="sm"
@@ -608,7 +609,7 @@ const ClientDashboard = () => {
                         <div className="font-semibold text-sm text-foreground mt-1">{s.label}</div>
                         {s.signedAt && (
                           <div className="text-[11px] text-muted-foreground mt-0.5">
-                            {t("cli_signed_on")} {new Date(s.signedAt).toLocaleString("fr-DZ")}
+                            {t("cli_signed_on")} {formatDateTime(s.signedAt, lang)}
                           </div>
                         )}
                       </div>
