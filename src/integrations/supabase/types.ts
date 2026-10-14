@@ -1197,6 +1197,8 @@ export type Database = {
         Returns: undefined
       }
       admin_void_receipt: { Args: { _reason: string; _receipt_id: string }; Returns: undefined }
+      export_my_data: { Args: never; Returns: Json }
+      my_deletion_blockers: { Args: never; Returns: { kind: string; n: number }[] }
       my_subscription: {
         Args: never
         Returns: {
