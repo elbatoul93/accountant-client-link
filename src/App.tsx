@@ -11,11 +11,20 @@ import Signup from "./pages/Signup.tsx";
 import InviteSignup from "./pages/InviteSignup.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const AccountantDashboard = lazy(() => import("./pages/AccountantDashboard.tsx"));
 const ClientDashboard = lazy(() => import("./pages/ClientDashboard.tsx"));
 
-const queryClient = new QueryClient();
+const PageSpinner = () => (
+  <div className="min-h-screen grid place-items-center bg-background">
+    <div className="h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+  </div>
+);
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -24,7 +33,8 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Suspense fallback={null}>
+          <ErrorBoundary>
+          <Suspense fallback={<PageSpinner />}>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
@@ -35,6 +45,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
+          </ErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>
     </AppProvider>
