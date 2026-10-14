@@ -19,7 +19,7 @@ interface AuthFormProps {
 }
 
 export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
-  const { t, user, loading } = useApp();
+  const { t, user, loading, lang } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const pendingEmail = (location.state as { pendingConfirmationEmail?: string } | null)?.pendingConfirmationEmail;
@@ -294,9 +294,10 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
                   <Checkbox id="accept-terms" checked={accepted} onCheckedChange={(v) => setAccepted(v === true)} className="mt-0.5" />
                   <Label htmlFor="accept-terms" className="text-xs font-normal leading-relaxed text-muted-foreground">
                     {t("auth_consent_prefix")}{" "}
-                    <Link to="/terms" target="_blank" className="text-primary underline">{t("landing_terms")}</Link>{" "}
-                    {t("auth_consent_and")}{" "}
-                    <Link to="/privacy" target="_blank" className="text-primary underline">{t("landing_privacy")}</Link>
+                    <Link to="/terms" target="_blank" className="text-primary underline">{t("auth_consent_terms")}</Link>{" "}
+                    {/* Arabic "و" attaches to the next word, so no space after it */}
+                    {t("auth_consent_and")}{lang === "ar" ? "" : " "}
+                    <Link to="/privacy" target="_blank" className="text-primary underline">{t("auth_consent_privacy")}</Link>
                   </Label>
                 </div>
               )}

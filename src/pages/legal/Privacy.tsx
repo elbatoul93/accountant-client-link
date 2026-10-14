@@ -68,6 +68,72 @@ const PrivacyFr = () => (
   </>
 );
 
+const PrivacyEn = () => (
+  <>
+    <p>
+      {COMPANY} ("Managementik", "we") publishes the Managementik platform, which connects accounting firms
+      and their clients. This policy explains which personal data we process and why, in line with Algerian
+      law no. 18-07 on the protection of individuals in the processing of personal data.
+    </p>
+
+    <h2>1. Roles</h2>
+    <p>
+      The accounting firm is the controller of its clients' data (documents, declarations, payroll).
+      Managementik acts as a processor for that data, on the firm's instructions. Managementik is the
+      controller of user account data (name, email, encrypted password).
+    </p>
+
+    <h2>2. Data we process</h2>
+    <ul>
+      <li>Account: name, email address, company, role (accountant or client).</li>
+      <li>Documents and exchanges: uploaded files, messages, signatures, declarations (G50, CNAS, etc.).</li>
+      <li>Accounting and payroll data entered by the firm: tax identifiers (NIF, NIS, RC), employees, salaries, contributions.</li>
+      <li>Technical data: connection and error logs, needed for security and troubleshooting.</li>
+    </ul>
+
+    <h2>3. Purposes and legal basis</h2>
+    <ul>
+      <li>Providing the service (performance of the contract with the firm and its clients).</li>
+      <li>Securing accounts and preventing abuse (legitimate interest).</li>
+      <li>Meeting our legal obligations.</li>
+    </ul>
+
+    <h2>4. Recipients and processors</h2>
+    <p>
+      Hosting and database: Supabase. Website delivery: Cloudflare. PDF document conversion: CloudConvert.
+      These providers process data on our behalf. We do not sell your data.
+    </p>
+
+    <h2>5. Transfers outside Algeria</h2>
+    <p>
+      Some providers host data outside Algeria. The formalities with the ANPDP (declaration or authorisation)
+      will be completed before commercial launch.
+    </p>
+
+    <h2>6. Retention</h2>
+    <p>
+      Data is kept while the account is active, then deleted or anonymised within 12 months after closure,
+      unless the law requires it to be kept (in particular accounting records).
+    </p>
+
+    <h2>7. Your rights</h2>
+    <p>
+      You can ask for access to, correction or deletion of your data, and object to its processing, by writing to{" "}
+      <a className="text-primary underline" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+      For the data of an accounting firm's clients, contact that firm first.
+    </p>
+
+    <h2>8. Browser storage</h2>
+    <p>
+      The site uses the browser's local storage only for the session, the chosen language and the
+      operation of the application. No advertising trackers are used.
+    </p>
+
+    <h2>9. Data breaches</h2>
+    <p>If a data breach poses a risk, we promptly inform the firms concerned and the competent authorities.</p>
+  </>
+);
+
 const PrivacyAr = () => (
   <>
     <p>
@@ -136,9 +202,10 @@ const PrivacyAr = () => (
 const Privacy = () => {
   const { lang } = useApp();
   const ar = lang === "ar";
+  const en = lang === "en";
   return (
-    <LegalLayout title={ar ? "سياسة الخصوصية" : "Politique de confidentialité"}>
-      {ar ? <PrivacyAr /> : <PrivacyFr />}
+    <LegalLayout title={ar ? "سياسة الخصوصية" : en ? "Privacy Policy" : "Politique de confidentialité"}>
+      {ar ? <PrivacyAr /> : en ? <PrivacyEn /> : <PrivacyFr />}
     </LegalLayout>
   );
 };
