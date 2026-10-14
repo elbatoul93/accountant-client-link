@@ -12,7 +12,7 @@
  */
 import { classOf, getPcnByPrefix, PCN } from "./pcn";
 import { SS_EMPLOYER_RATE } from "./payroll";
-import { tapRateForPeriod, IBS_ACOMPTE_MONTHS, IBS_ACOMPTE_RATE } from "./algerianTax";
+import { tapRateForPeriod, IBS_ACOMPTE_MONTHS, IBS_ACOMPTE_RATE, computeTvaSettlement } from "./algerianTax";
 
 export type EntrySource = "manual" | "sales" | "purchase" | "payroll" | "tax";
 
@@ -230,6 +230,10 @@ export interface G50Computation {
   tvaCollected: number; // 44551 credit movements
   tvaDeductible: number; // 44562 debit movements
   tvaDue: number;
+  /** TVA credit brought forward from the previous month (précompte). */
+  precompteFromPrev: number;
+  /** TVA credit to carry to the next month. */
+  precompteToNext: number;
   salaries: number;   // 631 debit movements
   irgSalaries: number; // 4422 credit movements
   tapRate: number; tap: number;
@@ -258,6 +262,8 @@ export const computeG50FromJournal = (
     clientId?: string; period: string; tapRate?: number;
     /** IBS due for the previous financial year; drives the acomptes. */
     ibsPriorYear?: number;
+    /** TVA credit (précompte) carried from the previous month. */
+    precompteFromPrev?: number;
   },
 ): G50Computation => {
   const period = opts.period;
@@ -273,7 +279,10 @@ export const computeG50FromJournal = (
 
   const tvaCollected   = sumMovementsBetween(lines, (l) => l.account === "44551", "credit", from, to, opts.clientId);
   const tvaDeductible  = sumMovementsBetween(lines, (l) => l.account === "44562", "debit",  from, to, opts.clientId);
-  const tvaDue = Math.max(0, tvaCollected - tvaDeductible);
+  const tvaSettlement = computeTvaSettlement({
+    period, tvaCollected, tvaDeductible, precompteFromPrev: opts.precompteFromPrev,
+  });
+  const tvaDue = tvaSettlement.tvaDue;
 
   const salaries     = sumMovementsBetween(lines, (l) => l.account === "631", "debit",  from, to, opts.clientId);
   const irgSalaries  = sumMovementsBetween(lines, (l) => l.account === "4422", "credit", from, to, opts.clientId);
@@ -287,7 +296,9 @@ export const computeG50FromJournal = (
     : 0;
 
   return {
-    period, caHt, tvaCollected, tvaDeductible, tvaDue, salaries, irgSalaries,
+    period, caHt, tvaCollected, tvaDeductible, tvaDue,
+    precompteFromPrev: tvaSettlement.precompteFromPrev, precompteToNext: tvaSettlement.precompteToNext,
+    salaries, irgSalaries,
     tapRate, tap, ibsRate, ibs,
     total: tap + tvaDue + irgSalaries + ibs,
   };

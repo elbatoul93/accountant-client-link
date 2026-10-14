@@ -184,6 +184,13 @@ export interface TvaPeriodResult {
  * Compute the monthly VAT settlement, automatically rolling a Précompte
  * (credit balance) into the next month when input VAT > output VAT.
  */
+/** Previous YYYY-MM string. */
+export const prevPeriod = (period: string): string => {
+  const [y, m] = period.split("-").map(Number);
+  const d = new Date(y, m - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+};
+
 export const computeTvaSettlement = (input: TvaPeriodInput): TvaPeriodResult => {
   const prev = Math.max(0, Math.round(input.precompteFromPrev ?? 0));
   const totalDeductible = Math.round(input.tvaDeductible + prev);

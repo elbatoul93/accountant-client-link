@@ -28,7 +28,7 @@ import {
   IRG_PRO_BRACKETS_2024, computeIrgProfessionsLiberales,
   computeTfpTapp, TFP_TAPP_THRESHOLD,
   buildG50Preview, type G50Line, type G50Section,
-  tapRateForPeriod, IBS_ACOMPTE_MONTHS, buildEtat104,
+  tapRateForPeriod, IBS_ACOMPTE_MONTHS, buildEtat104, prevPeriod,
 } from "@/lib/accounting/algerianTax";
 import { computeG50FromJournal, type JournalLine } from "@/lib/accounting/engine";
 import { type BillInvoice, type PrecompteMap, precompteKey } from "./SuiteModules";
@@ -44,13 +44,6 @@ interface Props {
   precompte: PrecompteMap;
   setPrecompte: React.Dispatch<React.SetStateAction<PrecompteMap>>;
 }
-
-/** Compute the previous YYYY-MM string. */
-const prevPeriod = (period: string): string => {
-  const [y, m] = period.split("-").map(Number);
-  const d = new Date(y, m - 2, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-};
 
 /** Compute the next YYYY-MM string. */
 const nextPeriod = (period: string): string => {

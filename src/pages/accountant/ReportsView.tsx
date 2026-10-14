@@ -13,6 +13,8 @@ import {
   type JournalLine, type PeriodLock,
   computeTrialBalance, computeBilan, computeTCR, computeG50FromJournal,
 } from "@/lib/accounting/engine";
+import { prevPeriod } from "@/lib/accounting/algerianTax";
+import { type PrecompteMap, precompteKey } from "./SuiteModules";
 
 
 interface ClientLite { id: string; name: string }
@@ -22,9 +24,10 @@ interface Props {
   journal: JournalLine[];
   locks: PeriodLock[];
   clients: ClientLite[];
+  precompte?: PrecompteMap;
 }
 
-export const ReportsView = ({ t, journal, locks, clients }: Props) => {
+export const ReportsView = ({ t, journal, locks, clients, precompte = {} }: Props) => {
   const fmtDZD = useFmtDZD();
   const [clientId, setClientId] = useState<string>("ALL");
   const [period, setPeriod] = useState<string>(new Date().toISOString().slice(0, 7));
@@ -39,9 +42,13 @@ export const ReportsView = ({ t, journal, locks, clients }: Props) => {
   const trial = useMemo(() => computeTrialBalance(journal, filter), [journal, filter]);
   const bilan = useMemo(() => computeBilan(journal, { clientId: filter.clientId, to }), [journal, filter.clientId, to]);
   const tcr = useMemo(() => computeTCR(journal, filter), [journal, filter]);
+  const [ibsPrior, setIbsPrior] = useState<string>("0");
+  const precompteFromPrev = precompte[precompteKey(filter.clientId, prevPeriod(period))] ?? 0;
   const g50 = useMemo(
-    () => computeG50FromJournal(journal, { clientId: filter.clientId, period }),
-    [journal, filter.clientId, period],
+    () => computeG50FromJournal(journal, {
+      clientId: filter.clientId, period, precompteFromPrev, ibsPriorYear: Number(ibsPrior) || 0,
+    }),
+    [journal, filter.clientId, period, precompteFromPrev, ibsPrior],
   );
 
   const totalDebit = trial.reduce((s, r) => s + r.debit, 0);
@@ -216,6 +223,17 @@ export const ReportsView = ({ t, journal, locks, clients }: Props) => {
               <KpiBox label={t("g50_live_tva_due")} value={fmtDZD(g50.tvaDue)} highlight />
               <KpiBox label={t("g50_live_salaries")} value={fmtDZD(g50.salaries)} />
               <KpiBox label={t("g50_live_irg")} value={fmtDZD(g50.irgSalaries)} />
+            </div>
+            <div className="flex items-end gap-3 flex-wrap mb-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t("tax_ibs_prior_year")}</Label>
+                <Input type="number" min={0} value={ibsPrior} onChange={(e) => setIbsPrior(e.target.value)} className="w-44" />
+              </div>
+              {g50.precompteFromPrev > 0 && (
+                <span className="text-xs text-muted-foreground pb-2">
+                  {t("tax_g50_precompte_in")}: {fmtDZD(g50.precompteFromPrev)}
+                </span>
+              )}
             </div>
             <div className="space-y-2">
               {g50.tapRate > 0 && <G50Row label={`TAP (${g50.tapRate}%)`} base={g50.caHt} value={g50.tap} />}
