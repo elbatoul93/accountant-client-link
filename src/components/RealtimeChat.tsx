@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useApp } from "@/contexts/AppContext";
+import { formatDateTime } from "@/lib/format";
 
 interface Message {
   id: string;
@@ -367,7 +368,9 @@ const ChatThread = forwardRef<HTMLDivElement, ChatThreadProps>(
 );
 ChatThread.displayName = "ChatThread";
 
-const Bubble = ({ m, mine }: { m: Message; mine: boolean }) => (
+const Bubble = ({ m, mine }: { m: Message; mine: boolean }) => {
+  const { lang } = useApp();
+  return (
   <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
     <div
       className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${
@@ -378,16 +381,12 @@ const Bubble = ({ m, mine }: { m: Message; mine: boolean }) => (
     >
       <div className="whitespace-pre-wrap break-words">{m.content}</div>
       <div className={`text-[9px] mt-1 ${mine ? "opacity-70" : "text-muted-foreground"}`}>
-        {new Date(m.created_at).toLocaleString(undefined, {
-          hour: "2-digit",
-          minute: "2-digit",
-          day: "2-digit",
-          month: "2-digit",
-        })}
+        {formatDateTime(m.created_at, lang, { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })}
       </div>
     </div>
   </div>
 );
+};
 
 const ChatComposer = ({
   draft,
