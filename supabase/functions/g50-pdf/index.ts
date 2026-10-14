@@ -21,7 +21,6 @@ Deno.serve(async (req) => {
         500,
       );
     }
-    console.log(`[g50-pdf] API key loaded (length=${apiKey.length})`);
 
     let payload: { xlsxBase64?: string; fileName?: string };
     try {
@@ -131,7 +130,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[g50-pdf] Downloading PDF from ${fileUrl}`);
+    console.log("[g50-pdf] Downloading PDF");
     const pdfRes = await fetch(fileUrl);
     if (!pdfRes.ok) {
       const errText = await pdfRes.text();
