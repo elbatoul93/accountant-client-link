@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminBilling } from "@/pages/AdminBilling";
+import { AdminAlerts, useOpenAlertCount } from "@/pages/AdminAlerts";
 
 type Status = "pending" | "active" | "suspended";
 interface AccountantRow {
@@ -21,6 +22,7 @@ const Admin = () => {
   const [rows, setRows] = useState<AccountantRow[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const alerts = useOpenAlertCount();
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.rpc("admin_list_accountants");
@@ -58,6 +60,10 @@ const Admin = () => {
           <TabsList>
             <TabsTrigger value="accounts">Accounts</TabsTrigger>
             <TabsTrigger value="billing">Plans and receipts</TabsTrigger>
+            <TabsTrigger value="alerts" className="gap-2">
+              Security alerts
+              {alerts.count > 0 && <Badge variant="destructive">{alerts.count}</Badge>}
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="accounts" className="space-y-4">
         <div>
@@ -91,6 +97,7 @@ const Admin = () => {
         </Card>
           </TabsContent>
           <TabsContent value="billing"><AdminBilling /></TabsContent>
+          <TabsContent value="alerts"><AdminAlerts onChange={alerts.refresh} /></TabsContent>
         </Tabs>
       </main>
     </div>
