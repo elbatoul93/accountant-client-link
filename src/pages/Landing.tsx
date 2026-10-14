@@ -171,7 +171,7 @@ const Landing = () => {
             <Link to="/help" className="hover:text-primary transition-smooth">{t("help_link")}</Link>
             <Link to="/privacy" className="hover:text-primary transition-smooth">{t("landing_privacy")}</Link>
             <Link to="/terms" className="hover:text-primary transition-smooth">{t("landing_terms")}</Link>
-            <a href="mailto:contact@managementik.dz" className="hover:text-primary transition-smooth">{t("landing_contact")}</a>
+            <a href="mailto:contact@managementik.com" className="hover:text-primary transition-smooth">{t("landing_contact")}</a>
           </div>
         </div>
       </footer>
