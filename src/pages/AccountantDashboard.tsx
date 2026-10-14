@@ -7,7 +7,7 @@ import { useApp } from "@/contexts/AppContext";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DEMO_CLIENT_ID, OnboardingChecklist, buildSampleData } from "@/pages/accountant/Onboarding";
+import { OnboardingChecklist, buildSampleData, isDemoClient } from "@/pages/accountant/Onboarding";
 import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -703,9 +703,11 @@ const AccountantDashboard = () => {
                   setInvoices((p) => [...p, invoice]);
                 }}
                 onRemoveSample={() => {
-                  setInvoices((p) => p.filter((x) => x.clientId !== DEMO_CLIENT_ID));
-                  setDecls((p) => p.filter((x) => x.clientId !== DEMO_CLIENT_ID));
-                  setClients((p) => p.filter((x) => x.id !== DEMO_CLIENT_ID));
+                  setInvoices((p) => p.filter((x) => !isDemoClient(x.clientId)));
+                  setDecls((p) => p.filter((x) => !isDemoClient(x.clientId)));
+                  setSharedDocs((p) => p.filter((x) => !isDemoClient(x.clientId)));
+                  setLegalDocs((p) => p.filter((x) => !isDemoClient(x.clientId)));
+                  setClients((p) => p.filter((x) => !isDemoClient(x.id)));
                 }}
               />
             )}
