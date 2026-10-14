@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -495,6 +496,7 @@ const AccountantDashboard = () => {
     <div className="min-h-screen bg-gradient-subtle">
       <SiteHeader />
       <div className="container py-6">
+        <SubscriptionBanner t={t} />
         <div className="grid lg:grid-cols-[240px_1fr] gap-6">
           {/* Sidebar */}
           <aside className="lg:sticky lg:top-24 self-start">
