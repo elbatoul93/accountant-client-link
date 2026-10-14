@@ -26,7 +26,7 @@ Migrations must be backward compatible with the frontend currently live (add col
 - `SUPABASE_DB_PASSWORD`: the project's database password (Supabase dashboard > Project Settings > Database)
 
 ## Security headers
-`public/_headers` sets HSTS, nosniff, frame denial, referrer and permissions policies. The Content-Security-Policy is in Report-Only mode because the payslip and liasse print popups write an inline `<script>`; once those call `w.print()` from the opener, rename the header to `Content-Security-Policy` to enforce it.
+`public/_headers` sets HSTS, nosniff, frame denial, referrer/permissions policies and an enforced Content-Security-Policy. Scripts must be same-origin (no inline `<script>`, including in `document.write` popups). If a new feature needs another origin (fonts, images, API, analytics), add it to the matching directive in `_headers`; a blocked resource shows as a "Refused to ..." console error. Error reporting (Sentry) and Cloudflare Web Analytics hosts are already allowed.
 
 ## Lockfiles
 `package-lock.json` is the one CI uses. `bun.lock` / `bun.lockb` are leftovers from the Lovable template; do not edit them by hand.
