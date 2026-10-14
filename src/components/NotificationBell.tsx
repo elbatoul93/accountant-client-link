@@ -22,7 +22,7 @@ export const NotificationBell = ({ role, email, t }: { role: NotifRole; email?: 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative" aria-label={t("notif_title")}>
           <Bell className="h-4 w-4" />
           {unread > 0 && (
             <Badge className="absolute -top-1 -end-1 h-4 min-w-[16px] px-1 rounded-full bg-gold text-gold-foreground border-0 text-[10px] font-bold leading-none flex items-center justify-center">

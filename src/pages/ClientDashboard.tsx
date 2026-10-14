@@ -31,6 +31,9 @@ import {
   addIncomingInvoice, pushNotification, getVault, onPortalChange, type VaultEntry,
 } from "@/lib/portal";
 import { loadSharedDocsForClient, signSharedDocDb } from "@/lib/accountantStore";
+import { readJson } from "@/lib/safeStorage";
+
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 interface Doc { id?: string; file_path?: string; name: string; size: string; date: string; status: "processed" | "pending" }
 type DeclType = "G50" | "CNAS" | "CASNOS" | "CACOBATPH" | "TAP" | "IBS" | "FS" | "G12" | "CP";
@@ -62,8 +65,8 @@ const STORAGE_KEY = "mgmtk_client_docs";
 const ClientDashboard = () => {
   const { t, user } = useApp();
   const [docs, setDocs] = useState<Doc[]>(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const cached = readJson<Doc[]>(STORAGE_KEY, []);
+    return Array.isArray(cached) ? cached : [];
   });
   const [tick, setTick] = useState(0);
   const [signing, setSigning] = useState<SharedDoc | null>(null);
@@ -74,8 +77,12 @@ const ClientDashboard = () => {
 
   // Load shared documents from the DB (RLS scopes to this client).
   const refreshSharedDocs = useCallback(async () => {
-    const rows = await loadSharedDocsForClient();
-    setDbSharedDocs(rows as SharedDoc[]);
+    try {
+      const rows = await loadSharedDocsForClient();
+      setDbSharedDocs(rows as SharedDoc[]);
+    } catch {
+      toast.error(t("load_failed"), { id: "load-failed" });
+    }
   }, []);
   useEffect(() => { refreshSharedDocs(); }, [refreshSharedDocs]);
 
@@ -85,7 +92,10 @@ const ClientDashboard = () => {
       .from("shared_documents" as any)
       .select("id,title,file_path,created_at")
       .order("created_at", { ascending: false });
-    if (error || !data) return;
+    if (error || !data) {
+      toast.error(t("load_failed"), { id: "load-failed" });
+      return;
+    }
     setAccountantPdfs(data as any);
   }, []);
   useEffect(() => { refreshAccountantPdfs(); }, [refreshAccountantPdfs]);
@@ -265,7 +275,11 @@ const ClientDashboard = () => {
       setUploadTitle("");
       setUploadDescription("");
     } catch (e: any) {
-      toast.error(e?.message || t("upload_failed"));
+      // Storage rejections (size / type rules) come back as raw English text
+      const msg = String(e?.message || "").toLowerCase();
+      if (msg.includes("exceed") || msg.includes("too large") || msg.includes("payload")) toast.error(t("upload_too_large"));
+      else if (msg.includes("mime") || msg.includes("not allowed") || msg.includes("not supported")) toast.error(t("upload_wrong_type"));
+      else toast.error(t("upload_failed"));
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -274,7 +288,12 @@ const ClientDashboard = () => {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { "image/*": [], "application/pdf": [] },
+    accept: { "image/png": [], "image/jpeg": [], "application/pdf": [] },
+    maxSize: MAX_UPLOAD_BYTES,
+    onDropRejected: (rejections) => {
+      const code = rejections[0]?.errors[0]?.code;
+      toast.error(t(code === "file-too-large" ? "upload_too_large" : "upload_wrong_type"));
+    },
     multiple: false,
     disabled: uploading || !!pendingFile,
   });
@@ -285,11 +304,10 @@ const ClientDashboard = () => {
       totalDue: 0, myRegime: undefined as TaxRegime | undefined, requiredTypes: [] as DeclType[], vault: [] as VaultEntry[],
       myEmpCount: 0, myHasCacobatph: false,
     };
-    const allClients: any[] = JSON.parse(localStorage.getItem("mgmtk_acc_clients") || "[]");
-    const allDecls: Decl[] = JSON.parse(localStorage.getItem("mgmtk_acc_declarations") || "[]");
-    const allInvoices: Invoice[] = JSON.parse(localStorage.getItem("mgmtk_acc_invoices") || "[]");
-    const allShared: SharedDoc[] = JSON.parse(localStorage.getItem("mgmtk_acc_shared_docs") || "[]");
-    const allEmployees: any[] = JSON.parse(localStorage.getItem("mgmtk_acc_employees") || "[]");
+    const allClients: any[] = readJson("mgmtk_acc_clients", []);
+    const allDecls: Decl[] = readJson("mgmtk_acc_declarations", []);
+    const allInvoices: Invoice[] = readJson("mgmtk_acc_invoices", []);
+    const allEmployees: any[] = readJson("mgmtk_acc_employees", []);
     const mine = allClients.filter(
       (c) => c.contact?.toLowerCase() === user.email.toLowerCase()
     );
@@ -511,7 +529,7 @@ const ClientDashboard = () => {
                           <Badge className="bg-warning/15 text-warning-foreground border-warning/40 hover:bg-warning/20">
                             <Clock className="h-3 w-3 me-1" /> {t("dash_status_pending")}
                           </Badge>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeDoc(i)}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeDoc(i)} aria-label={t("common_delete")}>
                             <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                         </div>

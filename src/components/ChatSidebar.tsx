@@ -121,7 +121,7 @@ export const ChatSidebar = ({ t, role, selfName, activeClientEmail, contacts }: 
             placeholder={t("chat_placeholder")}
             disabled={!target}
           />
-          <Button variant="gold" size="icon" onClick={send} disabled={!target || !draft.trim()}>
+          <Button variant="gold" size="icon" onClick={send} disabled={!target || !draft.trim()} aria-label={t("common_send")}>
             <Send className="h-4 w-4" />
           </Button>
         </div>
