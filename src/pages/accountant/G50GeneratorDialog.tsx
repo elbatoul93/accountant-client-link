@@ -11,6 +11,8 @@ import { generateG50Xlsx, generateG50Pdf } from "@/lib/g50Export";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 import { todayIso } from "@/lib/isoDate";
+import { g50Amounts, G50_VAT_RATES } from "@/lib/g50Amounts";
+import { tapRateForPeriod } from "@/lib/accounting/algerianTax";
 import { Client, Decl, SharedDoc, fmtDZD } from "@/pages/accountant/shared";
 
 export const G50GeneratorDialog = ({
@@ -31,7 +33,7 @@ export const G50GeneratorDialog = ({
   const [caHt, setCaHt] = useState("");
   const [salaries, setSalaries] = useState("");
   const [benefice, setBenefice] = useState("");
-  const [rTap, setRTap] = useState("2");
+  const [rTap, setRTap] = useState(String(tapRateForPeriod(new Date().toISOString().slice(0, 7))));
   const [rTva, setRTva] = useState("19");
   const [rIrg, setRIrg] = useState("10");
   const [rIbs, setRIbs] = useState("23");
@@ -52,7 +54,7 @@ export const G50GeneratorDialog = ({
       setCaHt(f.caHt != null ? String(f.caHt) : (f.caHtTotal != null ? String(f.caHtTotal) : ""));
       setSalaries(f.salaries != null ? String(f.salaries) : "");
       setBenefice(f.benefice != null ? String(f.benefice) : "");
-      setRTap(f.rTap != null ? String(f.rTap) : "2");
+      setRTap(f.rTap != null ? String(f.rTap) : String(tapRateForPeriod(f.year && f.month ? `${f.year}-${String(f.month).padStart(2, "0")}` : period)));
       setRTva(f.rTva != null ? String(f.rTva) : "19");
       setRIrg(f.rIrg != null ? String(f.rIrg) : "10");
       setRIbs(f.rIbs != null ? String(f.rIbs) : "23");
@@ -66,6 +68,11 @@ export const G50GeneratorDialog = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editing?.id]);
+
+  // The TAP was repealed from 2024: its rate follows the period, unless a saved G50 is being edited.
+  useEffect(() => {
+    if (open && !editing) setRTap(String(tapRateForPeriod(period)));
+  }, [open, editing, period]);
 
   // Auto-fill from live journal aggregates when client/period changes
   useEffect(() => {
@@ -92,15 +99,22 @@ export const G50GeneratorDialog = ({
     setSynced(false);
   }, [clientId, period, getLiveG50, getAggregates, editing]);
 
-  const tap = (Number(caHt || 0) * Number(rTap || 0)) / 100;
-  const tva = (Number(caHt || 0) * Number(rTva || 0)) / 100;
-  const irg = (Number(salaries || 0) * Number(rIrg || 0)) / 100;
-  const ibs = (Number(benefice || 0) * Number(rIbs || 0)) / 100;
-  const total = tap + tva + irg + ibs;
+  // The same arithmetic fills the official form (g50-pdf function and Excel export), so this total is the form's total.
+  const bases = {
+    caHtTotal: Number(caHt || 0), caHtImposable: Number(caHtImposable || caHt || 0),
+    salaries: Number(salaries || 0), benefice: Number(benefice || 0),
+    rTap: Number(rTap || 0), rTva: Number(rTva || 0), rIrg: Number(rIrg || 0), rIbs: Number(rIbs || 0),
+  };
+  const { tap, tva, irg, ibs, total } = g50Amounts(bases);
+  const inputsValid =
+    [bases.caHtTotal, bases.caHtImposable, bases.salaries, bases.benefice].every((v) => Number.isFinite(v) && v >= 0) &&
+    [bases.rTap, bases.rIrg, bases.rIbs].every((v) => Number.isFinite(v) && v >= 0 && v <= 100) &&
+    G50_VAT_RATES.includes(bases.rTva);
 
   const submit = async () => {
     const c = clients.find((x) => x.id === clientId);
     if (!c || !period || total <= 0) { toast.error(t("i18n_required_fields")); return; }
+    if (!inputsValid) { toast.error(t("g50_inputs_invalid")); return; }
     const declId = crypto.randomUUID();
     const [yyyy, mm] = period.split("-");
     const ext = format === "pdf" ? "pdf" : "xlsx";
@@ -125,8 +139,8 @@ export const G50GeneratorDialog = ({
         rTva: Number(rTva || 0),
         rIrg: Number(rIrg || 0),
         rIbs: Number(rIbs || 0),
-        caHtTotal: Number(caHt || 0),
-        caHtImposable: Number(caHtImposable || caHt || 0),
+        caHtTotal: bases.caHtTotal,
+        caHtImposable: bases.caHtImposable,
         fileName: `G50_${c.taxId || "NIF"}_${yyyy}_${mm}.${ext}`,
       };
       if (format === "pdf") {

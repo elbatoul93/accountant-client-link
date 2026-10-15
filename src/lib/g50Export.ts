@@ -1,5 +1,6 @@
 import type ExcelJS from "exceljs";
 import { supabase } from "@/integrations/supabase/client";
+import { g50Amounts } from "@/lib/g50Amounts";
 
 export interface G50ExportInput {
   companyName: string;
@@ -14,6 +15,13 @@ export interface G50ExportInput {
   bp?: string;
   caHtTotal: number;
   caHtImposable: number;
+  // The other bases and rates of the G50 dialog (see g50Amounts). Absent: no amount, VAT at 19%.
+  salaries?: number;
+  benefice?: number;
+  rTap?: number;
+  rTva?: number;
+  rIrg?: number;
+  rIbs?: number;
   fileName: string;
 }
 
@@ -23,14 +31,13 @@ const replaceDots = (existing: unknown, value: string): string => {
   return value;
 };
 
-async function buildG50Buffer(input: G50ExportInput): Promise<ArrayBuffer> {
-  const res = await fetch("/templates/G50_template.xlsx");
-  if (!res.ok) throw new Error("G50 template not found");
-  const buf = await res.arrayBuffer();
-  const { default: ExcelJSLib } = await import("exceljs");
-  const wb = new ExcelJSLib.Workbook();
-  await wb.xlsx.load(buf);
-
+/** Fills the official form's variable cells. The formulas of the template add up the totals and the recapitulation. */
+export function fillG50Workbook(wb: ExcelJS.Workbook, input: G50ExportInput) {
+  const amounts = g50Amounts({
+    caHtTotal: input.caHtTotal, caHtImposable: input.caHtImposable,
+    salaries: input.salaries ?? 0, benefice: input.benefice ?? 0,
+    rTap: input.rTap ?? 0, rTva: input.rTva ?? 19, rIrg: input.rIrg ?? 0, rIbs: input.rIbs ?? 0,
+  });
   const ibs = wb.getWorksheet("IBS-IRG");
   if (ibs) {
     const set = (addr: string, val: string | number) => {
@@ -62,14 +69,41 @@ async function buildG50Buffer(input: G50ExportInput): Promise<ArrayBuffer> {
       const cur = typeof bpCell.value === "string" ? bpCell.value : "BP : ";
       bpCell.value = cur.endsWith(" ") || cur.endsWith(":") ? `${cur}${input.bp}` : `${cur} ${input.bp}`;
     }
+
+    // IBS: "Acompte provisionnel IBS" (block 1). IRG on salaries: base and amount on the first line of block 4.
+    if (amounts.ibs > 0) ibs.getCell("BX30").value = amounts.ibs;
+    if (amounts.irg > 0) {
+      ibs.getCell("AY50").value = input.salaries ?? 0;
+      ibs.getCell("BX50").value = amounts.irg;
+    }
   }
 
+  // VAT: the 19% row "Autres prestations de services", or at 9% the "Prestations de services (art. 23)" row.
   const tva = wb.getWorksheet("T.V.A");
   if (tva) {
-    if (input.caHtTotal > 0) tva.getCell("AQ22").value = input.caHtTotal;
-    if (input.caHtImposable > 0) tva.getCell("BQ22").value = input.caHtImposable;
+    const row = input.rTva === 9 ? 11 : 22;
+    if (input.caHtTotal > 0) tva.getCell(`AQ${row}`).value = input.caHtTotal;
+    if (input.caHtImposable > 0) tva.getCell(`BQ${row}`).value = input.caHtImposable;
   }
 
+  // TAP (repealed from 2024; the dialog still accepts a rate for earlier periods): "Autres impôts et taxes", block 7.
+  const autres = wb.getWorksheet("D.TIMBRE");
+  if (autres && amounts.tap > 0) {
+    autres.getCell("H15").value = "TAP";
+    autres.getCell("AS15").value = input.caHtTotal;
+    autres.getCell("BL15").value = (input.rTap ?? 0) / 100;
+    autres.getCell("BP15").value = amounts.tap;
+  }
+}
+
+async function buildG50Buffer(input: G50ExportInput): Promise<ArrayBuffer> {
+  const res = await fetch("/templates/G50_template.xlsx");
+  if (!res.ok) throw new Error("G50 template not found");
+  const buf = await res.arrayBuffer();
+  const { default: ExcelJSLib } = await import("exceljs");
+  const wb = new ExcelJSLib.Workbook();
+  await wb.xlsx.load(buf);
+  fillG50Workbook(wb, input);
   return await wb.xlsx.writeBuffer() as ArrayBuffer;
 }
 

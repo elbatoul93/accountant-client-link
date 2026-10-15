@@ -187,6 +187,7 @@ export const en = {
   payx_cnas_republic: "People's Democratic Republic of Algeria — CNAS",
   send_client_not_linked: "This client has not accepted the invitation yet, so nothing was sent. Ask them to accept the invitation first.",
   send_not_delivered: "The document was saved, but the client did not receive the notification. Try again later.",
+  g50_inputs_invalid: "Check the amounts and rates: amounts cannot be negative, rates are 0 to 100, and VAT is 0, 9 or 19 on the official form.",
   g50_send_pdf_unavailable: "PDF service unavailable: the G50 was not sent to the client. Nothing was changed, try again in a few minutes.",
   g50_send_retry: "Retry",
   g50_send_failed: "Failed to send G50",

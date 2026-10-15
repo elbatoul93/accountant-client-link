@@ -181,6 +181,7 @@ export const fr: typeof en = {
   payx_cnas_republic: "République Algérienne Démocratique et Populaire — CNAS",
   send_client_not_linked: "Ce client n'a pas encore accepté l'invitation, rien n'a été envoyé. Demandez-lui d'accepter l'invitation d'abord.",
   send_not_delivered: "Le document est enregistré, mais le client n'a pas reçu la notification. Réessayez plus tard.",
+  g50_inputs_invalid: "Vérifiez les montants et les taux : un montant ne peut pas être négatif, un taux va de 0 à 100, et la TVA est de 0, 9 ou 19 sur le formulaire officiel.",
   g50_send_pdf_unavailable: "Service PDF indisponible : le G50 n'a pas été envoyé au client. Rien n'a été modifié, réessayez dans quelques minutes.",
   g50_send_retry: "Réessayer",
   g50_send_failed: "Échec de l'envoi du G50",

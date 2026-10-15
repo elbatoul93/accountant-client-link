@@ -17,7 +17,7 @@ const TEMPLATE = join(root, "public/templates/G50_template.xlsx");
 
 // Every cell the app fills or whose formula depends on one, plus the two TODAY() cells.
 // kind: text | num0 ("#,##0") | acc0 / acc2 (accounting, "-" for zero) | date
-const IBS = "IBS-IRG", TVA = "T.V.A", RECAP = "RECAP";
+const IBS = "IBS-IRG", TVA = "T.V.A", RECAP = "RECAP", TIMBRE = "D.TIMBRE";
 const NIF_COLS = "DEFGHIJKLMNOPQR".split("");
 const CELLS = [
   ...["AK14", "AS20", "AN22", "Y6", "Y7", "Y9", "I7", "H16", "BW23"].map((a) => [IBS, a, "text"]),
@@ -25,9 +25,15 @@ const CELLS = [
   [TVA, "AQ22", "num0"], [TVA, "BQ22", "num0"], [TVA, "CH22", "acc2"], [TVA, "CH31", "num0"],
   [TVA, "CD35", "acc2"], [TVA, "CD40", "acc2"], [TVA, "CD42", "acc2"],
   [RECAP, "Y35", "acc0"], [RECAP, "Y39", "acc0"], [RECAP, "AT31", "date"], [RECAP, "BK34", "date"],
+  // The other amounts the G50 dialog adds to its total: IBS acompte (IBS-IRG line 1), IRG on salaries (line 4),
+  // TAP as "Autres impots et taxes" (D.TIMBRE block 7), VAT at 9% (T.V.A row 11), and the lines of RECAP that carry them.
+  [IBS, "BX30", "acc0"], [IBS, "BX34", "acc0"], [IBS, "AY50", "num0"], [IBS, "BX50", "acc0"], [IBS, "BX56", "acc0"],
+  [TVA, "AQ11", "num0"], [TVA, "BQ11", "num0"], [TVA, "CH11", "acc2"],
+  [TIMBRE, "H15", "text"], [TIMBRE, "AS15", "num0"], [TIMBRE, "BL15", "text"], [TIMBRE, "BP15", "acc2"], [TIMBRE, "BP21", "acc2"],
+  [RECAP, "Y27", "acc0"], [RECAP, "Y31", "acc0"], [RECAP, "Y34", "acc0"],
 ];
 // Helper cells that carry a total to RECAP but sit outside the printed table, where LibreOffice shows them as "###".
-const HIDDEN = [[IBS, "CQ34"], [IBS, "CQ40"], [IBS, "CQ46"], [IBS, "CQ56"]];
+const HIDDEN = [[IBS, "CQ34"], [IBS, "CQ40"], [IBS, "CQ46"], [IBS, "CQ56"], [TIMBRE, "AQ8"]]; // AQ8 (=F8) prints a stray 0 in the stamp-duty table
 const FONT_FILE = { Calibri: "Carlito", Cambria: "Caladea" };
 const METRICS = { Carlito: { asc: 1950 / 2048 }, Caladea: { asc: 1.05 } };
 
@@ -36,6 +42,8 @@ const render = async (name, mutate) => {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(TEMPLATE);
   for (const [s, a] of HIDDEN) wb.getWorksheet(s).getCell(a).value = null;
+  // CH12:CH15 share the formula of CH11, which is cleared below; give each its own so the file can be written.
+  for (let r = 12; r <= 15; r++) wb.getWorksheet(TVA).getCell(`CH${r}`).value = { formula: `BQ${r}*0.09` };
   mutate(wb);
   const xlsx = join(tmp, `${name}.xlsx`);
   await wb.xlsx.writeFile(xlsx);

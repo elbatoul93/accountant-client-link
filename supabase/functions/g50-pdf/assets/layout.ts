@@ -242,6 +242,122 @@ export const LAYOUT: Record<string, Slot> = {
     "size": 7.3,
     "maxW": 91.9
   },
+  "IBS-IRG!BX30": {
+    "page": 0,
+    "align": "right",
+    "font": "Carlito",
+    "bold": true,
+    "x": 683.55,
+    "y": 407.3,
+    "size": 8.9,
+    "maxW": 113.6,
+    "zeroX": 679.79
+  },
+  "IBS-IRG!BX34": {
+    "page": 0,
+    "align": "right",
+    "font": "Carlito",
+    "bold": true,
+    "x": 683.55,
+    "y": 363.01,
+    "size": 8.9,
+    "maxW": 113.6,
+    "zeroX": 679.79
+  },
+  "IBS-IRG!AY50": {
+    "page": 0,
+    "align": "right",
+    "font": "Carlito",
+    "bold": false,
+    "x": 477.96,
+    "y": 204.63,
+    "size": 8.9,
+    "maxW": 120
+  },
+  "IBS-IRG!BX50": {
+    "page": 0,
+    "align": "right",
+    "font": "Carlito",
+    "bold": true,
+    "x": 683.55,
+    "y": 204.63,
+    "size": 8.9,
+    "maxW": 113.6,
+    "zeroX": 679.79
+  },
+  "IBS-IRG!BX56": {
+    "page": 0,
+    "align": "right",
+    "font": "Carlito",
+    "bold": true,
+    "x": 683.55,
+    "y": 139.12,
+    "size": 8.9,
+    "maxW": 113.6,
+    "zeroX": 679.79
+  },
+  "D.TIMBRE!H15": {
+    "page": 2,
+    "align": "center",
+    "font": "Carlito",
+    "bold": false,
+    "x": 257.97,
+    "y": 390.08,
+    "size": 10.99,
+    "maxW": 335
+  },
+  "D.TIMBRE!AS15": {
+    "page": 2,
+    "align": "center",
+    "font": "Carlito",
+    "bold": false,
+    "x": 514.93,
+    "y": 390.08,
+    "size": 10.99,
+    "maxW": 180.7
+  },
+  "D.TIMBRE!BL15": {
+    "page": 2,
+    "align": "center",
+    "font": "Carlito",
+    "bold": false,
+    "x": 622.28,
+    "y": 390.08,
+    "size": 10.99,
+    "maxW": 34.9
+  },
+  "D.TIMBRE!BP15": {
+    "page": 2,
+    "align": "center",
+    "font": "Carlito",
+    "bold": true,
+    "x": 717.66,
+    "y": 390.08,
+    "size": 10.99,
+    "maxW": 156.9
+  },
+  "D.TIMBRE!BP21": {
+    "page": 2,
+    "align": "right",
+    "font": "Carlito",
+    "bold": true,
+    "x": 785.67,
+    "y": 308.75,
+    "size": 10.99,
+    "maxW": 156.9,
+    "zeroX": 781.51
+  },
+  "T.V.A!CH11": {
+    "page": 3,
+    "align": "right",
+    "font": "Carlito",
+    "bold": true,
+    "x": 813.97,
+    "y": 470.05,
+    "size": 10.8,
+    "maxW": 101.1,
+    "zeroX": 809.83
+  },
   "T.V.A!CH22": {
     "page": 3,
     "align": "right",
@@ -262,6 +378,26 @@ export const LAYOUT: Record<string, Slot> = {
     "y": 206.12,
     "size": 10.8,
     "maxW": 101.1
+  },
+  "T.V.A!AQ11": {
+    "page": 3,
+    "align": "center",
+    "font": "Carlito",
+    "bold": false,
+    "x": 437.49,
+    "y": 470.05,
+    "size": 10.8,
+    "maxW": 101.1
+  },
+  "T.V.A!BQ11": {
+    "page": 3,
+    "align": "center",
+    "font": "Carlito",
+    "bold": false,
+    "x": 646.09,
+    "y": 470.05,
+    "size": 10.8,
+    "maxW": 113.5
   },
   "T.V.A!AQ22": {
     "page": 3,
@@ -315,6 +451,39 @@ export const LAYOUT: Record<string, Slot> = {
     "size": 10.8,
     "maxW": 131.4,
     "zeroX": 810.61
+  },
+  "RECAP!Y27": {
+    "page": 4,
+    "align": "right",
+    "font": "Carlito",
+    "bold": true,
+    "x": 362.93,
+    "y": 473.62,
+    "size": 10.99,
+    "maxW": 104.6,
+    "zeroX": 358.3
+  },
+  "RECAP!Y31": {
+    "page": 4,
+    "align": "right",
+    "font": "Carlito",
+    "bold": true,
+    "x": 362.93,
+    "y": 416.7,
+    "size": 10.99,
+    "maxW": 104.6,
+    "zeroX": 358.3
+  },
+  "RECAP!Y34": {
+    "page": 4,
+    "align": "right",
+    "font": "Carlito",
+    "bold": true,
+    "x": 362.93,
+    "y": 374.01,
+    "size": 10.99,
+    "maxW": 104.6,
+    "zeroX": 358.3
   },
   "RECAP!Y35": {
     "page": 4,

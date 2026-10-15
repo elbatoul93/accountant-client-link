@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { computeSlots, parseG50Input } from "./compute.ts";
+import { G50_VAT_RATES, computeSlots, parseG50Input } from "./compute.ts";
 import { drawG50 } from "./draw.ts";
 
 const RATE_LIMIT = 20; // PDFs per user per window (best effort, per isolate)
@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
     }
     const input = parseG50Input(payload.input);
     if (!input) return fail("bad_request", 400, "A company name is required");
+    if (!G50_VAT_RATES.includes(input.rTva ?? 19)) return fail("bad_request", 400, "The form has VAT rows for 9% and 19% only");
 
     // 3) Draw the values onto the official form.
     const pdf = await drawG50(computeSlots(input, new Date()));
