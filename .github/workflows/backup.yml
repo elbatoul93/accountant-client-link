@@ -39,9 +39,9 @@ jobs:
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.gate.outputs.run == 'true'
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         if: steps.gate.outputs.run == 'true'
         with:
           version: latest
@@ -88,7 +88,7 @@ jobs:
         run: |
           for f in out/*; do age -r "$BACKUP_AGE_PUBLIC_KEY" -o "$f.age" "$f" && rm "$f"; done
           ls -la out
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: steps.gate.outputs.run == 'true'
         with:
           name: backup-${{ env.STAMP }}

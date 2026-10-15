@@ -1,10 +1,17 @@
 version: 2
+# Every Dependabot push builds a Cloudflare preview (free plan: monthly build cap) and runs CI,
+# so: monthly, few PRs, no automatic rebases, and no major npm upgrades until after launch (OPS-9).
+# To take a major, bump it by hand in a PR of its own.
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 3
+    rebase-strategy: disabled
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       radix-ui:
         patterns: ["@radix-ui/*"]
@@ -14,3 +21,5 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    open-pull-requests-limit: 2
+    rebase-strategy: disabled

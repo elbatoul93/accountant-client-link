@@ -53,8 +53,8 @@ jobs:
           # lag has gone both ways, so a difference is reported but not a failure. The render check
           # below is what gates the run.
           [ "$prod" = "$pages" ] || echo "::warning::$PROD_URL and $SITE_URL serve different builds ($prod vs ${pages:-nothing})"
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
