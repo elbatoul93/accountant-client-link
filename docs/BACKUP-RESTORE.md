@@ -27,6 +27,6 @@ Always restore into a **new, empty** Supabase project, never over production, an
 6. Write down: how long it took, what failed, what you changed in this runbook.
 
 ## Disaster checklist
-- Loss of data only: restore into a new project as above, then switch `VITE_SUPABASE_URL` / key in Cloudflare Pages and redeploy; re-add the Edge Function secret `CLOUDCONVERT_API_KEY` and redeploy functions.
+- Loss of data only: restore into a new project as above, then switch `VITE_SUPABASE_URL` / key in Cloudflare Pages and redeploy; redeploy functions.
 - Accidental deletion of a few rows: restore into a scratch project and copy the rows back with SQL.
 - Recovery objectives to confirm with Mo: at most 24 h of data loss (nightly), a few hours to restore.

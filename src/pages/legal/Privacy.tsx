@@ -34,8 +34,7 @@ const PrivacyFr = () => (
 
     <h2>4. Destinataires et sous-traitants</h2>
     <p>
-      Hébergement et base de données : Supabase. Diffusion du site : Cloudflare. Conversion de documents PDF :
-      CloudConvert. Ces prestataires traitent les données pour notre compte. Nous ne vendons pas vos données.
+      Hébergement et base de données : Supabase. Diffusion du site : Cloudflare. Ces prestataires traitent les données pour notre compte. Nous ne vendons pas vos données.
     </p>
 
     <h2>5. Transfert hors d'Algérie</h2>
@@ -100,7 +99,7 @@ const PrivacyEn = () => (
 
     <h2>4. Recipients and processors</h2>
     <p>
-      Hosting and database: Supabase. Website delivery: Cloudflare. PDF document conversion: CloudConvert.
+      Hosting and database: Supabase. Website delivery: Cloudflare.
       These providers process data on our behalf. We do not sell your data.
     </p>
 
@@ -166,7 +165,7 @@ const PrivacyAr = () => (
 
     <h2>4. المستلمون والمعالجون من الباطن</h2>
     <p>
-      الاستضافة وقاعدة البيانات: Supabase. نشر الموقع: Cloudflare. تحويل وثائق PDF: CloudConvert. يعالج هؤلاء
+      الاستضافة وقاعدة البيانات: Supabase. نشر الموقع: Cloudflare. يعالج هؤلاء
       المزوّدون المعطيات لحسابنا. نحن لا نبيع معطياتكم.
     </p>
 
