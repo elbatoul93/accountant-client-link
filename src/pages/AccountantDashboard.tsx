@@ -63,7 +63,7 @@ const AccountantDashboard = () => {
       .from("g50_declarations")
       .select("id, client_id, month, year, form_data, sent")
       .eq("accountant_id", accId);
-    if (error || !data) return;
+    if (error || !data) { toast.error(t("load_failed"), { id: "load-failed" }); return; }
     const map: Record<string, { id: string; sent: boolean; formData: any }> = {};
     for (const r of data as any[]) {
       const key = `${r.client_id}|${String(r.year).padStart(4, "0")}-${String(r.month).padStart(2, "0")}`;
@@ -326,6 +326,7 @@ const AccountantDashboard = () => {
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
+      try {
       const { data } = await supabase.auth.getUser();
       const accId = data.user?.id;
       if (!accId || cancelled) return;
@@ -357,10 +358,20 @@ const AccountantDashboard = () => {
       setInvoices(inv); setDecls(dec); setFsList(fs);
       setSharedDocs(sh as typeof sharedDocs); setLegalDocs(lg as typeof legalDocs);
       dbReadyRef.current = true;
+      } catch (e) {
+        // Nothing is written back until a load has succeeded, so tell the accountant instead of showing empty lists.
+        console.error("[dashboard load]", e);
+        if (!cancelled) toast.error(t("load_failed"), { id: "load-failed", duration: 15000 });
+      }
     };
     run();
+    // Sign-in events also fire when the tab regains focus or the token refreshes:
+    // only reload when a different account signs in, or edits made meanwhile would be overwritten.
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session?.user) run();
+      if (session?.user && session.user.id !== accIdRef.current) {
+        dbReadyRef.current = false;
+        run();
+      }
     });
     return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, []);
@@ -553,8 +564,10 @@ const AccountantDashboard = () => {
     let cancelled = false;
     supabase.from("documents").select("id,file_name,created_at,user_id").eq("kind", "invoice")
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        if (!cancelled) setInvoiceDocs((data ?? []).map((r) => ({ id: r.id, fileName: r.file_name, createdAt: r.created_at, userId: r.user_id })));
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) { toast.error(t("load_failed"), { id: "load-failed" }); return; }
+        setInvoiceDocs((data ?? []).map((r) => ({ id: r.id, fileName: r.file_name, createdAt: r.created_at, userId: r.user_id })));
       });
     return () => { cancelled = true; };
   }, []);

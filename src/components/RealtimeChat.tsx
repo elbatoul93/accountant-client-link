@@ -46,6 +46,8 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [contactsError, setContactsError] = useState(false);
+  const [messagesError, setMessagesError] = useState(false);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -55,6 +57,7 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
     let cancelled = false;
     (async () => {
       setLoadingContacts(true);
+      setContactsError(false);
       try {
         if (role === "accountant") {
           // Use RPC to bypass profiles RLS recursion
@@ -87,6 +90,7 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
           setActiveId(list[0]?.user_id ?? null);
         }
       } catch (e: any) {
+        if (!cancelled) setContactsError(true);
         toast.error(e.message || "Failed to load contacts");
       } finally {
         if (!cancelled) setLoadingContacts(false);
@@ -110,11 +114,17 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
   useEffect(() => {
     if (!activeId) {
       setMessages([]);
+      setLoadingMessages(false);
+      setMessagesError(false);
       return;
     }
     let cancelled = false;
     setLoadingMessages(true);
-    (async () => {
+    setMessagesError(false);
+    setMessages([]);
+
+    // Merge, never overwrite: a live message that arrived while the history was loading must survive.
+    const loadHistory = async () => {
       const { data, error } = await supabase
         .from("messages")
         .select("*")
@@ -124,19 +134,25 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
         .order("created_at", { ascending: true });
       if (cancelled) return;
       if (error) {
+        setMessagesError(true);
         toast.error(error.message);
       } else {
-        setMessages((data || []) as Message[]);
+        setMessagesError(false);
+        const rows = (data || []) as Message[];
+        setMessages((prev) => {
+          const seen = new Set(rows.map((r) => r.id));
+          const extra = prev.filter((m) => !seen.has(m.id));
+          return [...rows, ...extra].sort((a, b) => a.created_at.localeCompare(b.created_at));
+        });
         // mark received as read
-        const unreadIds = (data || [])
-          .filter((m: any) => m.receiver_id === selfId && !m.is_read)
-          .map((m: any) => m.id);
+        const unreadIds = rows.filter((m) => m.receiver_id === selfId && !m.is_read).map((m) => m.id);
         if (unreadIds.length) {
-          await supabase.from("messages").update({ is_read: true }).in("id", unreadIds);
+          const { error: readErr } = await supabase.from("messages").update({ is_read: true }).in("id", unreadIds);
+          if (readErr) console.error("[chat mark read]", readErr);
         }
       }
-      setLoadingMessages(false);
-    })();
+      if (!cancelled) setLoadingMessages(false);
+    };
 
     const channel = supabase
       .channel(`messages-${selfId}-${activeId}`)
@@ -155,7 +171,13 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
           }
         }
       )
-      .subscribe();
+      // Load the history once the live channel is up, so nothing sent in between is missed.
+      // If the channel cannot start, still show the history (without live updates).
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          void loadHistory();
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -197,8 +219,11 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
       toast.error(error.message);
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
     } else if (data) {
+      // The live channel may already have delivered this very message: keep one copy.
       setMessages((prev) =>
-        prev.map((m) => (m.id === optimistic.id ? (data as Message) : m))
+        prev.some((m) => m.id === (data as Message).id)
+          ? prev.filter((m) => m.id !== optimistic.id)
+          : prev.map((m) => (m.id === optimistic.id ? (data as Message) : m))
       );
     }
     setSending(false);
@@ -223,7 +248,7 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
           loading={loadingMessages}
           messages={messages}
           selfId={selfId}
-          empty={!activeContact && !loadingContacts ? t("chat_no_linked_clients") : t("chat_no_messages_yet")}
+          empty={contactsError || messagesError ? t("chat_load_error") : !activeContact && !loadingContacts ? t("chat_no_linked_clients") : t("chat_no_messages_yet")}
         />
         <ChatComposer
           draft={draft}
@@ -253,6 +278,8 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-full" />
             </div>
+          ) : contactsError ? (
+            <p role="alert" className="p-4 text-xs text-destructive">{t("chat_load_error")}</p>
           ) : contacts.length === 0 ? (
             <p className="p-4 text-xs text-muted-foreground">{t("chat_no_linked_clients")}</p>
           ) : (
@@ -296,7 +323,7 @@ export const RealtimeChat = ({ selfId, role, preselectId }: Props) => {
             loading={loadingMessages}
             messages={messages}
             selfId={selfId}
-            empty={!activeContact ? t("chat_select_to_start") : t("chat_no_messages_yet")}
+            empty={contactsError || messagesError ? t("chat_load_error") : !activeContact ? t("chat_select_to_start") : t("chat_no_messages_yet")}
           />
           <ChatComposer
             draft={draft}

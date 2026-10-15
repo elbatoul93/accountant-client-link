@@ -1,5 +1,5 @@
 import { useFormat } from "@/hooks/useFormat";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,8 @@ export const ClientFilesSection = ({ clientId, clientEmail, clientName, t }: Pro
   const [files, setFiles] = useState<DocRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  // Only the latest request may write the list: a slow answer for a previous client must be dropped.
+  const requestRef = useRef(0);
 
   // 1) Resolve client user_id from email if it wasn't provided
   useEffect(() => {
@@ -49,6 +51,7 @@ export const ClientFilesSection = ({ clientId, clientEmail, clientName, t }: Pro
         setResolvedId(undefined);
         return;
       }
+      setError(null);
       const { data, error } = await supabase
         .from("profiles")
         .select("user_id")
@@ -67,6 +70,7 @@ export const ClientFilesSection = ({ clientId, clientEmail, clientName, t }: Pro
 
   // 2) Fetch document rows for this client from the `documents` table
   const fetchFiles = useCallback(async () => {
+    const request = ++requestRef.current;
     if (!resolvedId) {
       setFiles([]);
       setLoading(false);
@@ -74,11 +78,13 @@ export const ClientFilesSection = ({ clientId, clientEmail, clientName, t }: Pro
     }
     setLoading(true);
     setError(null);
+    setFiles([]);
     const { data, error } = await supabase
       .from("documents")
       .select("id,title,description,file_name,file_path,mime_type,size,created_at")
       .eq("user_id", resolvedId)
       .order("created_at", { ascending: false });
+    if (request !== requestRef.current) return;
     if (error) {
       setError(error.message);
       setFiles([]);

@@ -175,6 +175,7 @@ export const fr: typeof en = {
   g50_sending_label: "Envoi…",
   g50_sent_success: "G50 envoyé au client",
   sync_failed: "Votre dernière modification n’a pas pu être enregistrée. Vérifiez votre connexion et réessayez.",
+  chat_load_error: "Impossible de charger les messages. Rechargez la page pour réessayer.",
   reminder_title: "📌 Rappel",
   reminder_msg: "Aucun document reçu pour {month}. Merci de téléverser vos factures avant le 20 du mois pour la déclaration G50.",
   payx_cnas_republic: "République Algérienne Démocratique et Populaire — CNAS",
