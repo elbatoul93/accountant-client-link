@@ -122,6 +122,9 @@ test("a G50 whose declaration fails to save tells the accountant instead of fail
   await dialog.getByRole("button", { name: /generate.*pdf/i }).click();
   await expect(page.getByText(/declaration was not saved/i).first()).toBeVisible();
   expect(backend.rows("g50_declarations")).toHaveLength(0);
+  // Nothing is filed or locked when the save failed.
+  await expect(page.getByText(/g50.*(filed|locked)/i)).toHaveCount(0);
+  expect(backend.rows("acc_period_locks")).toHaveLength(0);
 });
 
 test("client reviews and signs a G50: signature saved, accountant notified", async ({ page }) => {
