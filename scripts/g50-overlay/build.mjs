@@ -26,6 +26,8 @@ const CELLS = [
   [TVA, "CD35", "acc2"], [TVA, "CD40", "acc2"], [TVA, "CD42", "acc2"],
   [RECAP, "Y35", "acc0"], [RECAP, "Y39", "acc0"], [RECAP, "AT31", "date"], [RECAP, "BK34", "date"],
 ];
+// Helper cells that carry a total to RECAP but sit outside the printed table, where LibreOffice shows them as "###".
+const HIDDEN = [[IBS, "CQ34"], [IBS, "CQ40"], [IBS, "CQ46"], [IBS, "CQ56"]];
 const FONT_FILE = { Calibri: "Carlito", Cambria: "Caladea" };
 const METRICS = { Carlito: { asc: 1950 / 2048 }, Caladea: { asc: 1.05 } };
 
@@ -33,6 +35,7 @@ const tmp = mkdtempSync(join(tmpdir(), "g50-"));
 const render = async (name, mutate) => {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(TEMPLATE);
+  for (const [s, a] of HIDDEN) wb.getWorksheet(s).getCell(a).value = null;
   mutate(wb);
   const xlsx = join(tmp, `${name}.xlsx`);
   await wb.xlsx.writeFile(xlsx);

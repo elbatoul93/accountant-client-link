@@ -3,29 +3,27 @@ import fontkit from "npm:@pdf-lib/fontkit@1.1.1";
 import { BACKGROUND_PDF_BASE64 } from "./assets/background.ts";
 import { CALADEA_BASE64, CALADEA_BOLD_BASE64, CARLITO_BASE64, CARLITO_BOLD_BASE64, DEJAVU_BASE64 } from "./assets/fonts.ts";
 import { LAYOUT } from "./assets/layout.ts";
+import { ARABIC, bidiRuns, shapeArabic } from "./arabic.ts";
 
 const b64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-const ARABIC = /[\u0600-\u06ff\u0750-\u077f\ufb50-\ufdff\ufe70-\ufeff]/;
 const MIN_SCALE = 0.6;
-
-/** Splits text into runs of Arabic (with the neutrals between them) and everything else, in logical order. The font layout
- * shapes and orders the glyphs inside an Arabic run; the caller lays the runs out right to left. */
-export function bidiRuns(text: string): { rtl: boolean; s: string }[] {
-  const runs: { rtl: boolean; s: string }[] = [];
-  for (const ch of text) {
-    const rtl = ARABIC.test(ch);
-    const neutral = /[\s.,:;()\-/]/.test(ch);
-    const last = runs[runs.length - 1];
-    if (last && (last.rtl === rtl || neutral)) last.s += ch;
-    else runs.push({ rtl, s: ch });
-  }
-  return runs;
-}
 
 /** Draws the computed values onto the official G50 background and returns the PDF. */
 export async function drawG50(values: Record<string, string>): Promise<Uint8Array> {
   const doc = await PDFDocument.load(b64(BACKGROUND_PDF_BASE64));
-  doc.registerFontkit(fontkit);
+  // The library's own Arabic shaper does not run in Deno, so the Arabic font is laid out glyph by glyph; shapeArabic()
+  // has already chosen the contextual forms.
+  const arabicBytes = b64(DEJAVU_BASE64);
+  doc.registerFontkit({
+    create: (bytes: Uint8Array, name?: string) => {
+      const font = fontkit.create(bytes, name);
+      if (bytes === arabicBytes) {
+        // pdf-lib only reads `glyphs` from the result
+        font.layout = ((text: string) => ({ glyphs: [...text].map((ch) => font.glyphForCodePoint(ch.codePointAt(0)!)) })) as unknown as typeof font.layout;
+      }
+      return font;
+    },
+  } as typeof fontkit);
   const embed = (data: string) => doc.embedFont(b64(data), { subset: true });
   const fonts: Record<string, PDFFont> = {
     Carlito: await embed(CARLITO_BASE64),
@@ -33,7 +31,7 @@ export async function drawG50(values: Record<string, string>): Promise<Uint8Arra
     Caladea: await embed(CALADEA_BASE64),
     "Caladea-bold": await embed(CALADEA_BOLD_BASE64),
   };
-  const arabic = await embed(DEJAVU_BASE64);
+  const arabic = await doc.embedFont(arabicBytes, { subset: true });
   const pages = doc.getPages();
 
   for (const [id, text] of Object.entries(values)) {
@@ -44,7 +42,9 @@ export async function drawG50(values: Record<string, string>): Promise<Uint8Arra
     // Visual order: Arabic strings read right to left, so their runs are laid out in reverse.
     const layoutRuns = (t: string) => (isAr ? bidiRuns(t).reverse() : [{ rtl: false, s: t }]);
     let runs = layoutRuns(text);
-    const measure = (size: number) => runs.map((r) => font.widthOfTextAtSize(r.s, size));
+    // An Arabic run is shaped, then reversed into drawing order (the font is laid out left to right).
+    const visual = (r: { rtl: boolean; s: string }) => (r.rtl ? [...shapeArabic(r.s)].reverse().join("") : r.s);
+    const measure = (size: number) => runs.map((r) => font.widthOfTextAtSize(visual(r), size));
     let size = slot.size;
     let widths = measure(size);
     const total = () => widths.reduce((a, b) => a + b, 0);
@@ -60,7 +60,7 @@ export async function drawG50(values: Record<string, string>): Promise<Uint8Arra
     const anchor = text === "-" && slot.zeroX ? slot.zeroX : slot.x; // a zero dash sits left of where digits end
     let x = slot.align === "left" ? anchor : slot.align === "right" ? anchor - total() : anchor - total() / 2;
     runs.forEach((r, i) => {
-      pages[slot.page].drawText(r.s, { x, y: slot.y, size, font });
+      pages[slot.page].drawText(visual(r), { x, y: slot.y, size, font });
       x += widths[i];
     });
   }
