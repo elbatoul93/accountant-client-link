@@ -167,6 +167,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  // Keep user_metadata.locale equal to the UI language so Supabase's confirmation and reset
+  // email templates (supabase/templates/) are sent in the language the user last chose.
+  const signedIn = !!user;
+  useEffect(() => {
+    if (!signedIn) return;
+    supabase.auth.getSession().then(({ data }) => {
+      const current = data.session?.user.user_metadata?.locale;
+      if (data.session && current !== lang) {
+        void supabase.auth.updateUser({ data: { locale: lang } }).catch(() => { /* best effort */ });
+      }
+    });
+  }, [signedIn, lang]);
+
   const setLang = useCallback((l: Lang) => setLangState(l), []);
 
   // Keep the previous dictionary while the next language loads so the UI never flashes raw keys.

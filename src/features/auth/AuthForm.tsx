@@ -130,6 +130,8 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
               ...(resolvedCompany ? { company: resolvedCompany } : {}),
               role,
               user_type: role,
+              // Read by the Supabase confirmation and reset email templates to pick the language.
+              locale: lang,
               ...(isInvite ? { invite_token: token } : {}),
             },
           },
