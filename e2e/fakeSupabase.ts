@@ -44,6 +44,8 @@ export class FakeSupabase {
   rpcs: Record<string, (args: Record<string, unknown>, user?: FakeUser) => unknown> = this.defaultRpcs();
   rpcCalls: Array<{ name: string; args: Record<string, unknown>; user?: string }> = [];
   writes: Array<{ table: string; method: string; body: unknown }> = [];
+  /** Tables whose writes fail with a server error (to test failed-save handling). */
+  failWrites = new Set<string>();
   uploads: string[] = [];
   g50PdfCalls: Array<Record<string, unknown>> = [];
   receipts: Row[] = [];
@@ -278,6 +280,7 @@ export class FakeSupabase {
         }
         const body = req.postDataJSON() as Record<string, unknown> | Record<string, unknown>[] | null;
         this.writes.push({ table, method: req.method(), body });
+        if (this.failWrites.has(table)) return json(500, { code: "XX000", message: "simulated failure" });
         if (req.method() === "POST") {
           const list = (Array.isArray(body) ? body : [body ?? {}]).map((r) => ({ id: randomUUID(), created_at: new Date().toISOString(), ...r }));
           const conflict = (url.searchParams.get("on_conflict") ?? "id").split(",").filter(Boolean);

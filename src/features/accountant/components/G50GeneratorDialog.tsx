@@ -139,28 +139,34 @@ export const G50GeneratorDialog = ({
       try {
         const { data: auth } = await supabase.auth.getUser();
         const accountantId = auth?.user?.id;
-        if (accountantId) {
+        if (!accountantId) throw new Error("No signed-in user");
+        {
+          let saveError;
           if (editing?.id) {
-            await supabase.from("g50_declarations")
+            ({ error: saveError } = await supabase.from("g50_declarations")
               .update({
                 month: Number(mm),
                 year: Number(yyyy),
                 form_data: payload as any,
                 generated_at: new Date().toISOString(),
               })
-              .eq("id", editing.id);
+              .eq("id", editing.id));
           } else {
-            await supabase.from("g50_declarations").insert({
+            ({ error: saveError } = await supabase.from("g50_declarations").insert({
               accountant_id: accountantId,
               client_id: c.id,
               month: Number(mm),
               year: Number(yyyy),
               form_data: payload as any,
-            });
+            }));
           }
+          if (saveError) throw saveError;
         }
       } catch (saveErr) {
         console.error("Failed to save G50 declaration", saveErr);
+        toast.error(t("toast_g50_not_saved"));
+        setGenerating(false);
+        return; // nothing is filed or locked when the declaration was not saved
       }
     } catch (e) {
       console.error(e);
