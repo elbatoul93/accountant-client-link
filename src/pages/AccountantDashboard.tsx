@@ -30,7 +30,7 @@ import { lockPeriod, computeG50FromJournal } from "@/lib/accounting/engine";
 import { ClientInviteManager } from "@/components/ClientInviteManager";
 import { IncomingDocumentsLive } from "@/components/IncomingDocumentsLive";
 import { Archive, Inbox as InboxIcon } from "lucide-react";
-import { generateG50PdfBytes } from "@/lib/g50Export";
+import { generateG50PdfBytes, isG50PdfUnavailable } from "@/lib/g50Export";
 import { copyToClipboard } from "@/lib/clipboard";
 import { Client, Decl, FinStmt, Invoice, LegalDoc, SharedDoc, TaxRegime, View, fmtDZD } from "@/pages/accountant/shared";
 import { EmptyState, ToolCard } from "@/pages/accountant/ui";
@@ -128,11 +128,21 @@ const AccountantDashboard = () => {
       toast.success(t("g50_sent_success") || "G50 sent to client");
     } catch (e: any) {
       console.error("[handleSendG50]", e);
-      toast.error(e?.message || t("g50_send_failed") || "Failed to send G50");
+      if (isG50PdfUnavailable(e)) {
+        // The PDF service is down: nothing was sent, and the Excel file is not a substitute for the client's copy.
+        toast.error(t("g50_send_pdf_unavailable"), {
+          duration: 15000,
+          action: { label: t("g50_send_retry"), onClick: () => void sendG50Ref.current?.(d, clientName, taxId, bp) },
+        });
+      } else {
+        toast.error(e?.message || t("g50_send_failed") || "Failed to send G50");
+      }
     } finally {
       setSendingDeclId(null);
     }
   }, [g50Map, sendingDeclId, t]);
+  const sendG50Ref = useRef(handleSendG50);
+  sendG50Ref.current = handleSendG50;
 
   
   const [obligationsClient, setObligationsClient] = useState<Client | null>(null);
