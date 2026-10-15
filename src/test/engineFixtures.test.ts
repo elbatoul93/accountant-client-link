@@ -148,3 +148,18 @@ describe("G50 from journal carries the VAT credit", () => {
     expect(g.precompteToNext).toBe(11_000);
   });
 });
+
+describe("Tax Intel G50 preview follows the engine", () => {
+  it("has the same total and IBS acompte as the engine G50 in an acompte month", async () => {
+    const { buildG50Preview } = await import("@/lib/accounting/algerianTax");
+    const lines = postSalesInvoice({ date: "2026-06-05", ht: 1_000_000, tva: 190_000, ttc: 1_190_000, party: "C", number: "F1" });
+    const g = computeG50FromJournal(lines, { period: "2026-06", precompteFromPrev: 40_000, ibsPriorYear: 1_000_000 });
+    const p = buildG50Preview({
+      period: g.period, caHt: g.caHt, tvaCollected: g.tvaCollected, tvaDeductible: g.tvaDeductible,
+      precompteFromPrev: g.precompteFromPrev, tapRate: g.tapRate, irgSalaries: g.irgSalaries, ibsAcompte: g.ibs,
+    });
+    expect(g.ibs).toBe(300_000);
+    expect(p.total).toBe(g.total);
+    expect(p.tva.tvaDue).toBe(g.tvaDue);
+  });
+});

@@ -14,6 +14,7 @@ import {
   computeTrialBalance, computeBilan, computeTCR, computeG50FromJournal,
 } from "@/lib/accounting/engine";
 import { prevPeriod } from "@/lib/accounting/algerianTax";
+import { useIbsPrior } from "@/lib/useIbsPrior";
 import { type PrecompteMap, precompteKey } from "./SuiteModules";
 
 
@@ -42,7 +43,7 @@ export const ReportsView = ({ t, journal, locks, clients, precompte = {} }: Prop
   const trial = useMemo(() => computeTrialBalance(journal, filter), [journal, filter]);
   const bilan = useMemo(() => computeBilan(journal, { clientId: filter.clientId, to }), [journal, filter.clientId, to]);
   const tcr = useMemo(() => computeTCR(journal, filter), [journal, filter]);
-  const [ibsPrior, setIbsPrior] = useState<string>("0");
+  const { value: ibsPrior, setValue: setIbsPrior, save: saveIbsPrior } = useIbsPrior(filter.clientId, Number(period.slice(0, 4)));
   const precompteFromPrev = precompte[precompteKey(filter.clientId, prevPeriod(period))] ?? 0;
   const g50 = useMemo(
     () => computeG50FromJournal(journal, {
@@ -227,7 +228,7 @@ export const ReportsView = ({ t, journal, locks, clients, precompte = {} }: Prop
             <div className="flex items-end gap-3 flex-wrap mb-4">
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("tax_ibs_prior_year")}</Label>
-                <Input type="number" min={0} value={ibsPrior} onChange={(e) => setIbsPrior(e.target.value)} className="w-44" />
+                <Input type="number" min={0} value={ibsPrior} onChange={(e) => setIbsPrior(e.target.value)} onBlur={saveIbsPrior} className="w-44" />
               </div>
               {g50.precompteFromPrev > 0 && (
                 <span className="text-xs text-muted-foreground pb-2">
