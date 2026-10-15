@@ -430,6 +430,7 @@ export const fr: typeof en = {
   toast_reminders_sent_many: "{n} rappels envoyés aux clients sans dépôt ce mois-ci.",
   toast_reminders_sent_other: "{n} rappels envoyés aux clients sans dépôt ce mois-ci.",
   toast_pdf_unavailable_xlsx: "Service PDF indisponible : le fichier Excel a été téléchargé à la place.",
+  toast_g50_not_saved: "Le fichier G50 a été téléchargé mais la déclaration n'a pas été enregistrée. Générez-la de nouveau avant de l'envoyer.",
   // Fiscal Calendar
   fcal_title: "Calendrier Fiscal",
   fcal_subtitle: "Échéances fiscales et sociales algériennes à venir",

@@ -108,6 +108,22 @@ test("accountant generates a G50 for a linked client and sends it: stored, uploa
   expect(backend.g50PdfCalls.length).toBeGreaterThan(1); // the download, then the client's copy
 });
 
+test("a G50 whose declaration fails to save tells the accountant instead of failing silently", async ({ page }) => {
+  backend.seed({ email: "karim@example.com", password: "right-password-1", role: "client", name: "Karim Client" });
+  backend.linkClient("karim@example.com", { tax_id: "000016001234567" });
+  backend.failWrites.add("g50_declarations");
+  await signIn(page, "amel@example.com");
+  await page.getByRole("button", { name: /^professional tools/i }).first().click();
+  await page.getByRole("button", { name: /^G50 Generator/ }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("combobox").click();
+  await page.getByRole("option", { name: "Karim Client" }).click();
+  await dialog.getByPlaceholder("1000000").fill("1000000");
+  await dialog.getByRole("button", { name: /generate.*pdf/i }).click();
+  await expect(page.getByText(/declaration was not saved/i).first()).toBeVisible();
+  expect(backend.rows("g50_declarations")).toHaveLength(0);
+});
+
 test("client reviews and signs a G50: signature saved, accountant notified", async ({ page }) => {
   const amel = backend.users.find((u) => u.email === "amel@example.com")!;
   backend.seed({ email: "karim@example.com", password: "right-password-1", role: "client", name: "Karim Client", linkedAccountantId: amel.id });
