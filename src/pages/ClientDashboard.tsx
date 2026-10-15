@@ -105,7 +105,8 @@ const ClientDashboard = () => {
         .select("id,file_name,file_path,size,created_at")
         .eq("user_id", uid)
         .order("created_at", { ascending: false });
-      if (cancelled || error || !data) return;
+      if (cancelled) return;
+      if (error || !data) { toast.error(t("load_failed"), { id: "load-failed" }); return; }
       setDocs(
         data.map((d) => ({
           id: d.id,

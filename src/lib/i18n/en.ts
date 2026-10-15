@@ -181,6 +181,7 @@ export const en = {
   g50_sending_label: "Sending…",
   g50_sent_success: "G50 sent to client",
   sync_failed: "Your last change could not be saved. Check your connection and try again.",
+  chat_load_error: "Could not load the messages. Reload the page to try again.",
   reminder_title: "📌 Reminder",
   reminder_msg: "No documents received for {month}. Please upload your invoices before the 20th of the month so the G50 can be filed.",
   payx_cnas_republic: "People's Democratic Republic of Algeria — CNAS",
