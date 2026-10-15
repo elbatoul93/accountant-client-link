@@ -76,7 +76,7 @@ export const FiscalCalendar = ({ t, regime, limit = 8, employeeCount, hasCacobat
         <div className="flex-1 min-w-0">
           <div className="text-xs font-semibold text-primary">{t("fcal_g50_countdown")}</div>
           <div className="text-[11px] text-muted-foreground font-mono">
-            {t("fcal_g50_window")}: {g50.open.toISOString().slice(0, 10)} → {g50.due.toISOString().slice(0, 10)}
+            {t("fcal_g50_window")}: <bdi dir="ltr">{g50.open.toISOString().slice(0, 10)} → {g50.due.toISOString().slice(0, 10)}</bdi>
             {!g50Open && <span className="ms-2">· {t("fcal_g50_not_open")}</span>}
           </div>
         </div>
@@ -114,7 +114,7 @@ export const FiscalCalendar = ({ t, regime, limit = 8, employeeCount, hasCacobat
                     {e.quarterly && <Badge variant="outline" className="text-[9px] font-mono border-gold/40 text-gold-deep">{t("fcal_freq_quarterly")}</Badge>}
                   </div>
                   <p className="text-[11px] text-muted-foreground font-mono">
-                    {e.openDate ? `${e.openDate} → ${e.date}` : e.date}
+                    <bdi dir="ltr">{e.openDate ? `${e.openDate} → ${e.date}` : e.date}</bdi>
                   </p>
                 </div>
                 <div className="text-end">

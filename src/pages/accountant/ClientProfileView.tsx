@@ -35,7 +35,7 @@ export const ClientProfileView = ({
   return (
     <>
       <Button variant="ghost" size="sm" onClick={onBack} className="-ms-2">
-        <ArrowLeft className="h-4 w-4" /> {t("side_back")}
+        <ArrowLeft className="h-4 w-4 rtl:rotate-180" /> {t("side_back")}
       </Button>
 
       {/* Header card */}

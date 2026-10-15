@@ -32,7 +32,7 @@ export const DashboardView = ({
     <Card className="p-5 shadow-card">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-primary">{t("dash_portfolio")}</h2>
-        <Button variant="ghost" size="sm" onClick={onGoClients}>{t("dash_view_all")} <ChevronRight className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="sm" onClick={onGoClients}>{t("dash_view_all")} <ChevronRight className="h-4 w-4 rtl:rotate-180" /></Button>
       </div>
       {clients.length === 0 ? (
         <EmptyState label={t("empty_no_clients")} />
@@ -57,7 +57,7 @@ export const DashboardView = ({
     <FiscalCalendar t={t} limit={6} />
     {onOpenCalendar && (
       <div className="text-end">
-        <Button variant="ghost" size="sm" onClick={onOpenCalendar}>{t("fcal_view_all")} <ChevronRight className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="sm" onClick={onOpenCalendar}>{t("fcal_view_all")} <ChevronRight className="h-4 w-4 rtl:rotate-180" /></Button>
       </div>
     )}
   </>
@@ -142,7 +142,7 @@ export const ClientsListView = ({
                         <Pencil className="h-3.5 w-3.5" /> {t("acc_edit")}
                       </Button>
                       <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => onOpen(c)}>
-                        {t("client_open_profile")} <ChevronRight className="h-3.5 w-3.5" />
+                        {t("client_open_profile")} <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" />
                       </Button>
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(c.id)} aria-label={t("common_delete")}>
                         <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />

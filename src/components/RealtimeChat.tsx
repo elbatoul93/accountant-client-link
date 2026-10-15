@@ -346,7 +346,7 @@ const ChatHeader = ({
   <div className="px-4 py-3 border-b flex items-center gap-3 bg-card">
     {onBack && (
       <Button variant="ghost" size="icon" className="h-8 w-8 -ms-1" onClick={onBack} aria-label={t("i18n_back")}>
-        <ArrowLeft className="h-4 w-4" />
+        <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
       </Button>
     )}
     <MessageCircle className="h-4 w-4 text-gold-deep" />

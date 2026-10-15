@@ -145,7 +145,7 @@ export const AddClientDialog = ({
                 </p>
               )}
               <div className="grid sm:grid-cols-2 gap-3">
-                <Field label={t("client_nif") + " *"}><Input value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="000016001234567" className="font-mono" /></Field>
+                <Field label={t("client_nif") + " *"}><Input value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="000016001234567" dir="ltr" className="font-mono rtl:text-right" /></Field>
                 <Field label={t("client_bp")}><Input value={bp} onChange={(e) => setBp(e.target.value)} placeholder={t("acc_ph_bp")} className="font-mono" /></Field>
                 <Field label={t("acc_direction_label")}><Input value={direction} onChange={(e) => setDirection(e.target.value)} placeholder={t("acc_ph_direction")} /></Field>
                 <Field label={t("acc_commune_label")}><Input value={commune} onChange={(e) => setCommune(e.target.value)} placeholder={t("acc_ph_commune")} /></Field>
@@ -183,7 +183,7 @@ export const AddClientDialog = ({
 
           <Section title={t("client_section_legal")} icon={FileText}>
             <div className="grid sm:grid-cols-2 gap-3">
-              <Field label={t("client_nis")}><Input value={nis} onChange={(e) => setNis(e.target.value)} placeholder="0916 0000123456 78" className="font-mono" /></Field>
+              <Field label={t("client_nis")}><Input value={nis} onChange={(e) => setNis(e.target.value)} placeholder="0916 0000123456 78" dir="ltr" className="font-mono rtl:text-right" /></Field>
               <Field label={t("client_rc")}><Input value={rc} onChange={(e) => setRc(e.target.value)} placeholder="16/00 - 1234567 B 24" className="font-mono" /></Field>
             </div>
           </Section>
@@ -218,7 +218,7 @@ export const AddClientDialog = ({
               {mode !== "edit" && (
                 <Field label={t("client_email")}><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("acc_ph_email_contact")} /></Field>
               )}
-              <Field label={t("client_phone")}><Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+213 555 12 34 56" /></Field>
+              <Field label={t("client_phone")}><Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+213 555 12 34 56" /></Field>
               <Field label={t("client_address")} full><Textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t("acc_ph_address")} rows={2} /></Field>
             </div>
           </Section>
