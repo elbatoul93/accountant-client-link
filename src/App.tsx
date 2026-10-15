@@ -4,24 +4,24 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider } from "@/contexts/AppContext";
-import Index from "./pages/Index.tsx";
-import Login from "./pages/Login.tsx";
-import Signup from "./pages/Signup.tsx";
-import InviteSignup from "./pages/InviteSignup.tsx";
-import NotFound from "./pages/NotFound.tsx";
-import RecoveryRedirect from "./components/RecoveryRedirect";
-import ProtectedRoute from "./components/ProtectedRoute";
-import Privacy from "./pages/legal/Privacy.tsx";
-import Terms from "./pages/legal/Terms.tsx";
-import Help from "./pages/help/Help.tsx";
-import ForgotPassword from "./pages/ForgotPassword.tsx";
-import ResetPassword from "./pages/ResetPassword.tsx";
-import { ErrorBoundary } from "./components/ErrorBoundary";
+import Index from "./features/landing/Index.tsx";
+import Login from "./features/auth/Login.tsx";
+import Signup from "./features/auth/Signup.tsx";
+import InviteSignup from "./features/auth/InviteSignup.tsx";
+import NotFound from "./features/landing/NotFound.tsx";
+import RecoveryRedirect from "./features/auth/RecoveryRedirect";
+import ProtectedRoute from "./features/auth/ProtectedRoute";
+import Privacy from "./features/legal/Privacy.tsx";
+import Terms from "./features/legal/Terms.tsx";
+import Help from "./features/help/Help.tsx";
+import ForgotPassword from "./features/auth/ForgotPassword.tsx";
+import ResetPassword from "./features/auth/ResetPassword.tsx";
+import { ErrorBoundary } from "./components/layout/ErrorBoundary";
 
-const Account = lazy(() => import("./pages/Account.tsx"));
-const AccountantDashboard = lazy(() => import("./pages/AccountantDashboard.tsx"));
-const Admin = lazy(() => import("./pages/Admin.tsx"));
-const ClientDashboard = lazy(() => import("./pages/ClientDashboard.tsx"));
+const Account = lazy(() => import("./features/account/Account.tsx"));
+const AccountantDashboard = lazy(() => import("./features/accountant/AccountantDashboard.tsx"));
+const Admin = lazy(() => import("./features/admin/Admin.tsx"));
+const ClientDashboard = lazy(() => import("./features/client/ClientDashboard.tsx"));
 
 const PageSpinner = () => (
   <div className="min-h-screen grid place-items-center bg-background">

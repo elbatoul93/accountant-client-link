@@ -9,7 +9,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-import { loadIbsPrior, saveIbsPrior } from "@/lib/ibsPriorStore";
+import { loadIbsPrior, saveIbsPrior } from "@/features/accountant/lib/ibsPriorStore";
 
 describe("IBS N-1 store", () => {
   it("returns the saved amount", async () => {
