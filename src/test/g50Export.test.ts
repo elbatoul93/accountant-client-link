@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invoke: vi.fn() } } }));
-import { G50PdfError, isG50PdfUnavailable } from "@/lib/g50Export";
+import { G50PdfError, isG50PdfUnavailable } from "@/features/accountant/lib/g50Export";
 
 describe("g50-pdf fallback", () => {
   it("falls back for retryable or provider errors", () => {
