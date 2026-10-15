@@ -699,7 +699,7 @@ export const ar: typeof en = {
   pcn_no_results: "لم يتم العثور على حساب",
   pcn_accounts_label: "حساب — المخطط المحاسبي الوطني",
 
-  auth_invite_title: "إنشاء حساب الزبون",
+  auth_invite_title: "إنشاء حسابك",
   auth_acc_signup_title: "فضاء المحاسب — التسجيل",
   auth_invite_subtitle: "لقد تمت دعوتك. أكمل تسجيلك للوصول إلى بوابتك.",
   auth_invite_subtitle_by: "لقد تمت دعوتك من قبل {name}. أكمل تسجيلك للوصول إلى بوابتك.",
