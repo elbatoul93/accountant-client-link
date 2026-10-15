@@ -7,7 +7,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toIsoDay, todayIso } from "@/lib/isoDate";
 import type { WorkflowStatus } from "@/lib/portal";
-import { loadTranslations, type Lang } from "@/lib/i18n";
+import { LANG_STORAGE_KEY, loadTranslations, type Lang } from "@/lib/i18n";
 import { toast } from "sonner";
 
 const BUCKET = "client-uploads";
@@ -168,7 +168,7 @@ const must = (res: { error: { message: string } | null }) => {
   if (!res.error) return;
   let lang: Lang = "en";
   try {
-    const saved = localStorage.getItem("mgmtk_lang");
+    const saved = localStorage.getItem(LANG_STORAGE_KEY);
     if (saved === "fr" || saved === "ar") lang = saved;
   } catch { /* storage unavailable */ }
   void loadTranslations(lang).then((d) => toast.error(d.sync_failed));

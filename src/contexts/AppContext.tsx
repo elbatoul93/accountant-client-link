@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
-import { loadTranslations, type Dict, type Lang } from "@/lib/i18n";
+import { LANG_STORAGE_KEY, loadTranslations, type Dict, type Lang } from "@/lib/i18n";
 import { detectBrowserLang, interpolate } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
@@ -39,7 +39,7 @@ const stashLocalAppData = (uid: string | null) => {
   if (!uid) return;
   try {
     Object.keys(localStorage)
-      .filter((k) => k.startsWith("mgmtk_") && k !== "mgmtk_lang" && k !== LAST_UID_KEY)
+      .filter((k) => k.startsWith("mgmtk_") && k !== LANG_STORAGE_KEY && k !== LAST_UID_KEY)
       .forEach((k) => {
         const v = localStorage.getItem(k);
         if (v !== null) localStorage.setItem(`${BACKUP_PREFIX}${uid}__${k}`, v);
@@ -67,7 +67,7 @@ const restoreLocalAppData = (uid: string) => {
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [lang, setLangState] = useState<Lang>(() => {
     try {
-      const saved = localStorage.getItem("mgmtk_lang");
+      const saved = localStorage.getItem(LANG_STORAGE_KEY);
       if (saved === "ar" || saved === "fr" || saved === "en") return saved;
     } catch { /* storage unavailable */ }
     // First visit: follow the browser's language when we support it, else Arabic.
@@ -85,7 +85,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = dir;
-    try { localStorage.setItem("mgmtk_lang", lang); } catch { /* storage unavailable */ }
+    try { localStorage.setItem(LANG_STORAGE_KEY, lang); } catch { /* storage unavailable */ }
   }, [lang, dir]);
 
   // Hydrate user from a Supabase session

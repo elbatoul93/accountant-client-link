@@ -503,8 +503,8 @@ const AccountantDashboard = () => {
           if (!(await markReminderSent(accId, c.id, month))) continue;
           await sendNotification({
             recipientId: link.id,
-            title: "📌 Rappel / تذكير",
-            message: `Aucun document reçu pour ${month}. Merci de téléverser vos factures avant le 20 du mois pour la déclaration G50. (تذكير: لم نستلم وثائقك لهذا الشهر).`,
+            title: t("reminder_title"),
+            message: t("reminder_msg", { month }),
             link: "/dashboard/client",
           });
           sent++;

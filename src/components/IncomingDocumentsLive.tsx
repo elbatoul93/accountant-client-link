@@ -1,5 +1,5 @@
 import { useFormat } from "@/hooks/useFormat";
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,56 +28,40 @@ const BUCKET = "client-uploads";
 
 export const IncomingDocumentsLive = ({ t }: Props) => {
   const fmt = useFormat();
-  const [rows, setRows] = useState<Row[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const q = useQuery({
+    queryKey: ["incoming-documents"],
+    retry: false,
+    staleTime: 0, // lists that change while the user is away: always refetch on open
+    queryFn: async (): Promise<Row[]> => {
+      // 1) Pull every document the accountant is allowed to read.
+      //    RLS on `documents` already restricts rows to clients linked to this
+      //    accountant via profiles.linked_accountant_id — no role check here.
+      const { data: docs, error: dErr } = await supabase
+        .from("documents")
+        .select("id,title,description,file_name,file_path,mime_type,size,created_at,user_id")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (dErr) throw dErr;
+      if (!docs || docs.length === 0) return [];
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    // 1) Pull every document the accountant is allowed to read.
-    //    RLS on `documents` already restricts rows to clients linked to this
-    //    accountant via profiles.linked_accountant_id — no role check here.
-    const { data: docs, error: dErr } = await supabase
-      .from("documents")
-      .select("id,title,description,file_name,file_path,mime_type,size,created_at,user_id")
-      .order("created_at", { ascending: false })
-      .limit(100);
-    if (dErr) {
-      setError(dErr.message);
-      setLoading(false);
-      return;
-    }
-    if (!docs || docs.length === 0) {
-      setRows([]);
-      setLoading(false);
-      return;
-    }
-
-    // 2) Resolve client display names through the safe SECURITY DEFINER RPC.
-    //    This avoids querying profiles directly and lets database RLS handle access.
-    const { data: names, error: namesErr } = await supabase.rpc("get_linked_client_names");
-    if (namesErr) {
-      setError(namesErr.message);
-      setLoading(false);
-      return;
-    }
-    const byId = new Map(
-      (names || []).map((client) => [client.id, (client.full_name && client.full_name.trim()) || "Unknown"] as const),
-    );
-
-    setRows(
-      docs.map((d) => ({
+      // 2) Resolve client display names through the safe SECURITY DEFINER RPC.
+      //    This avoids querying profiles directly and lets database RLS handle access.
+      const { data: names, error: namesErr } = await supabase.rpc("get_linked_client_names");
+      if (namesErr) throw namesErr;
+      const byId = new Map(
+        (names || []).map((client) => [client.id, (client.full_name && client.full_name.trim()) || "Unknown"] as const),
+      );
+      return docs.map((d) => ({
         ...d,
         client_name: byId.get(d.user_id) || "Unknown",
         client_email: "",
-      })) as Row[],
-    );
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+      })) as Row[];
+    },
+  });
+  const rows = q.data ?? [];
+  const loading = q.isFetching;
+  const error = q.isError ? (q.error as Error).message : null;
+  const fetchAll = () => q.refetch();
 
   const open = async (path: string) => {
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 600);

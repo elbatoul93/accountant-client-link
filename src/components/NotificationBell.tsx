@@ -1,5 +1,6 @@
 import { useFormat } from "@/hooks/useFormat";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Bell, CheckCheck } from "lucide-react";
@@ -16,12 +17,16 @@ import {
 export const NotificationBell = ({ t }: { t: (k: string) => string }) => {
   const navigate = useNavigate();
   const fmt = useFormat();
-  const [items, setItems] = useState<PortalNotificationRow[]>([]);
+  const qc = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    try { setItems(await loadNotifications(30)); } catch { /* the bell stays as it was */ }
-  }, []);
+  // On a failed load the bell keeps what it had.
+  const { data: items = [] } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => loadNotifications(30),
+    retry: false,
+  });
+  const refresh = () => qc.invalidateQueries({ queryKey: ["notifications"] });
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
@@ -30,11 +35,10 @@ export const NotificationBell = ({ t }: { t: (k: string) => string }) => {
       const { data } = await supabase.auth.getUser();
       if (!data.user || cancelled) return;
       setUserId(data.user.id);
-      await refresh();
-      if (!cancelled) unsubscribe = subscribeNotifications(data.user.id, refresh);
+      unsubscribe = subscribeNotifications(data.user.id, () => { void qc.invalidateQueries({ queryKey: ["notifications"] }); });
     })();
     return () => { cancelled = true; unsubscribe?.(); };
-  }, [refresh]);
+  }, [qc]);
 
   const unread = items.filter((n) => !n.read).length;
 
