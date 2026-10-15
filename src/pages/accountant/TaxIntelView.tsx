@@ -28,8 +28,9 @@ import {
   IRG_PRO_BRACKETS_2024, computeIrgProfessionsLiberales,
   computeTfpTapp, TFP_TAPP_THRESHOLD,
   buildG50Preview, type G50Line, type G50Section,
-  tapRateForPeriod, IBS_ACOMPTE_MONTHS, buildEtat104, prevPeriod,
+  buildEtat104, prevPeriod,
 } from "@/lib/accounting/algerianTax";
+import { useIbsPrior } from "@/lib/useIbsPrior";
 import { computeG50FromJournal, type JournalLine } from "@/lib/accounting/engine";
 import { type BillInvoice, type PrecompteMap, precompteKey } from "./SuiteModules";
 
@@ -60,8 +61,9 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
 
   /* IBS state */
   const [ibsSector, setIbsSector] = useState<IbsSector>("SERVICES");
-  const [ibsPrior, setIbsPrior] = useState<string>("0");
   const [ibsResult, setIbsResult] = useState<string>("0");
+  const cid = clientId === "ALL" ? undefined : clientId;
+  const { value: ibsPrior, setValue: setIbsPrior, save: saveIbsPrior } = useIbsPrior(cid, Number(period.slice(0, 4)));
   const ibsAcompte = computeIbsAcompte(Number(ibsPrior || 0));
   const ibsAnnual = computeIbs(Number(ibsResult || 0), ibsSector);
 
@@ -82,15 +84,15 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
   /* G50 — pulls live amounts from journal then layers our calculators on top.
    * TAP: 1% before 2024, repealed by LF 2024 (rate 0 from 2024-01). Précompte is auto-loaded from previous month.
    * TRWI (Radio/TV) removed from G50 per regulatory update. */
-  // Acomptes fall in March, June and November only (not spread monthly).
-  const monthlyIbsShare = IBS_ACOMPTE_MONTHS.includes(Number(period.slice(5, 7))) ? ibsAcompte.perAcompte : 0;
-  const cid = clientId === "ALL" ? undefined : clientId;
-  const liveG50 = useMemo(
-    () => computeG50FromJournal(journal, { clientId: cid, period, tapRate: tapRateForPeriod(period) }),
-    [journal, cid, period],
-  );
-
+  // The engine owns the G50 arithmetic (TAP, VAT with the carried credit, IBS acomptes in March, June and November);
+  // this view only lays the result out and adds the TFP/TAPP lines.
   const precompteFromPrev = precompte[precompteKey(cid, prevPeriod(period))] ?? 0;
+  const liveG50 = useMemo(
+    () => computeG50FromJournal(journal, {
+      clientId: cid, period, precompteFromPrev, ibsPriorYear: Number(ibsPrior) || 0,
+    }),
+    [journal, cid, period, precompteFromPrev, ibsPrior],
+  );
 
   const g50 = useMemo(
     () => buildG50Preview({
@@ -99,12 +101,12 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
       tvaCollected: liveG50.tvaCollected,
       tvaDeductible: liveG50.tvaDeductible,
       precompteFromPrev,
-      tapRate: tapRateForPeriod(period),
+      tapRate: liveG50.tapRate,
       irgSalaries: liveG50.irgSalaries,
-      ibsAcompte: monthlyIbsShare,
+      ibsAcompte: liveG50.ibs,
       tfpTapp,
     }),
-    [period, liveG50, precompteFromPrev, monthlyIbsShare, tfpTapp],
+    [period, liveG50, precompteFromPrev, tfpTapp],
   );
 
   /* Auto-persist the carry-forward Précompte for this period whenever it changes,
@@ -199,7 +201,7 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("tax_ibs_prior_year")}</Label>
-                <Input type="number" value={ibsPrior} onChange={(e) => setIbsPrior(e.target.value)} placeholder="500000" />
+                <Input type="number" value={ibsPrior} onChange={(e) => setIbsPrior(e.target.value)} onBlur={saveIbsPrior} placeholder="500000" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("tax_ibs_taxable")}</Label>
