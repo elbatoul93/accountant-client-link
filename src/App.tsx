@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { lazy, Suspense } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { lazy, Suspense, useEffect, useRef } from "react";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -35,6 +35,21 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
 });
 
+/** Most query keys carry no user id, so a different account signing in on the same tab must not see the last one's cached lists. */
+const QueryCacheReset = () => {
+  const { user } = useApp();
+  const qc = useQueryClient();
+  const last = useRef(user?.email ?? null);
+  useEffect(() => {
+    const now = user?.email ?? null;
+    if (now !== last.current) {
+      last.current = now;
+      qc.clear();
+    }
+  }, [user?.email, qc]);
+  return null;
+};
+
 /** Radix defaults to left-to-right: tabs, menus and selects need the page direction for layout and arrow keys. */
 const RadixDirection = ({ children }: { children: ReactNode }) => {
   const { dir } = useApp();
@@ -44,6 +59,7 @@ const RadixDirection = ({ children }: { children: ReactNode }) => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AppProvider>
+      <QueryCacheReset />
       <RadixDirection>
       <TooltipProvider>
         <Sonner />
