@@ -7,7 +7,7 @@
 - Edge function secret: `CLOUDCONVERT_API_KEY` (`supabase secrets set CLOUDCONVERT_API_KEY=...`).
 
 ## Checks
-The `Verify production deploy` workflow runs after every push to `main`: it waits for the Cloudflare Pages check on that commit and checks that the live site serves the CSP and HSTS headers. A red run means production did not update. Production is **https://managementik.com**, a custom domain on the same Cloudflare Pages project as `accountant-client-link.pages.dev` (Cloudflare's built-in address for the project; both serve the same build and use the same Supabase project). The workflow checks pages.dev first, then retries until managementik.com serves the same bundle (it can lag by about a minute) and has the CSP and HSTS headers.
+The `Verify production deploy` workflow runs after every push to `main`: it waits for the Cloudflare Pages check on that commit and checks that the live site serves the CSP and HSTS headers. A red run means production did not update. Production is **https://managementik.com**, a custom domain on the same Cloudflare Pages project as `accountant-client-link.pages.dev` (Cloudflare's built-in address for the project; both serve the same build and use the same Supabase project). The workflow checks pages.dev first, then renders https://managementik.com/login in headless Chromium and fails on a blank page, a console error or a script served as HTML. It also reports (without failing) when managementik.com and pages.dev serve different builds; the two can lag each other.
 `.github/workflows/ci.yml` runs typecheck, lint, tests and build on every PR and push to `main`. Merge only when it is green.
 
 ## Database tests
