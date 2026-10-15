@@ -439,6 +439,7 @@ export const en = {
   toast_reminders_sent_other: "{n} reminders sent to clients with no upload this month.",
   toast_pdf_unavailable_xlsx: "PDF service unavailable: the Excel file was downloaded instead.",
   toast_g50_not_saved: "The G50 file was downloaded but the declaration was not saved. Generate it again before sending.",
+  toast_g50_client_not_linked: "This client has not accepted the invitation yet. Ask them to accept it first, then generate the G50.",
   // Fiscal Calendar
   fcal_title: "Fiscal Calendar",
   fcal_subtitle: "Upcoming Algerian tax & social-security deadlines",

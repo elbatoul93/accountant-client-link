@@ -151,3 +151,28 @@ test("client reviews and signs a G50: signature saved, accountant notified", asy
   expect(backend.rows("notifications")[0]).toMatchObject({ recipient_id: amel.id, type: "doc_signed", ref_id: "doc-1" });
   await expect(page.getByText(/digitally signed|signed/i).first()).toBeVisible();
 });
+
+test("example data: a G50 asks for the client to accept the invite first, and removing the example works", async ({ page }) => {
+  await signIn(page, "amel@example.com");
+  await page.waitForLoadState("networkidle"); // let the dashboard finish loading its data first
+  await page.getByRole("button", { name: /load example data/i }).click();
+  await expect.poll(() => backend.rows("acc_clients").map((r) => r.client_ref)).toEqual(["0d3e0000-0000-4000-8000-000000000001"]);
+  await expect.poll(() => backend.rows("acc_invoices").length).toBe(1);
+
+  await page.getByRole("button", { name: /^professional tools/i }).first().click();
+  await page.getByRole("button", { name: /^G50 Generator/ }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("combobox").click();
+  await page.getByRole("option", { name: /Exemple SARL/ }).click();
+  await dialog.getByPlaceholder("1000000").fill("1000000");
+  await dialog.getByRole("button", { name: /generate.*pdf/i }).click();
+  await expect(page.getByText(/not accepted the invitation/i).first()).toBeVisible();
+  expect(backend.rows("g50_declarations")).toHaveLength(0);
+  expect(backend.g50PdfCalls).toHaveLength(0);
+  await page.keyboard.press("Escape");
+
+  await page.getByRole("button", { name: /dashboard/i }).first().click();
+  await page.getByRole("button", { name: /remove example data/i }).click();
+  await expect.poll(() => backend.rows("acc_clients").length).toBe(0);
+  expect(backend.rows("acc_invoices")).toHaveLength(0);
+});

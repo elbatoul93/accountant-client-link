@@ -7,6 +7,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toIsoDay, todayIso } from "@/lib/isoDate";
 import type { WorkflowStatus } from "@/lib/portal";
+import { toUuid } from "@/features/accountant/lib/businessStore";
 import { LANG_STORAGE_KEY, loadTranslations, type Lang } from "@/lib/i18n";
 import { toast } from "sonner";
 
@@ -399,11 +400,14 @@ export const migrateLocalToDb = async (accId: string): Promise<void> => {
     const localShared = readLocal<SharedDoc>("mgmtk_acc_shared_docs");
     const localLegal = readLocal<LegalDoc>("mgmtk_acc_legal_docs");
 
-    if ((invCount ?? 0) === 0 && localInvoices.length) await syncInvoices([], localInvoices, accId);
-    if ((declCount ?? 0) === 0 && localDecls.length) await syncDecls([], localDecls, accId);
-    if ((fsCount ?? 0) === 0 && localFs.length) await syncFs([], localFs, accId);
-    if ((sharedCount ?? 0) === 0 && localShared.length) await syncShared([], localShared, accId);
-    if ((legalCount ?? 0) === 0 && localLegal.length) await syncLegal([], localLegal, accId);
+    // Old browser data used ids like "INV-12345"; the row id columns are uuids, so re-key anything else
+    // (client_ref values stay as they are, they are text).
+    const rekey = <T extends { id: string }>(rows: T[]): T[] => rows.map((r) => ({ ...r, id: toUuid(r.id) }));
+    if ((invCount ?? 0) === 0 && localInvoices.length) await syncInvoices([], rekey(localInvoices), accId);
+    if ((declCount ?? 0) === 0 && localDecls.length) await syncDecls([], rekey(localDecls), accId);
+    if ((fsCount ?? 0) === 0 && localFs.length) await syncFs([], rekey(localFs), accId);
+    if ((sharedCount ?? 0) === 0 && localShared.length) await syncShared([], rekey(localShared), accId);
+    if ((legalCount ?? 0) === 0 && localLegal.length) await syncLegal([], rekey(localLegal), accId);
 
     localStorage.setItem(MIGRATION_FLAG, "1");
   } catch (e) {
