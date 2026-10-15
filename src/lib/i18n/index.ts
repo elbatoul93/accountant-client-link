@@ -13,3 +13,6 @@ export const loadTranslations = async (lang: Lang): Promise<Dict> => {
     default: return (await import("./en")).en;
   }
 };
+
+/** localStorage key that remembers the chosen language. */
+export const LANG_STORAGE_KEY = "mgmtk_lang";

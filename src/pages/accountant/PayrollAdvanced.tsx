@@ -221,7 +221,7 @@ export const PayrollAdvanced = ({
             return (
               <Card className="p-5 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
                 <div className="text-center mb-4 pb-3 border-b">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">République Algérienne — CNAS</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("payx_cnas_republic")}</p>
                   <h3 className="text-lg font-bold text-primary">{t("payx_cnas_avis")}</h3>
                   <p className="text-xs text-muted-foreground">{a.period} — {a.frequency === "monthly" ? t("payx_monthly") : t("payx_quarterly")}</p>
                 </div>

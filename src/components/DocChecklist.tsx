@@ -1,6 +1,7 @@
 import { useApp } from "@/contexts/AppContext";
 import { formatDate } from "@/lib/format";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -26,20 +27,25 @@ const labelOf = (kind: ChecklistRow["kind"]): string =>
 export const DocChecklist = ({ t, clientRef, accountantMode, monthKey }: Props) => {
   const { lang } = useApp();
   const month = monthKey || new Date().toISOString().slice(0, 7);
-  const [entries, setEntries] = useState<ChecklistRow[]>([]);
-
-  const refresh = useCallback(async () => {
-    try {
+  const qc = useQueryClient();
+  const key = ["checklist", month, accountantMode ? clientRef ?? null : null, !!accountantMode];
+  const q = useQuery({
+    queryKey: key,
+    retry: false,
+    staleTime: 0, // lists that change while the user is away: always refetch on open
+    queryFn: async (): Promise<ChecklistRow[]> => {
       if (accountantMode && clientRef) {
         const { data: au } = await supabase.auth.getUser();
         if (au.user) await ensureChecklist(au.user.id, clientRef, month);
       }
-      setEntries(await loadChecklist(month, accountantMode ? clientRef : undefined));
-    } catch {
-      toast.error(t("load_failed"), { id: "load-failed" });
-    }
-  }, [accountantMode, clientRef, month, t]);
-  useEffect(() => { refresh(); }, [refresh]);
+      return loadChecklist(month, accountantMode ? clientRef : undefined);
+    },
+  });
+  const entries = q.data ?? [];
+  useEffect(() => {
+    if (q.isError) toast.error(t("load_failed"), { id: "load-failed" });
+  }, [q.isError, q.errorUpdatedAt]); // eslint-disable-line react-hooks/exhaustive-deps
+  const refresh = () => qc.invalidateQueries({ queryKey: ["checklist"] });
 
   const setStatus = async (id: string, status: ChecklistStatus) => {
     try {

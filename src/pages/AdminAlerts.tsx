@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -16,13 +17,17 @@ const rpc = supabase.rpc as unknown as (fn: string, args?: Record<string, unknow
 const call = (fn: string, args?: Record<string, unknown>) => rpc.call(supabase, fn, args);
 
 export function useOpenAlertCount() {
-  const [count, setCount] = useState(0);
-  const refresh = useCallback(async () => {
-    const { data, error } = await call("admin_open_alert_count");
-    setCount(error || typeof data !== "number" ? 0 : data);
-  }, []);
-  useEffect(() => { refresh(); }, [refresh]);
-  return { count, refresh };
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ["admin", "alert-count"],
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await call("admin_open_alert_count");
+      if (error) throw error;
+      return typeof data === "number" ? data : 0;
+    },
+  });
+  return { count: q.data ?? 0, refresh: () => qc.invalidateQueries({ queryKey: ["admin", "alert-count"] }) };
 }
 
 const KIND_LABEL: Record<string, string> = {
@@ -35,24 +40,27 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 export function AdminAlerts({ onChange }: { onChange: () => void }) {
-  const [rows, setRows] = useState<AlertRow[]>([]);
-  const [available, setAvailable] = useState(true);
+  const qc = useQueryClient();
   const [busy, setBusy] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    const { data, error } = await call("admin_list_security_alerts", { _only_open: true, _limit: 100 });
-    if (error) { setAvailable(false); setRows([]); return; }
-    setAvailable(true);
-    setRows((data ?? []) as AlertRow[]);
-  }, []);
-  useEffect(() => { load(); }, [load]);
+  const list = useQuery({
+    queryKey: ["admin", "alerts"],
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await call("admin_list_security_alerts", { _only_open: true, _limit: 100 });
+      if (error) throw error;
+      return (data ?? []) as AlertRow[];
+    },
+  });
+  const rows = list.data ?? [];
+  const available = !list.isError;
 
   const ack = async (id: string) => {
     setBusy(id);
     const { error } = await call("admin_ack_security_alert", { _id: id });
     setBusy(null);
     if (error) { toast.error("Could not acknowledge the alert."); return; }
-    await load();
+    await qc.invalidateQueries({ queryKey: ["admin", "alerts"] });
     onChange();
   };
 

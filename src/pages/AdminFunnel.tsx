@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 
@@ -37,27 +38,24 @@ function stuckAt(r: Row): string {
 
 export function AdminFunnel() {
   const [days, setDays] = useState(90);
-  const [funnel, setFunnel] = useState<Funnel | null>(null);
-  const [rows, setRows] = useState<Row[]>([]);
-  const [available, setAvailable] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    const since = days ? new Date(Date.now() - days * 86400000).toISOString() : null;
-    (async () => {
+  const q = useQuery({
+    queryKey: ["admin", "funnel", days],
+    retry: false,
+    queryFn: async () => {
+      const since = days ? new Date(Date.now() - days * 86400000).toISOString() : null;
       const [f, a] = await Promise.all([
         call("admin_activation_funnel", { _since: since }),
         call("admin_activation_accountants", { _since: since }),
       ]);
-      if (cancelled) return;
-      if (f.error || a.error) { setAvailable(false); return; }
-      setAvailable(true);
+      if (f.error || a.error) throw new Error("funnel unavailable");
       const first = Array.isArray(f.data) ? f.data[0] : f.data;
-      setFunnel((first ?? null) as Funnel | null);
-      setRows((a.data ?? []) as Row[]);
-    })();
-    return () => { cancelled = true; };
-  }, [days]);
+      return { funnel: (first ?? null) as Funnel | null, rows: (a.data ?? []) as Row[] };
+    },
+  });
+  const funnel = q.data?.funnel ?? null;
+  const rows = q.data?.rows ?? [];
+  const available = !q.isError;
 
   if (!available) return <p className="text-sm text-muted-foreground">The activation funnel is not available yet.</p>;
 

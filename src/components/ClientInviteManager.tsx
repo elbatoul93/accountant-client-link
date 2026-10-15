@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
@@ -36,27 +37,32 @@ const randomToken = () => {
 
 export const ClientInviteManager = () => {
   const { user, t } = useApp();
-  const [invites, setInvites] = useState<Invite[]>([]);
-  const [loading, setLoading] = useState(true);
+  const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [email, setEmail] = useState("");
   const [inviteToDelete, setInviteToDelete] = useState<Invite | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) { setLoading(false); return; }
-    const { data, error } = await supabase
-      .from("invitations")
-      .select("id,token,email,used,expires_at,created_at")
-      .eq("accountant_id", authUser.id)
-      .order("created_at", { ascending: false });
-    if (!error) setInvites(data ?? []);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
+  const list = useQuery({
+    queryKey: ["invitations"],
+    retry: false,
+    staleTime: 0, // lists that change while the user is away: always refetch on open
+    queryFn: async (): Promise<Invite[]> => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return [];
+      const { data, error } = await supabase
+        .from("invitations")
+        .select("id,token,email,used,expires_at,created_at")
+        .eq("accountant_id", authUser.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  // A failed load keeps the last list, as before.
+  const invites = list.data ?? [];
+  const loading = list.isPending;
+  const load = () => qc.invalidateQueries({ queryKey: ["invitations"] });
 
   const generate = async () => {
     setBusy(true);

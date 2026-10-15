@@ -2,6 +2,7 @@ import { formatDate as formatDateLocale } from "@/lib/format";
 import type { Lang } from "@/lib/i18n";
 import { useApp } from "@/contexts/AppContext";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,32 +56,29 @@ export const ClientDocumentsSection = ({
   t: (k: string) => string;
 }) => {
   const { lang } = useApp();
-  const [docs, setDocs] = useState<ClientDoc[]>([]);
-  const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
+  const q = useQuery({
+    queryKey: ["client-documents", clientId],
+    enabled: !!clientId,
+    retry: false,
+    staleTime: 0, // lists that change while the user is away: always refetch on open
+    queryFn: async () => {
       // Filter only by user_id (already known) — no profiles join, avoids RLS recursion.
       const { data, error } = await supabase
         .from("documents")
         .select("id,title,file_name,file_path,mime_type,size,created_at")
         .eq("user_id", clientId)
         .order("created_at", { ascending: false });
-      if (cancelled) return;
-      if (error) {
-        console.error("[ClientDocumentsSection] load", error);
-        toast.error(error.message);
-      } else {
-        setDocs((data ?? []) as ClientDoc[]);
-      }
-      setLoading(false);
-    };
-    if (clientId) load();
-    return () => { cancelled = true; };
-  }, [clientId]);
+      if (error) throw error;
+      return (data ?? []) as ClientDoc[];
+    },
+  });
+  const docs = q.data ?? [];
+  const loading = q.isPending && !!clientId;
+  useEffect(() => {
+    if (q.isError) { console.error("[ClientDocumentsSection] load", q.error); toast.error((q.error as Error).message); }
+  }, [q.isError, q.errorUpdatedAt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDownload = async (doc: ClientDoc) => {
     setDownloading(doc.id);

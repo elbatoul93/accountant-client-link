@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,18 +21,22 @@ interface AccountantRow {
 // Operator-only screen (not translated): activate or suspend accountant accounts.
 const Admin = () => {
   const admin = useIsAdmin();
-  const [rows, setRows] = useState<AccountantRow[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
   const alerts = useOpenAlertCount();
 
-  const load = useCallback(async () => {
-    const { data, error } = await supabase.rpc("admin_list_accountants");
-    if (error) { setFailed(true); return; }
-    setFailed(false);
-    setRows((data ?? []) as AccountantRow[]);
-  }, []);
-  useEffect(() => { if (admin === "yes") load(); }, [admin, load]);
+  const list = useQuery({
+    queryKey: ["admin", "accountants"],
+    enabled: admin === "yes",
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_list_accountants");
+      if (error) throw error;
+      return (data ?? []) as AccountantRow[];
+    },
+  });
+  const rows = list.data ?? [];
+  const failed = list.isError;
+  const load = () => list.refetch();
 
   const setStatus = async (id: string, status: Status) => {
     setBusy(id);
