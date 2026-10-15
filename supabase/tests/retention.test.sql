@@ -13,8 +13,11 @@ BEGIN
 END $$;
 -- Runs a statement as the current role and returns the error text, or '' if it succeeded.
 CREATE FUNCTION r.try(_sql text) RETURNS text LANGUAGE plpgsql AS $$
+DECLARE n bigint;
 BEGIN
   EXECUTE _sql;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n = 0 THEN RETURN 'matched no rows (uid=' || coalesce(auth.uid()::text, 'null') || ', role=' || current_user || ')'; END IF;
   RETURN '';
 EXCEPTION WHEN OTHERS THEN
   RETURN SQLERRM;
