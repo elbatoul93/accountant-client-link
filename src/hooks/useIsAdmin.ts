@@ -7,7 +7,7 @@ export const useIsAdmin = (enabled = true): "loading" | "yes" | "no" => {
   const { user } = useApp();
   const q = useQuery({
     // Keyed by account so a different sign-in never sees the previous answer.
-    queryKey: ["is_admin", user?.id ?? null],
+    queryKey: ["is_admin", user?.email ?? null],
     enabled,
     retry: false,
     staleTime: 5 * 60_000,

@@ -106,7 +106,7 @@ export const ClientInviteManager = () => {
     if (error) {
       toast.error(t("invite_delete_error"));
     } else {
-      setInvites((prev) => prev.filter((i) => i.id !== inviteToDelete.id));
+      qc.setQueryData<Invite[]>(["invitations"], (prev) => (prev ?? []).filter((i) => i.id !== inviteToDelete.id));
       toast.success(t("acc_deleted"));
     }
     setDeleting(false);
