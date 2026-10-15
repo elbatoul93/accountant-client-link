@@ -428,7 +428,7 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
                 <div className="rounded-md border border-gold/50 bg-gold/10 px-3 py-2 text-xs text-gold-deep flex items-center gap-2">
                   <ArrowUpFromLine className="h-3.5 w-3.5" />
                   {t("tax_g50_precompte_out")}: <span className="font-mono font-bold">{fmtDZD(g50.tva.precompteToNext)}</span>
-                  <span className="opacity-70">→ {nextPeriod(period)}</span>
+                  <span className="opacity-70"><span className="inline-block rtl:rotate-180">→</span> {nextPeriod(period)}</span>
                 </div>
               )}
 

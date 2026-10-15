@@ -61,7 +61,7 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <SiteHeader />
-      <main className="container max-w-4xl py-8 space-y-4">
+      <main className="container max-w-4xl py-8 space-y-4" dir="ltr" lang="en">
         <Tabs defaultValue="accounts">
           <TabsList>
             <TabsTrigger value="accounts">Accounts</TabsTrigger>

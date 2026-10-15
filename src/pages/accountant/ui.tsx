@@ -71,6 +71,6 @@ export const ToolCard = ({ icon: Icon, title, subtitle, cta, onClick, disabled }
     </div>
     <div className="font-semibold text-sm text-foreground mb-1">{title}</div>
     <div className="text-xs text-muted-foreground mb-3">{subtitle}</div>
-    <div className="text-xs font-semibold text-gold-deep">{cta} →</div>
+    <div className="text-xs font-semibold text-gold-deep">{cta} <span className="inline-block rtl:rotate-180">→</span></div>
   </button>
 );
