@@ -1,4 +1,4 @@
--- Retention (SEC-16), the files. 233000 and 244000 stop users deleting the rows of signed documents and delivered G50s;
+-- Retention (SEC-16), the files (renamed from 20261014245000 before it was ever applied). 233000 and 244000 stop users deleting the rows of signed documents and delivered G50s;
 -- this stops them deleting the stored files those rows point at. Restrictive DELETE policy only: uploads and updates are
 -- untouched, drafts and unsigned files delete as before, and the service role (account erasure, support) bypasses RLS.
 CREATE OR REPLACE FUNCTION public.storage_object_is_retained(_bucket text, _name text)
