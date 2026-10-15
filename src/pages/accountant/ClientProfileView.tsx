@@ -55,8 +55,8 @@ export const ClientProfileView = ({
             </div>
             {client.company && <p className="text-sm text-muted-foreground">{client.company}</p>}
             <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
-              {client.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {client.email}</span>}
-              {client.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {client.phone}</span>}
+              {client.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> <bdi dir="ltr">{client.email}</bdi></span>}
+              {client.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> <bdi dir="ltr">{client.phone}</bdi></span>}
               {client.address && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {client.address}</span>}
             </div>
           </div>

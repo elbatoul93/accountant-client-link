@@ -184,7 +184,7 @@ export const ClientFilesSection = ({ clientId, clientEmail, clientName, t }: Pro
                   {f.mime_type && (
                     <Badge variant="outline" className="text-[10px] font-mono">{f.mime_type}</Badge>
                   )}
-                  {typeof f.size === "number" && <span>{(f.size / 1024).toFixed(1)} KB</span>}
+                  {typeof f.size === "number" && <bdi dir="ltr">{(f.size / 1024).toFixed(1)} KB</bdi>}
                   <span>• {fmt.date(f.created_at)}</span>
                 </div>
               </div>

@@ -133,7 +133,7 @@ export const ClientDocumentsSection = ({
                   <Badge variant="outline" className="text-[10px] font-mono">
                     {fileTypeLabel(d.mime_type, d.file_name)}
                   </Badge>
-                  <span>{formatSize(d.size)}</span>
+                  <bdi dir="ltr">{formatSize(d.size)}</bdi>
                   <span>•</span>
                   <span>{formatDate(d.created_at, lang)}</span>
                 </div>

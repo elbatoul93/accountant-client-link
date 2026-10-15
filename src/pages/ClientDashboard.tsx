@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useDropzone } from "react-dropzone";
-import { formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { useApp } from "@/contexts/AppContext";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Card } from "@/components/ui/card";
@@ -113,7 +113,7 @@ const ClientDashboard = () => {
           file_path: d.file_path,
           name: d.file_name,
           size: typeof d.size === "number" ? `${(d.size / 1024).toFixed(0)} KB` : "—",
-          date: new Date(d.created_at).toLocaleDateString(),
+          date: formatDate(d.created_at, lang),
           status: "pending" as const,
         })),
       );
@@ -246,7 +246,7 @@ const ClientDashboard = () => {
         file_path: inserted?.file_path ?? path,
         name: pendingFile.name,
         size: `${(pendingFile.size / 1024).toFixed(0)} KB`,
-        date: new Date().toLocaleDateString(),
+        date: formatDate(new Date(), lang),
         status: "pending",
       }, ...prev]);
 
@@ -501,7 +501,7 @@ const ClientDashboard = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm text-foreground truncate">{d.name}</div>
-                            <div className="text-xs text-muted-foreground">{d.size} • {d.date}</div>
+                            <div className="text-xs text-muted-foreground"><bdi dir="ltr">{d.size}</bdi> • {d.date}</div>
                           </div>
                           <Badge className="bg-warning/15 text-warning-foreground border-warning/40 hover:bg-warning/20">
                             <Clock className="h-3 w-3 me-1" /> {t("dash_status_pending")}

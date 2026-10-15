@@ -132,7 +132,7 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
                 <div className="text-[11px] text-muted-foreground flex flex-wrap gap-1.5 items-center mt-1">
                   <span className="truncate max-w-[180px]">{r.file_name}</span>
                   {r.mime_type && <Badge variant="outline" className="text-[10px] font-mono">{r.mime_type}</Badge>}
-                  {typeof r.size === "number" && <span>{(r.size / 1024).toFixed(1)} KB</span>}
+                  {typeof r.size === "number" && <bdi dir="ltr">{(r.size / 1024).toFixed(1)} KB</bdi>}
                   <span>• {fmt.dateTime(r.created_at)}</span>
                 </div>
               </div>
