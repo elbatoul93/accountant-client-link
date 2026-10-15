@@ -17,7 +17,7 @@ CI, releases and database deploys are described in [docs/DELIVERY.md](docs/DELIV
 
 ## Database
 Schema lives in `supabase/migrations`. Apply with `supabase link --project-ref <ref> && supabase db push`.
-Edge function `g50-pdf` needs the `CLOUDCONVERT_API_KEY` secret: `supabase functions deploy g50-pdf`.
+Edge function `g50-pdf` needs no secret and no third-party service: it draws the values onto a copy of the official G50 form kept in `supabase/functions/g50-pdf/assets` (regenerate with `node scripts/g50-overlay/build.mjs` after changing `public/templates/G50_template.xlsx`). Deploy: `supabase functions deploy g50-pdf`.
 
 ## Roles
 Accountants self-register; clients can only sign up through an accountant's invite link. The role and accountant link

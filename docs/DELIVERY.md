@@ -4,7 +4,7 @@
 - Frontend: Cloudflare Pages, project `accountant-client-link`. Every merge to `main` deploys; every PR gets a preview.
 - Backend: Supabase project `kjdokftgjldqriwyeuox` (Postgres + RLS, auth, storage, edge function `g50-pdf`).
 - Frontend env vars (set in Cloudflare Pages, Production and Preview): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`. Both are public values. Never put the `service_role` key in the frontend or in Cloudflare build variables.
-- Edge function secret: `CLOUDCONVERT_API_KEY` (`supabase secrets set CLOUDCONVERT_API_KEY=...`).
+- Edge functions need no extra secrets (`g50-pdf` draws onto the bundled official form; see `supabase/functions/g50-pdf/assets/README.md`).
 
 ## Checks
 The `Verify production deploy` workflow runs after every push to `main`: it waits for the Cloudflare Pages check on that commit and checks that the live site serves the CSP and HSTS headers. A red run means production did not update. Production is **https://managementik.com**, a custom domain on the same Cloudflare Pages project as `accountant-client-link.pages.dev` (Cloudflare's built-in address for the project; both serve the same build and use the same Supabase project). The workflow checks pages.dev first, then renders https://managementik.com/login in headless Chromium and fails on a blank page, a console error or a script served as HTML. It also reports (without failing) when managementik.com and pages.dev serve different builds; the two can lag each other.

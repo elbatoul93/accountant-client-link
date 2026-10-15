@@ -7,6 +7,7 @@ describe("g50-pdf fallback", () => {
     expect(isG50PdfUnavailable(new G50PdfError("x", "provider_unavailable", true))).toBe(true);
     expect(isG50PdfUnavailable(new G50PdfError("x", "rate_limited", true))).toBe(true);
     expect(isG50PdfUnavailable(new G50PdfError("x", "not_configured", false))).toBe(true);
+    expect(isG50PdfUnavailable(new G50PdfError("x", "render_failed", true))).toBe(true);
   });
   it("falls back for the legacy function (no code)", () => {
     expect(isG50PdfUnavailable(new G50PdfError("old error"))).toBe(true);
