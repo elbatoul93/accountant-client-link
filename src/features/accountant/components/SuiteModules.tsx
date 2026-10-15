@@ -690,7 +690,7 @@ export const JournalView = ({
                     <td className="py-3 font-mono text-xs font-bold text-primary">{j.account}</td>
                     <td className="py-3 text-xs">{j.label}</td>
                     <td className="py-3 hidden sm:table-cell">
-                      <Badge variant="outline" className="text-[9px] capitalize">{j.source}</Badge>
+                      <Badge variant="outline" className="text-[9px]">{t(`eng_src_${j.source}`)}</Badge>
                     </td>
                     <td className="py-3 text-end font-mono text-xs">{j.debit ? fmtDZD(j.debit) : "—"}</td>
                     <td className="py-3 text-end font-mono text-xs">{j.credit ? fmtDZD(j.credit) : "—"}</td>

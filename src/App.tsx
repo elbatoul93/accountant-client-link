@@ -1,9 +1,11 @@
+import type { ReactNode } from "react";
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AppProvider } from "@/contexts/AppContext";
+import { DirectionProvider } from "@radix-ui/react-direction";
+import { AppProvider, useApp } from "@/contexts/AppContext";
 import Index from "./features/landing/Index.tsx";
 import Login from "./features/auth/Login.tsx";
 import Signup from "./features/auth/Signup.tsx";
@@ -33,9 +35,16 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
 });
 
+/** Radix defaults to left-to-right: tabs, menus and selects need the page direction for layout and arrow keys. */
+const RadixDirection = ({ children }: { children: ReactNode }) => {
+  const { dir } = useApp();
+  return <DirectionProvider dir={dir}>{children}</DirectionProvider>;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AppProvider>
+      <RadixDirection>
       <TooltipProvider>
         <Sonner />
         <BrowserRouter>
@@ -62,6 +71,7 @@ const App = () => (
           </ErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>
+      </RadixDirection>
     </AppProvider>
   </QueryClientProvider>
 );
