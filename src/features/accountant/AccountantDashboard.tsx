@@ -7,6 +7,7 @@ import { useApp } from "@/contexts/AppContext";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { removeClientsWithRecords } from "@/features/accountant/lib/exampleData";
 import { OnboardingChecklist, buildSampleData, isDemoClient } from "@/features/accountant/components/Onboarding";
 import { SubscriptionBanner } from "@/features/billing/SubscriptionBanner";
 import { SiteHeader } from "@/components/layout/SiteHeader";
@@ -275,6 +276,36 @@ const AccountantDashboard = () => {
   };
   const userIdOf = (clientId: string): string => linkedFor(clientId)?.id ?? clientId;
   userIdOfRef.current = userIdOf;
+
+  // Example clients (current and older ids) go out through the database child-first, because deleting a client
+  // that still has records is refused; the screen is updated only once that worked.
+  const removeExampleData = async (only?: string) => {
+    const accId = accIdRef.current;
+    const refs = clients.filter((c) => (only ? c.id === only : isDemoClient(c.id))).map((c) => c.id);
+    if (!accId || !refs.length) return;
+    try {
+      await removeClientsWithRecords(accId, refs);
+    } catch (e) {
+      console.error("[remove example data]", e);
+      toast.error(t("i18n_error_generic"));
+      return;
+    }
+    const gone = (id?: string) => !!id && refs.includes(id);
+    setInvoices((p) => p.filter((x) => !gone(x.clientId)));
+    setDecls((p) => p.filter((x) => !gone(x.clientId)));
+    setFsList((p) => p.filter((x) => !gone(x.clientId)));
+    setSharedDocs((p) => p.filter((x) => !gone(x.clientId)));
+    setLegalDocs((p) => p.filter((x) => !gone(x.clientId)));
+    // The database removed these through the cascade; drop them from the open screens too.
+    setEmployees((p) => p.filter((x) => !gone(x.clientId)));
+    setBills((p) => p.filter((x) => !gone(x.clientId)));
+    setJournal((p) => p.filter((x) => !gone(x.clientId)));
+    setLocks((p) => p.filter((x) => !gone(x.clientId)));
+    setPrecompte((p) => Object.fromEntries(Object.entries(p).filter(([k]) => !refs.some((r) => k.startsWith(`${r}__`)))));
+    setClients((p) => p.filter((x) => !gone(x.id)));
+    toast.success(t("acc_deleted"));
+  };
+
   const refOfUser = (userId: string): string => {
     if (clients.some((c) => c.id === userId)) return userId;
     const d = dbLinkedClients.find((x) => x.id === userId);
@@ -335,13 +366,14 @@ const AccountantDashboard = () => {
       const accId = data.user?.id;
       if (!accId || cancelled) return;
       accIdRef.current = accId;
-      await migrateLocalToDb(accId);
       try {
-        // One-time upload of this browser's old local data (clients, employees, bills, journal, assets)
+        // One-time upload of this browser's old local data (clients, employees, bills, journal, assets).
+        // Clients go first: invoices and the other documents reference them.
         await importLocalBusinessData(accId);
       } catch (e) {
         console.error("[import local data]", e);
       }
+      await migrateLocalToDb(accId);
       const [inv, dec, fs, sh, lg, cl] = await Promise.all([
         loadInvoices(accId), loadDecls(accId), loadFsList(accId),
         loadSharedDocs(accId), loadLegalDocs(accId),
@@ -736,7 +768,7 @@ const AccountantDashboard = () => {
 
           {/* Main */}
           <main className="space-y-6 min-w-0">
-            {view === "dashboard" && (
+            {view === "dashboard" && clientsReady && (
               <OnboardingChecklist
                 t={t} clients={clients} invoices={invoices} decls={decls}
                 hasProfile={!!(user?.name && user?.company)}
@@ -749,13 +781,7 @@ const AccountantDashboard = () => {
                   setClients((p) => (p.some((c) => c.id === client.id) ? p : [...p, client]));
                   setInvoices((p) => [...p, invoice]);
                 }}
-                onRemoveSample={() => {
-                  setInvoices((p) => p.filter((x) => !isDemoClient(x.clientId)));
-                  setDecls((p) => p.filter((x) => !isDemoClient(x.clientId)));
-                  setSharedDocs((p) => p.filter((x) => !isDemoClient(x.clientId)));
-                  setLegalDocs((p) => p.filter((x) => !isDemoClient(x.clientId)));
-                  setClients((p) => p.filter((x) => !isDemoClient(x.id)));
-                }}
+                onRemoveSample={() => removeExampleData()}
               />
             )}
             {view === "dashboard" && (
@@ -834,7 +860,9 @@ const AccountantDashboard = () => {
                   }}
                   onDelete={(id) => {
                     // The database refuses to delete a client that still has records, so say so up front.
+                    if (isDemoClient(id)) { askDelete(() => removeExampleData(id)); return; }
                     const hasRecords = invoices.some((x) => x.clientId === id) || decls.some((x) => x.clientId === id)
+                      || fsList.some((x) => x.clientId === id)
                       || legalDocs.some((x) => x.clientId === id) || sharedDocs.some((x) => x.clientId === id);
                     if (hasRecords) { toast.error(t("acc_delete_has_records")); return; }
                     askDelete(() => {
@@ -1091,6 +1119,8 @@ const AccountantDashboard = () => {
       <G50GeneratorDialog
         open={openTool === "g50"} onOpenChange={(o) => { if (!o) { setOpenTool(null); setEditG50(null); } }}
         clients={g50Clients} t={t}
+        // A G50 is stored against the portal account, so only clients that already have one can get it.
+        isLinked={(cid) => dbLinkedClients.some((d) => d.id === cid)}
         editing={editG50}
         getAggregates={(cid) => aggregateForG50(refOfUser(cid), bills, employees)}
         getLiveG50={(cid, period) => computeG50FromJournal(journal, {

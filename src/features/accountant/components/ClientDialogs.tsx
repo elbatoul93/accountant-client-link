@@ -360,13 +360,19 @@ export const AddInvoiceDialog = ({ clients, onAdd, t }: { clients: Client[]; onA
   const submit = () => {
     const c = clients.find((x) => x.id === clientId);
     if (!c || !amount) { toast.error(t("acc_client_amount_required")); return; }
-    onAdd({
-      id: crypto.randomUUID(),
-      clientId: c.id, clientName: c.name,
-      amount: Number(amount),
-      date: todayIso(),
-      status: "pending",
-    });
+    try {
+      onAdd({
+        id: crypto.randomUUID(),
+        clientId: c.id, clientName: c.name,
+        amount: Number(amount),
+        date: todayIso(),
+        status: "pending",
+      });
+    } catch (e) {
+      console.error("[add invoice]", e);
+      toast.error(t("i18n_error_generic"));
+      return; // keep the form so nothing has to be retyped
+    }
     toast.success(t("acc_invoice_added"));
     setClientId(""); setAmount(""); setOpen(false);
   };

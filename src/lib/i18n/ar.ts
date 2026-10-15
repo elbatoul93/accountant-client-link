@@ -431,6 +431,7 @@ export const ar: typeof en = {
   toast_reminders_sent_other: "تم إرسال {n} تذكير إلى زبائن لم يودعوا وثائق هذا الشهر.",
   toast_pdf_unavailable_xlsx: "خدمة PDF غير متاحة: تم تنزيل ملف Excel بدلًا منه.",
   toast_g50_not_saved: "تم تنزيل ملف G50 لكن الإقرار لم يُحفظ. أنشئه من جديد قبل إرساله.",
+  toast_g50_client_not_linked: "لم يقبل هذا الزبون الدعوة بعد. اطلب منه قبولها أولاً ثم أنشئ تصريح G50.",
   // Fiscal Calendar
   fcal_title: "الرزنامة الجبائية",
   fcal_subtitle: "الاستحقاقات الجبائية والاجتماعية الجزائرية القادمة",

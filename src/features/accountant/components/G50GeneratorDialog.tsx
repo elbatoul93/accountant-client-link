@@ -14,8 +14,10 @@ import { todayIso } from "@/lib/isoDate";
 import { Client, Decl, SharedDoc, fmtDZD } from "@/features/accountant/components/shared";
 
 export const G50GeneratorDialog = ({
-  open, onOpenChange, clients, t, onGenerate, getAggregates, getLiveG50, editing,
+  open, onOpenChange, clients, t, onGenerate, getAggregates, getLiveG50, editing, isLinked,
 }: { open: boolean; onOpenChange: (o: boolean) => void; clients: Client[]; t: (k: string) => string;
+     /** True when the client has accepted the invite (has a portal account). A G50 is stored against that account. */
+     isLinked?: (clientId: string) => boolean;
      editing?: { id: string; formData: any } | null;
      onGenerate: (
        d: Decl,
@@ -101,6 +103,7 @@ export const G50GeneratorDialog = ({
   const submit = async () => {
     const c = clients.find((x) => x.id === clientId);
     if (!c || !period || total <= 0) { toast.error(t("i18n_required_fields")); return; }
+    if (!editing?.id && isLinked && !isLinked(c.id)) { toast.error(t("toast_g50_client_not_linked")); return; }
     const declId = crypto.randomUUID();
     const [yyyy, mm] = period.split("-");
     const ext = format === "pdf" ? "pdf" : "xlsx";
