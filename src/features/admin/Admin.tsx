@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
+import { DirectionProvider } from "@radix-ui/react-direction";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/features/admin/useIsAdmin";
 import { SiteHeader } from "@/components/layout/SiteHeader";
@@ -62,6 +63,8 @@ const Admin = () => {
     <div className="min-h-screen bg-gradient-subtle">
       <SiteHeader />
       <main className="container max-w-4xl py-8 space-y-4" dir="ltr" lang="en">
+        {/* The app-wide provider follows the UI language; this page is English only, so tabs stay left-to-right. */}
+        <DirectionProvider dir="ltr">
         <Tabs defaultValue="accounts">
           <TabsList>
             <TabsTrigger value="accounts">Accounts</TabsTrigger>
@@ -107,6 +110,7 @@ const Admin = () => {
           <TabsContent value="funnel"><AdminFunnel /></TabsContent>
           <TabsContent value="alerts"><AdminAlerts onChange={alerts.refresh} /></TabsContent>
         </Tabs>
+        </DirectionProvider>
       </main>
     </div>
   );
