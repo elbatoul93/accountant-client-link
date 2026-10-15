@@ -1,0 +1,134 @@
+import { test, expect, type Page } from "@playwright/test";
+import { FakeSupabase } from "./fakeSupabase";
+
+let backend: FakeSupabase;
+
+test.beforeEach(async ({ page }) => {
+  backend = new FakeSupabase();
+  await backend.install(page);
+  await page.addInitScript(() => localStorage.setItem("mgmtk_lang", "en"));
+  backend.seed({ email: "amel@example.com", password: "right-password-1", role: "accountant", name: "Amel Accountant" });
+});
+
+async function signIn(page: Page, email: string) {
+  await page.goto("/login");
+  await page.fill("#email", email);
+  await page.fill("#password", "right-password-1");
+  await page.getByRole("button", { name: /sign ?in|log ?in/i }).click();
+  await expect(page).toHaveURL(/\/dashboard\//);
+}
+
+async function addClient(page: Page, name: string, nif: string, email?: string) {
+  await page.getByRole("button", { name: /add new client/i }).first().click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByPlaceholder("Amira Benali").fill(name);
+  await dialog.getByRole("combobox").first().click();
+  await page.getByRole("option", { name: /^SARL/ }).first().click();
+  await dialog.getByPlaceholder("000016001234567").fill(nif);
+  await dialog.getByRole("combobox").nth(1).click();
+  await page.getByRole("option").first().click();
+  if (email) await dialog.locator('input[type="email"]').fill(email);
+  await dialog.getByRole("button", { name: /^save$/i }).click();
+  await expect(dialog).toBeHidden();
+}
+
+test("accountant adds a client and an invoice, and both are saved to the database", async ({ page }) => {
+  await signIn(page, "amel@example.com");
+  await addClient(page, "Benali Trading", "000016001234567");
+  await expect.poll(() => backend.rows("acc_clients").map((r) => r.name)).toEqual(["Benali Trading"]);
+  expect(backend.rows("acc_clients")[0]).toMatchObject({ tax_id: "000016001234567", tax_regime: expect.any(String) });
+
+  await page.getByRole("button", { name: /^invoices/i }).first().click();
+  await page.getByRole("button", { name: /add invoice/i }).first().click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("combobox").click();
+  await page.getByRole("option", { name: "Benali Trading" }).click();
+  await dialog.locator('input[type="number"]').fill("120000");
+  await dialog.getByRole("button", { name: /^save$/i }).click();
+  await expect(dialog).toBeHidden();
+  await expect.poll(() => backend.rows("acc_invoices").map((r) => Number(r.amount))).toEqual([120000]);
+  await expect(page.getByText(/120[\s\u202f,.]?000/).first()).toBeVisible();
+});
+
+test("accountant adds an employee, runs payroll, and the payslip is stored with the right amounts", async ({ page }) => {
+  await signIn(page, "amel@example.com");
+  await page.getByRole("button", { name: /^payroll/i }).first().click();
+  await page.getByRole("button", { name: /add employee/i }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByPlaceholder("123456789012").fill("123456789012");
+  await dialog.locator("label", { hasText: /^Employee/ }).locator("..").locator("input").fill("Yacine Employee");
+  await dialog.getByPlaceholder("40000").fill("60000");
+  await dialog.getByRole("button", { name: /^save$/i }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByText("Yacine Employee")).toBeVisible();
+
+  await page.getByRole("button", { name: /run & post/i }).click();
+  await expect(page.getByText(/payroll posted to journal/i).first()).toBeVisible();
+  await expect.poll(() => backend.rows("acc_payslips").length).toBe(1);
+  const slip = backend.rows("acc_payslips")[0];
+  expect(slip).toMatchObject({ employee_name: "Yacine Employee", nss: "123456789012", basic: 60000, gross: 60000, ss_employee: 5400 });
+  expect(slip.net).toBeCloseTo(slip.gross - slip.ss_employee - slip.irg, 2);
+  expect(backend.rows("acc_payroll_runs")).toHaveLength(1);
+  // Posting twice replaces the first payslip instead of duplicating it.
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: /run & post/i }).click();
+  await expect.poll(() => backend.writes.filter((w) => w.table === "acc_payslips" && w.method === "POST").length).toBe(2);
+  expect(backend.rows("acc_payslips")).toHaveLength(1);
+});
+
+test("accountant generates a G50 for a linked client and sends it: stored, uploaded and shared", async ({ page }) => {
+  backend.seed({ email: "karim@example.com", password: "right-password-1", role: "client", name: "Karim Client" });
+  backend.linkClient("karim@example.com", { tax_id: "000016001234567" });
+  const karim = backend.users.find((u) => u.email === "karim@example.com")!;
+  await signIn(page, "amel@example.com");
+
+  await page.getByRole("button", { name: /^professional tools/i }).first().click();
+  await page.getByRole("button", { name: /^G50 Generator/ }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("combobox").click();
+  await page.getByRole("option", { name: "Karim Client" }).click();
+  await dialog.getByPlaceholder("1000000").fill("1000000");
+  await dialog.getByRole("button", { name: /generate.*pdf/i }).click();
+  await expect(page.getByText(/g50.*(filed|locked)/i).first()).toBeVisible();
+  expect(backend.g50PdfCalls).toHaveLength(1);
+  expect(backend.g50PdfCalls[0]).toMatchObject({ nif: "000016001234567", caHt: 1000000, companyName: "Karim Client" });
+  await expect.poll(() => backend.rows("g50_declarations").length).toBe(1);
+  const g50 = backend.rows("g50_declarations")[0];
+  expect(g50).toMatchObject({ client_id: karim.id, accountant_id: expect.any(String) });
+  expect(g50.sent).toBeFalsy();
+
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: /^obligations/i }).first().click();
+  await page.getByTitle("Send to client").click();
+  await expect(page.getByText(/g50 sent to client/i).first()).toBeVisible();
+  expect(backend.uploads.some((k) => k.includes(`shared-docs/${karim.id}/${g50.id}.pdf`))).toBe(true);
+  expect(backend.rows("shared_documents")).toHaveLength(1);
+  expect(backend.rows("shared_documents")[0]).toMatchObject({ client_id: karim.id, g50_declaration_id: g50.id });
+  expect(backend.rows("g50_declarations")[0].sent).toBe(true);
+  expect(backend.g50PdfCalls.length).toBeGreaterThan(1); // the download, then the client's copy
+});
+
+test("client reviews and signs a G50: signature saved, accountant notified", async ({ page }) => {
+  const amel = backend.users.find((u) => u.email === "amel@example.com")!;
+  backend.seed({ email: "karim@example.com", password: "right-password-1", role: "client", name: "Karim Client", linkedAccountantId: amel.id });
+  const karim = backend.users.find((u) => u.email === "karim@example.com")!;
+  backend.rows("acc_shared_documents").push({
+    id: "doc-1", accountant_id: amel.id, client_ref: karim.id, client_name: "Karim Client", client_email: "karim@example.com",
+    doc_type: "G50", label: "G50 2026-09 — 210 000 DA", doc_date: "2026-09-30", workflow: "sent", payload: JSON.stringify({ total: 210000 }),
+    created_at: "2026-09-30T10:00:00Z", signed_at: null,
+  });
+  await signIn(page, "karim@example.com");
+  await page.getByRole("tab", { name: /declarations for approval/i }).click();
+  await expect(page.getByText("G50 2026-09 — 210 000 DA")).toBeVisible();
+  await page.getByRole("button", { name: /review & sign/i }).click();
+  await page.getByRole("dialog").getByRole("button", { name: /click to sign/i }).click();
+  await expect(page.getByText(/document signed successfully/i).first()).toBeVisible();
+
+  const doc = backend.rows("acc_shared_documents")[0];
+  expect(doc.signed_by).toBe("Karim Client");
+  expect(doc.signed_at).toBeTruthy();
+  expect(String(doc.signature_data_url)).toMatch(/^data:image\/png;base64,/);
+  expect(backend.rows("notifications")).toHaveLength(1);
+  expect(backend.rows("notifications")[0]).toMatchObject({ recipient_id: amel.id, type: "doc_signed", ref_id: "doc-1" });
+  await expect(page.getByText(/digitally signed|signed/i).first()).toBeVisible();
+});

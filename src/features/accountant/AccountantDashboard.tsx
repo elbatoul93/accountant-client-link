@@ -69,7 +69,11 @@ const AccountantDashboard = () => {
       const key = `${r.client_id}|${String(r.year).padStart(4, "0")}-${String(r.month).padStart(2, "0")}`;
       map[key] = { id: r.id, sent: !!r.sent, formData: r.form_data };
     }
-    setG50Map(map);
+    // Keep a "sent" mark the app already set, so a slow refresh never un-sends a declaration.
+    setG50Map((prev) => {
+      for (const k of Object.keys(map)) if (prev[k]?.sent) map[k].sent = true;
+      return map;
+    });
   }, []);
   useEffect(() => { refreshG50Map(); }, [refreshG50Map]);
 
@@ -1117,6 +1121,8 @@ const AccountantDashboard = () => {
             setLocks((p) => lockPeriod(p, lockRef));
             void finalizePayrollRun(lockRef.clientId, lockRef.period);
           }
+          // The dialog has just saved the declaration; without this, "send" says "Generate the G50 first" until a reload.
+          void refreshG50Map();
           setOpenTool(null);
           setEditG50(null);
         }}
