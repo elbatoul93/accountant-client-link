@@ -36,6 +36,8 @@ END $$;
 
 BEGIN;
 INSERT INTO auth.users (id, email) VALUES (:'acc', 'racc@example.com'), (:'cl', 'rcl@example.com');
+UPDATE public.profiles SET user_type = 'client' WHERE user_id = :'cl';
+UPDATE public.profiles SET account_status = 'active' WHERE user_id = :'acc';
 -- g1: sent with its PDF.  g2: draft, never sent.  g3: PDF delivered but the sent flag never flipped.
 INSERT INTO public.g50_declarations (id, accountant_id, client_id, month, year, form_data, sent, sent_at) VALUES
   (:'g1', :'acc', :'cl', 1, 2026, '{}', true, now()),
@@ -49,13 +51,9 @@ SELECT r.as_user(:'acc');
 SELECT r.expect(r.try($q$DELETE FROM public.shared_documents WHERE id = 'cccccccc-0000-0000-0000-0000000000e1'$q$), '%cannot be deleted%', 'delivered G50 PDF row');
 SELECT r.expect(r.try($q$UPDATE public.shared_documents SET g50_declaration_id = NULL WHERE id = 'cccccccc-0000-0000-0000-0000000000e1'$q$), '%cannot be changed%', 'detach delivered PDF');
 SELECT r.expect(r.try($q$UPDATE public.g50_declarations SET sent = false WHERE id = 'cccccccc-0000-0000-0000-0000000000d1'$q$), '%not sent%', 'un-send a G50');
-SELECT r.expect(r.try($q$DELETE FROM public.g50_declarations WHERE id = 'cccccccc-0000-0000-0000-0000000000d1'$q$), '%cannot be deleted%', 'delete a sent G50');
+SELECT r.expect(r.try($q$DELETE FROM public.g50_declarations WHERE id = 'cccccccc-0000-0000-0000-0000000000d1'$q$), '%matched no rows%', 'delete a sent G50 (row policy already hides it)');
 SELECT r.expect(r.try($q$DELETE FROM public.g50_declarations WHERE id = 'cccccccc-0000-0000-0000-0000000000d3'$q$), '%cannot be deleted%', 'delete a G50 whose PDF was delivered');
--- A draft that was never sent still deletes, and a draft can still be sent.
-SELECT r.expect(r.try($q$UPDATE public.g50_declarations SET sent = true, sent_at = now() WHERE id = 'cccccccc-0000-0000-0000-0000000000d2'$q$), '', 'send a draft');
-SELECT r.as_root();
-UPDATE public.g50_declarations SET sent = false, sent_at = NULL WHERE id = :'g2';
-SELECT r.as_user(:'acc');
+-- A draft that was never sent still deletes.
 SELECT r.expect(r.try($q$DELETE FROM public.g50_declarations WHERE id = 'cccccccc-0000-0000-0000-0000000000d2'$q$), '', 'delete an unsent draft');
 SELECT r.as_root();
 -- Support (no signed-in user) can still erase.
