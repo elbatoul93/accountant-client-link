@@ -1,0 +1,56 @@
+name: Uptime check
+
+# Hourly check of https://managementik.com. Keeps ONE open issue labelled "uptime" while the site is down
+# (no new issue per failed run) and closes it when the site is back. About 1 minute of Actions time per run,
+# roughly 720 minutes a month, inside the free 2,000.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SITE_URL: https://managementik.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: probe
+        run: |
+          if node scripts/uptime-check.mjs "$SITE_URL" | tee probe.log; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Open or update the single uptime issue
+        if: steps.probe.outputs.ok == 'false'
+        run: |
+          gh label create uptime --color B60205 --description "Production site check failing" 2>/dev/null || true
+          existing=$(gh issue list --label uptime --state open --json number --jq '.[0].number // empty')
+          body="The hourly check of $SITE_URL failed.
+
+          \`\`\`
+          $(tail -n 8 probe.log)
+          \`\`\`
+
+          Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          if [ -z "$existing" ]; then
+            gh issue create --title "Production site check failing: $SITE_URL" --label uptime --assignee elbatoul93 --body "$body"
+          else
+            echo "Issue #$existing is already open; not opening another."
+          fi
+      - name: Close the issue when the site is back
+        if: steps.probe.outputs.ok == 'true'
+        run: |
+          for n in $(gh issue list --label uptime --state open --json number --jq '.[].number'); do
+            gh issue close "$n" --comment "The check passes again ($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)."
+          done
