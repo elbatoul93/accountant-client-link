@@ -48,8 +48,9 @@ const pick = (render, bilingual, path) => `{{- $l := "" -}}
 ${fromRedirect(path)}
 {{ if eq $l "ar" }}${render("ar")}{{ else if eq $l "fr" }}${render("fr")}{{ else if eq $l "en" }}${render("en")}{{ else }}${bilingual}{{ end }}`;
 
-const subjectFor = (c, path) =>
-  `{{- $l := "" }}{{ with .Data }}{{ with .locale }}{{ $l = printf "%v" . }}{{ end }}{{ end }}${fromRedirect(path).replace(/\n/g, "")}{{ if eq $l "fr" }}${c.fr.subject}{{ else if eq $l "en" }}${c.en.subject}{{ else if eq $l "ar" }}${c.ar.subject}{{ else }}${c.ar.subject} / ${c.fr.subject}{{ end -}}`;
+// Supabase caps the subject at 255 characters, too short for the language checks the body uses,
+// so the subject is a fixed Arabic / French line that reads right for every recipient.
+const subjectFor = (c) => `${c.ar.subject} / ${c.fr.subject}`;
 
 const files = {};
 for (const [name, c] of Object.entries(copy)) {
@@ -63,7 +64,7 @@ ${pick((l) => "\n" + block(c[l], l) + "\n", "\n" + bilingual + "\n", PATHS[name]
   </body>
 </html>
 `;
-  files[`${name}.subject.txt`] = subjectFor(c, PATHS[name]) + "\n";
+  files[`${name}.subject.txt`] = subjectFor(c) + "\n";
 }
 
 const check = process.argv.includes("--check");
