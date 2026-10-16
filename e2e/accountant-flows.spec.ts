@@ -196,7 +196,7 @@ test("client sees a filed G50 in the total due and the shared document under 'fr
   await signIn(page, "karim@example.com");
   const obligations = page.locator("div", { has: page.getByRole("heading", { name: /tax & social obligations/i }) }).last();
   await expect(obligations.getByText(/total amount due/i)).toBeVisible();
-  await expect(obligations.getByText(/264[\s ,.]?500/).first()).toBeVisible();
+  await expect(obligations.getByText(/264[\s\u202f,.]?500/).first()).toBeVisible();
   await expect(obligations.getByText(/^0\s*DA$/)).toHaveCount(0);
   const fromAcc = page.locator("div", { has: page.getByRole("heading", { name: /documents from my accountant/i }) }).last();
   await expect(fromAcc.getByText("G50 2026-10 — 264 500 DA")).toBeVisible();
