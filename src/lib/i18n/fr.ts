@@ -814,6 +814,8 @@ export const fr: typeof en = {
   auth_forgot_subtitle: "Saisissez votre e-mail, nous vous enverrons un lien pour choisir un nouveau mot de passe.",
   auth_forgot_send: "Envoyer le lien",
   auth_forgot_sent: "Si un compte existe pour cet e-mail, un lien de réinitialisation vous a été envoyé. Vérifiez votre boîte de réception et vos spams.",
+  auth_forgot_rate_limited: "Trop d'e-mails de réinitialisation ont été demandés. Patientez quelques minutes puis réessayez.",
+  auth_forgot_failed: "L'e-mail de réinitialisation n'a pas pu être envoyé. Réessayez plus tard.",
   auth_reset_title: "Choisissez un nouveau mot de passe",
   auth_reset_subtitle: "Utilisez au moins 8 caractères.",
   auth_reset_new_password: "Nouveau mot de passe",

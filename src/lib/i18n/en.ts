@@ -834,6 +834,8 @@ export const en = {
   auth_forgot_subtitle: "Enter your email and we will send you a link to choose a new password.",
   auth_forgot_send: "Send reset link",
   auth_forgot_sent: "If an account exists for this email, a reset link is on its way. Check your inbox and spam folder.",
+  auth_forgot_rate_limited: "Too many reset emails were requested. Please wait a few minutes and try again.",
+  auth_forgot_failed: "We could not send the reset email. Please try again later.",
   auth_reset_title: "Choose a new password",
   auth_reset_subtitle: "Use at least 8 characters.",
   auth_reset_new_password: "New password",

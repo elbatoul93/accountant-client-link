@@ -38,6 +38,9 @@ const fakeJwt = (u: FakeUser) =>
  */
 export class FakeSupabase {
   users: FakeUser[] = [];
+  recoverCalls: Array<{ email: string; redirectTo: string | null }> = [];
+  recoverRateLimited = false;
+  passwordUpdates: string[] = [];
   signupCalls: Array<Record<string, unknown>> = [];
   /** In-memory tables; RLS is not modelled (the database job covers it). */
   tables: Record<string, Row[]> = {};
@@ -140,6 +143,13 @@ export class FakeSupabase {
     };
   }
 
+  /** The URL hash Supabase puts on the link in a password-recovery email. */
+  recoveryHash(email: string) {
+    const u = this.users.find((x) => x.email === email)!;
+    const s = this.session(u);
+    return `#access_token=${s.access_token}&expires_in=3600&refresh_token=${s.refresh_token}&token_type=bearer&type=recovery`;
+  }
+
   private session(u: FakeUser) {
     return {
       access_token: fakeJwt(u),
@@ -211,9 +221,22 @@ export class FakeSupabase {
         }
         return json(200, this.session(u));
       }
-      if (url.pathname === "/auth/v1/user") {
+      if (url.pathname === "/auth/v1/user" && req.method() === "GET") {
         const u = this.userFromRequest(route);
         return u ? json(200, this.authUser(u)) : json(401, { code: 401, msg: "invalid JWT" });
+      }
+      if (url.pathname === "/auth/v1/recover") {
+        const body = req.postDataJSON() as { email: string };
+        this.recoverCalls.push({ email: body.email, redirectTo: url.searchParams.get("redirect_to") });
+        if (this.recoverRateLimited) return json(429, { code: "over_email_send_rate_limit", msg: "email rate limit exceeded" });
+        return json(200, {}); // same answer whether or not the address has an account
+      }
+      if (url.pathname === "/auth/v1/user" && req.method() === "PUT") {
+        const u = this.userFromRequest(route);
+        if (!u) return json(401, { code: 401, msg: "invalid JWT" });
+        u.password = (req.postDataJSON() as { password: string }).password;
+        this.passwordUpdates.push(u.email);
+        return json(200, this.authUser(u));
       }
       if (url.pathname === "/auth/v1/logout") return route.fulfill({ status: 204, headers: { "access-control-allow-origin": "*" } });
       if (url.pathname.startsWith("/auth/v1/")) return json(200, {});

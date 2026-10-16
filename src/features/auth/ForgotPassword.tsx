@@ -25,7 +25,7 @@ const ForgotPassword = () => {
       });
       // Same message whether or not the account exists, so the form can't be used to probe emails.
       if (err && err.status !== 400 && err.status !== 422) {
-        setError(err.message);
+        setError(t(err.status === 429 ? "auth_forgot_rate_limited" : "auth_forgot_failed"));
         return;
       }
       setSent(true);

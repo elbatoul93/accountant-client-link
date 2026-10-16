@@ -77,3 +77,47 @@ test("signed-out visitors are sent to the login page", async ({ page }) => {
   await page.goto("/dashboard/accountant");
   await expect(page).toHaveURL(/\/login$/);
 });
+
+test.describe("forgot password", () => {
+  test("login links to the request screen, which answers the same for unknown emails", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByRole("link", { name: /forgot password/i }).click();
+    await expect(page).toHaveURL(/\/forgot-password$/);
+    await page.fill("#email", "nobody@example.com");
+    await page.getByRole("button", { name: /send reset link/i }).click();
+    await expect(page.getByRole("status")).toContainText(/if an account exists/i);
+    expect(backend.recoverCalls[0]).toMatchObject({ email: "nobody@example.com" });
+    expect(backend.recoverCalls[0].redirectTo).toMatch(/\/reset-password$/);
+  });
+
+  test("an email rate limit shows a clear message", async ({ page }) => {
+    backend.recoverRateLimited = true;
+    await page.goto("/forgot-password");
+    await page.fill("#email", "karim@example.com");
+    await page.getByRole("button", { name: /send reset link/i }).click();
+    await expect(page.getByRole("alert")).toContainText(/too many reset emails/i);
+  });
+
+  test("the emailed link lets the user choose a new password and sign in with it", async ({ page }) => {
+    backend.seed({ email: "karim@example.com", password: "old-password-123", role: "client", name: "Karim Client" });
+    await page.goto(`/reset-password${backend.recoveryHash("karim@example.com")}`);
+    await page.fill("#new-password", "brand-new-pass-9");
+    await page.fill("#confirm-password", "different-pass-9");
+    await page.getByRole("button", { name: /save password/i }).click();
+    await expect(page.getByRole("alert")).toContainText(/do not match/i);
+    expect(backend.passwordUpdates).toHaveLength(0);
+
+    await page.fill("#confirm-password", "brand-new-pass-9");
+    await page.getByRole("button", { name: /save password/i }).click();
+    await expect(page).toHaveURL(/\/dashboard\/client$/);
+    expect(backend.passwordUpdates).toEqual(["karim@example.com"]);
+    expect(backend.users[0].password).toBe("brand-new-pass-9");
+  });
+
+  test("an expired or invalid link says so and offers a new one", async ({ page }) => {
+    await page.goto("/reset-password#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired");
+    await expect(page.getByRole("alert")).toContainText(/invalid or has expired/i);
+    await page.getByRole("link", { name: /send reset link/i }).click();
+    await expect(page).toHaveURL(/\/forgot-password$/);
+  });
+});
