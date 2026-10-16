@@ -73,7 +73,7 @@ export const AssetsView = ({ t, clients }: { t: (k: string) => string; clients: 
           </h2>
           <p className="text-xs text-muted-foreground">{t("assets_subtitle")}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="font-mono text-xs">
             {t("assets_year")} {year}: {fmtDZD(dotationYear)}
           </Badge>
@@ -91,7 +91,7 @@ export const AssetsView = ({ t, clients }: { t: (k: string) => string; clients: 
       </div>
 
       {assets.length === 0 ? (
-        <div className="text-center py-10 border border-dashed border-border rounded-lg">
+        <div className="text-center px-4 py-10 border border-dashed border-border rounded-lg">
           <Inbox className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">{t("assets_empty")}</p>
         </div>

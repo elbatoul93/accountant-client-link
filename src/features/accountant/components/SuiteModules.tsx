@@ -56,7 +56,7 @@ export interface BillInvoice {
 export type JournalEntry = JournalLine;
 
 const Empty = ({ label }: { label: string }) => (
-  <div className="text-center py-10 border border-dashed border-border rounded-lg">
+  <div className="text-center px-4 py-10 border border-dashed border-border rounded-lg">
     <div className="inline-flex p-3 rounded-full bg-muted text-muted-foreground mb-3">
       <Inbox className="h-6 w-6" />
     </div>
