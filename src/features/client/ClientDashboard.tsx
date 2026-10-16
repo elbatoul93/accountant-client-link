@@ -3,6 +3,7 @@ import { useDropzone } from "react-dropzone";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { useApp } from "@/contexts/AppContext";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { PANEL_SCROLL } from "@/components/layout/panelScroll";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -390,8 +391,8 @@ const ClientDashboard = () => {
 
           {/* === UPLOAD CENTER === */}
           <TabsContent value="upload" className="mt-5">
-            <div className="grid lg:grid-cols-3 gap-5">
-              <div className="lg:col-span-2 space-y-5">
+            <div className="grid lg:grid-cols-3 gap-5 items-start">
+              <div className={`lg:col-span-2 space-y-5 ${PANEL_SCROLL}`}>
                 <Card className="p-6 shadow-card">
                   <h2 className="text-lg font-bold text-primary mb-1">{t("dash_upload_title")}</h2>
                   <p className="text-sm text-muted-foreground mb-5">{t("dash_upload_subtitle")}</p>
@@ -525,7 +526,7 @@ const ClientDashboard = () => {
                 </Card>
               </div>
 
-              <div className="space-y-5">
+              <div className={`space-y-5 ${PANEL_SCROLL}`}>
                 <Card className="p-5 shadow-card">
                   <h2 className="text-base font-bold text-primary mb-3 flex items-center gap-2">
                     <Receipt className="h-4 w-4" /> {t("cli_my_obligations")}
