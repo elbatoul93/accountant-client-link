@@ -150,6 +150,7 @@ export const en = {
   tools_revenue: "Revenue",
   tools_net_result: "Net result",
   tools_save_fs: "Save statements",
+  fs_title: "Financial statements",
   tools_g50_period: "Period (month)",
   tools_g50_tap: "TAP (2%)",
   tools_g50_irg: "IRG salaries",

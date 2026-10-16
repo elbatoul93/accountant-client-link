@@ -22,21 +22,24 @@ import { DocChecklist } from "@/components/common/DocChecklist";
 import { DocPreviewDialog } from "@/features/client/components/DocPreviewDialog";
 import { WorkflowBadge } from "@/components/common/WorkflowStatus";
 import { FiscalCalendar } from "@/components/common/FiscalCalendar";
-import { loadSharedDocsForClient, signSharedDocDb, loadInvoices, loadDecls } from "@/features/accountant/lib/accountantStore";
+import { type FinStmt, loadFsForClient, loadSharedDocsForClient, signSharedDocDb, loadInvoices, loadDecls } from "@/features/accountant/lib/accountantStore";
 import { loadClients, loadEmployees } from "@/features/accountant/lib/businessStore";
 import { loadDocuments, myAccountantId, sendNotification } from "@/lib/portalStore";
 import { sortVault, vaultFromInvoiceDocs, vaultFromShared, type VaultEntry } from "@/lib/vault";
 import { todayIso } from "@/lib/isoDate";
+import { printFinStmt } from "@/lib/finStmtPrint";
 import { Decl, DeclType, Doc, Invoice, MAX_UPLOAD_BYTES, REGIME_DECLS, SharedDoc, TaxRegime, fmtDZD, regimeShort, safeParse } from "@/features/client/components/shared";
 import { SignDialog } from "@/features/client/components/SignAndVault";
 
 const ClientDashboard = () => {
-  const { t, user, lang } = useApp();
+  const { t, user, lang, dir } = useApp();
   const [docs, setDocs] = useState<Doc[]>([]);
   const [tick, setTick] = useState(0);
   const [signing, setSigning] = useState<SharedDoc | null>(null);
   const [previewDoc, setPreviewDoc] = useState<SharedDoc | null>(null);
   const [dbSharedDocs, setDbSharedDocs] = useState<SharedDoc[]>([]);
+  const [myStatements, setMyStatements] = useState<FinStmt[]>([]);
+  useEffect(() => { loadFsForClient().then(setMyStatements).catch(() => {}); }, []);
   const [accountantPdfs, setAccountantPdfs] = useState<{ id: string; title: string; file_path: string; created_at: string }[]>([]);
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
 
@@ -586,6 +589,26 @@ const ClientDashboard = () => {
                     </div>
                   )}
                 </Card>
+
+                {myStatements.length > 0 && (
+                  <Card className="p-5 shadow-card">
+                    <h2 className="text-base font-bold text-primary mb-3 flex items-center gap-2">
+                      <FileText className="h-4 w-4" /> {t("fs_title")}
+                    </h2>
+                    <div className="space-y-1.5">
+                      {myStatements.map((x) => (
+                        <div key={x.id} className="flex items-center justify-between gap-2 p-2 rounded border border-border/60 text-xs">
+                          <div className="min-w-0">
+                            <span className="font-semibold">{x.year}</span>
+                            <span className="text-muted-foreground"> · {t("tools_revenue")} {fmtDZD(x.revenue)} · {t("tools_net_result")} {fmtDZD(x.netResult)}</span>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" aria-label={t("liasse_print")} title={t("liasse_print")}
+                            onClick={() => printFinStmt(x, t, dir, fmtDZD)}><Download className="h-3.5 w-3.5" /></Button>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
               </div>
             </div>
           </TabsContent>

@@ -252,3 +252,52 @@ test("on a short desktop screen the accountant sidebar scrolls on its own, witho
   expect(await aside.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
   expect(await page.evaluate(() => window.scrollY)).toBe(0);
 });
+
+test("the 'Extract obligations' tool lets the accountant pick the client instead of always opening the first one", async ({ page }) => {
+  await signIn(page, "amel@example.com");
+  await addClient(page, "Benali Trading", "000016001234567");
+  await addClient(page, "Zerrouki Freres", "000016007654321");
+  await page.getByRole("button", { name: /^professional tools/i }).first().click();
+  await page.getByRole("button", { name: /extract obligations/i }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("heading")).toContainText(/Zerrouki Freres/);
+  await dialog.getByRole("combobox").click();
+  await page.getByRole("option", { name: "Benali Trading" }).click();
+  await expect(dialog.getByRole("heading")).toContainText(/Benali Trading/);
+});
+
+test("saved financial statements can be reopened and edited by the accountant", async ({ page }) => {
+  await signIn(page, "amel@example.com");
+  await addClient(page, "Benali Trading", "000016001234567");
+  await page.getByRole("button", { name: /^professional tools/i }).first().click();
+  await page.getByRole("button", { name: /financial statements builder|^open$/i }).first().click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("combobox").click();
+  await page.getByRole("option", { name: "Benali Trading" }).click();
+  await dialog.locator('input[type="number"]').first().fill("1000000");
+  await dialog.getByRole("button", { name: /save statements/i }).click();
+  await expect.poll(() => backend.rows("acc_financial_statements").map((r) => Number(r.assets))).toEqual([1000000]);
+  await expect(dialog.getByText(/1[\s\u202f,.]?000[\s\u202f,.]?000/).first()).toBeVisible();
+  await dialog.getByRole("button", { name: /^edit$/i }).click();
+  await dialog.locator('input[type="number"]').first().fill("2000000");
+  await dialog.getByRole("button", { name: /save statements/i }).click();
+  await expect.poll(() => backend.rows("acc_financial_statements").map((r) => Number(r.assets))).toEqual([2000000]);
+  expect(backend.rows("acc_financial_statements")).toHaveLength(1);
+});
+
+test("the client sees the saved financial statements of their accountant", async ({ page }) => {
+  const amel = backend.users.find((u) => u.email === "amel@example.com")!;
+  backend.seed({ email: "karim@example.com", password: "right-password-1", role: "client", name: "Karim Client", linkedAccountantId: amel.id });
+  const karim = backend.users.find((u) => u.email === "karim@example.com")!;
+  backend.rows("acc_clients").push({
+    id: "c-1", accountant_id: amel.id, client_ref: karim.id, name: "Karim Client", tax_regime: "REEL", status: "active", data: {},
+  });
+  backend.rows("acc_financial_statements").push({
+    id: "fs-1", accountant_id: amel.id, client_ref: karim.id, client_name: "Karim Client", fiscal_year: "2025",
+    assets: 5000000, liabilities: 1000000, equity: 4000000, revenue: 7500000, net_result: 640000, created_at: "2026-10-01T10:00:00Z",
+  });
+  await signIn(page, "karim@example.com");
+  const card = page.locator("div", { has: page.getByRole("heading", { name: /^financial statements$/i }) }).last();
+  await expect(card.getByText("2025")).toBeVisible();
+  await expect(card.getByText(/640[\s\u202f,.]?000/).first()).toBeVisible();
+});

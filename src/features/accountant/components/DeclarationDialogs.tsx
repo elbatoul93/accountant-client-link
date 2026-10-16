@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Client, Decl, FinStmt, SharedDoc, fmtDZD } from "@/features/accountant/components/shared";
 import { todayIso } from "@/lib/isoDate";
 import { EmptyState } from "@/features/accountant/components/ui";
+import { printFinStmt } from "@/lib/finStmtPrint";
 
 export const AddDeclarationDialog = ({
   clients, type, onAdd, t, social,
@@ -167,8 +168,11 @@ export const DeclList = ({ items, onDelete, t, showType, onSend, sharedDocs, onR
 };
 
 export const FinancialStatementsDialog = ({
-  open, onOpenChange, clients, t, onSave,
-}: { open: boolean; onOpenChange: (o: boolean) => void; clients: Client[]; t: (k: string) => string; onSave: (fs: FinStmt) => void }) => {
+  open, onOpenChange, clients, t, onSave, fsList = [], onUpdate, onDelete, dir = "ltr",
+}: {
+  open: boolean; onOpenChange: (o: boolean) => void; clients: Client[]; t: (k: string) => string; onSave: (fs: FinStmt) => void;
+  fsList?: FinStmt[]; onUpdate?: (fs: FinStmt) => void; onDelete?: (id: string) => void; dir?: "ltr" | "rtl";
+}) => {
   const [clientId, setClientId] = useState("");
   const [year, setYear] = useState(String(new Date().getFullYear() - 1));
   const [assets, setAssets] = useState("");
@@ -176,21 +180,33 @@ export const FinancialStatementsDialog = ({
   const [equity, setEquity] = useState("");
   const [revenue, setRevenue] = useState("");
   const [net, setNet] = useState("");
+  const [editing, setEditing] = useState<FinStmt | null>(null);
+  const saved = fsList.filter((x) => x.clientId === clientId).sort((p, q) => q.year.localeCompare(p.year));
+  const reset = () => { setEditing(null); setAssets(""); setLiab(""); setEquity(""); setRevenue(""); setNet(""); };
+  const startEdit = (x: FinStmt) => {
+    setEditing(x); setYear(x.year); setAssets(String(x.assets)); setLiab(String(x.liabilities));
+    setEquity(String(x.equity)); setRevenue(String(x.revenue)); setNet(String(x.netResult));
+  };
   const submit = () => {
     const c = clients.find((x) => x.id === clientId);
     if (!c || !year || !assets) { toast.error(t("i18n_required_fields")); return; }
-    onSave({
-      id: crypto.randomUUID(), clientId: c.id, clientName: c.name, year,
+    const figures = {
       assets: Number(assets), liabilities: Number(liab || 0), equity: Number(equity || 0),
       revenue: Number(revenue || 0), netResult: Number(net || 0),
-      createdAt: todayIso(),
-    });
+    };
+    // One statement per client and year: saving a year that already exists updates that row.
+    const target = editing ?? fsList.find((x) => x.clientId === c.id && x.year === year);
+    if (target && onUpdate) {
+      onUpdate({ ...target, clientName: c.name, year, ...figures });
+    } else {
+      onSave({ id: crypto.randomUUID(), clientId: c.id, clientName: c.name, year, ...figures, createdAt: todayIso() });
+    }
     toast.success(t("acc_balance_saved"));
-    setClientId(""); setAssets(""); setLiab(""); setEquity(""); setRevenue(""); setNet("");
+    reset();
   };
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); setClientId(""); } onOpenChange(o); }}>
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-gold-deep" /> {t("tools_fs_title")}
@@ -200,7 +216,7 @@ export const FinancialStatementsDialog = ({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>{t("dash_client")}</Label>
-              <Select value={clientId} onValueChange={setClientId}>
+              <Select value={clientId} onValueChange={(v) => { setClientId(v); reset(); }}>
                 <SelectTrigger><SelectValue placeholder={t("acc_select_client")} /></SelectTrigger>
                 <SelectContent>{clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
               </Select>
@@ -218,7 +234,31 @@ export const FinancialStatementsDialog = ({
             <div className="space-y-1.5 col-span-2"><Label>{t("tools_net_result")} (DA)</Label><Input type="number" value={net} onChange={(e) => setNet(e.target.value)} /></div>
           </div>
         </div>
-        <DialogFooter><Button onClick={submit} variant="hero">{t("tools_save_fs")}</Button></DialogFooter>
+        {saved.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="text-xs font-semibold text-muted-foreground">{t("fs_title")}</div>
+            {saved.map((x) => (
+              <div key={x.id} className="flex items-center justify-between gap-2 p-2 rounded border border-border/60 text-xs">
+                <div className="min-w-0">
+                  <span className="font-semibold">{x.year}</span>
+                  <span className="text-muted-foreground"> · {t("tools_assets")} {fmtDZD(x.assets)} · {t("tools_net_result")} {fmtDZD(x.netResult)}</span>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t("liasse_print")} title={t("liasse_print")}
+                    onClick={() => printFinStmt(x, t, dir, fmtDZD)}><Download className="h-3.5 w-3.5" /></Button>
+                  {onUpdate && <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t("acc_edit")} title={t("acc_edit")}
+                    onClick={() => startEdit(x)}><Pencil className="h-3.5 w-3.5" /></Button>}
+                  {onDelete && <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t("common_delete")} title={t("common_delete")}
+                    onClick={() => { if (editing?.id === x.id) reset(); onDelete(x.id); }}><Trash2 className="h-3.5 w-3.5 text-muted-foreground" /></Button>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <DialogFooter>
+          {editing && <Button variant="outline" onClick={reset}>{t("common_cancel")}</Button>}
+          <Button onClick={submit} variant="hero">{t("tools_save_fs")}</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
