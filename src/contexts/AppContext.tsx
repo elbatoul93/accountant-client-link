@@ -79,6 +79,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const activeUid = useRef<string | null>(null);
   // Uid whose profile (the trusted source of the role) has been loaded.
   const profileUid = useRef<string | null>(null);
+  // True once a signed-in user picks a language in the switcher; that choice beats the saved account language.
+  // A switch before signing in (login page) does not count: the account's saved language wins on sign-in.
+  const langChosen = useRef(false);
+  // Uid whose saved language (user_metadata.locale) has already been applied on this device.
+  const localeUid = useRef<string | null>(null);
 
   const dir: "ltr" | "rtl" = lang === "ar" ? "rtl" : "ltr";
 
@@ -93,11 +98,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (!session?.user) {
       activeUid.current = null;
       profileUid.current = null;
+      // The next account to sign in on this page gets its own saved language.
+      localeUid.current = null;
+      langChosen.current = false;
       setUser(null);
       setLoading(false);
       return;
     }
     activeUid.current = session.user.id;
+    // The language saved on the account follows the user to a new device or a cleared browser,
+    // unless they already picked one on this visit (the sync effect below then saves that choice).
+    if (localeUid.current !== session.user.id) {
+      localeUid.current = session.user.id;
+      const saved = (session.user.user_metadata as { locale?: unknown } | null)?.locale;
+      if (!langChosen.current && (saved === "ar" || saved === "fr" || saved === "en")) setLangState(saved);
+    }
     try {
       const last = localStorage.getItem(LAST_UID_KEY);
       if (last && last !== session.user.id) stashLocalAppData(last);
@@ -180,7 +195,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [signedIn, lang]);
 
-  const setLang = useCallback((l: Lang) => setLangState(l), []);
+  const setLang = useCallback((l: Lang) => {
+    langChosen.current = activeUid.current !== null;
+    setLangState(l);
+  }, []);
 
   // Keep the previous dictionary while the next language loads so the UI never flashes raw keys.
   const [dict, setDict] = useState<Dict | null>(null);
