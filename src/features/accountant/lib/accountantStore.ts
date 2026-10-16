@@ -112,15 +112,17 @@ export const loadDecls = async (accId: string): Promise<Decl[]> => {
   }));
 };
 
+const toFs = (r: any): FinStmt => ({
+  id: r.id, clientId: r.client_ref, clientName: r.client_name, year: r.fiscal_year,
+  assets: Number(r.assets), liabilities: Number(r.liabilities), equity: Number(r.equity),
+  revenue: Number(r.revenue), netResult: Number(r.net_result), createdAt: r.created_at,
+});
+
 export const loadFsList = async (accId: string): Promise<FinStmt[]> => {
   const { data, error } = await supabase.from("acc_financial_statements")
     .select("*").eq("accountant_id", accId).order("created_at", { ascending: false });
   if (error || !data) return [];
-  return data.map((r) => ({
-    id: r.id, clientId: r.client_ref, clientName: r.client_name, year: r.fiscal_year,
-    assets: Number(r.assets), liabilities: Number(r.liabilities), equity: Number(r.equity),
-    revenue: Number(r.revenue), netResult: Number(r.net_result), createdAt: r.created_at,
-  }));
+  return data.map(toFs);
 };
 
 export const loadSharedDocs = async (accId: string): Promise<SharedDoc[]> => {
@@ -340,6 +342,14 @@ export const syncLegal = async (
 };
 
 // ============ CLIENT-SIDE READ (relies on RLS for client visibility) ============
+
+// The client's own saved financial statements (RLS: "Client select own statements").
+export const loadFsForClient = async (): Promise<FinStmt[]> => {
+  const { data, error } = await supabase.from("acc_financial_statements")
+    .select("*").order("fiscal_year", { ascending: false });
+  if (error || !data) return [];
+  return data.map(toFs);
+};
 
 export const loadSharedDocsForClient = async (): Promise<SharedDoc[]> => {
   const { data, error } = await supabase.from("acc_shared_documents")

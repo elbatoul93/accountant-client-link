@@ -44,7 +44,7 @@ import { G50GeneratorDialog } from "@/features/accountant/components/G50Generato
 import { AddDeclarationDialog, DeclList, EditDeclDialog, FinancialStatementsDialog, SendDocumentDialog } from "@/features/accountant/components/DeclarationDialogs";
 
 const AccountantDashboard = () => {
-  const { t, user, lang } = useApp();
+  const { t, user, lang, dir } = useApp();
   const [clients, setClients] = useState<Client[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [decls, setDecls] = useState<Decl[]>([]);
@@ -1023,7 +1023,7 @@ const AccountantDashboard = () => {
                   <ToolCard icon={Calculator} title={t("tools_g50_title")} subtitle={t("tools_g50_subtitle")}
                     cta={t("tools_open")} onClick={() => setOpenTool("g50")} />
                   <ToolCard icon={FileDown} title={t("tools_extract_title")} subtitle={t("tools_extract_subtitle")}
-                    cta={t("acc_extract")} onClick={() => clients[0] && setObligationsClient(clients[0])}
+                    cta={t("acc_extract")} onClick={() => { const c = activeClient ?? clients[0]; if (c) setObligationsClient(c); }}
                     disabled={clients.length === 0} />
                 </div>
                 {clients.length > 0 && (
@@ -1115,7 +1115,10 @@ const AccountantDashboard = () => {
       <FinancialStatementsDialog
         open={openTool === "fs"} onOpenChange={(o) => !o && setOpenTool(null)}
         clients={clients} t={t}
-        onSave={(fs) => { setFsList((p) => [fs, ...p]); setOpenTool(null); }}
+        onSave={(fs) => setFsList((p) => [fs, ...p])}
+        fsList={fsList} dir={dir}
+        onUpdate={(fs) => setFsList((p) => p.map((x) => (x.id === fs.id ? fs : x)))}
+        onDelete={(id) => askDelete(() => setFsList((p) => p.filter((x) => x.id !== id)))}
       />
       <G50GeneratorDialog
         open={openTool === "g50"} onOpenChange={(o) => { if (!o) { setOpenTool(null); setEditG50(null); } }}
@@ -1186,6 +1189,14 @@ const AccountantDashboard = () => {
               {t("acc_obligations_title")} — {obligationsClient?.name}
             </DialogTitle>
           </DialogHeader>
+          {obligationsClient && clients.length > 1 && (
+            <Select value={obligationsClient.id} onValueChange={(id) => setObligationsClient(clients.find((c) => c.id === id) ?? null)}>
+              <SelectTrigger aria-label={t("acc_select_client")}><SelectValue placeholder={t("acc_select_client")} /></SelectTrigger>
+              <SelectContent>
+                {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
           {obligationsClient && (() => {
             const cDecls = decls.filter((d) => d.clientId === obligationsClient.id);
             const cInvoices = invoices.filter((i) => i.clientId === obligationsClient.id);

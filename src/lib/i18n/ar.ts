@@ -145,6 +145,7 @@ export const ar: typeof en = {
   tools_revenue: "رقم الأعمال",
   tools_net_result: "النتيجة الصافية",
   tools_save_fs: "حفظ الميزانية",
+  fs_title: "القوائم المالية",
   tools_g50_period: "الفترة (الشهر)",
   tools_g50_tap: "الرسم على النشاط المهني TAP (2%)",
   tools_g50_irg: "IRG على الأجور",

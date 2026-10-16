@@ -145,6 +145,7 @@ export const fr: typeof en = {
   tools_revenue: "Chiffre d'affaires",
   tools_net_result: "Résultat net",
   tools_save_fs: "Enregistrer le bilan",
+  fs_title: "États financiers",
   tools_g50_period: "Période (mois)",
   tools_g50_tap: "TAP (2%)",
   tools_g50_irg: "IRG salaires",
