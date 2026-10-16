@@ -71,6 +71,30 @@ test("client signs in, lands on the client dashboard and keeps the session on re
   await expect(page.getByText("Karim").first()).toBeVisible();
 });
 
+test("signing in on a new device applies the language saved on the account", async ({ page }) => {
+  // This browser has English stored (see beforeEach); the account says French.
+  backend.seed({ email: "karim@example.com", password: "right-password-1", role: "client", name: "Karim Client", locale: "fr" });
+  await page.goto("/login");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await page.fill("#email", "karim@example.com");
+  await page.fill("#password", "right-password-1");
+  await page.getByRole("button", { name: /sign ?in|log ?in/i }).click();
+  await expect(page).toHaveURL(/\/dashboard\/client$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "fr");
+});
+
+test("an account with no saved language keeps the device language", async ({ page }) => {
+  backend.seed({ email: "karim@example.com", password: "right-password-1", role: "client", name: "Karim Client" });
+  await page.goto("/login");
+  await page.fill("#email", "karim@example.com");
+  await page.fill("#password", "right-password-1");
+  await page.getByRole("button", { name: /sign ?in|log ?in/i }).click();
+  await expect(page).toHaveURL(/\/dashboard\/client$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  // The device language is then saved on the account.
+  await expect.poll(() => backend.userLocale("karim@example.com")).toBe("en");
+});
+
 test("signed-out visitors are sent to the login page", async ({ page }) => {
   await page.goto("/dashboard/client");
   await expect(page).toHaveURL(/\/login$/);

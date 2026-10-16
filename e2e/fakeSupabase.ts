@@ -14,6 +14,7 @@ interface FakeUser {
   name: string;
   role: Role;
   company?: string;
+  locale?: string;
   confirmed: boolean;
   accountStatus: "active" | "pending";
   linkedAccountantId?: string;
@@ -117,6 +118,9 @@ export class FakeSupabase {
     };
   }
 
+  userLocale(email: string) {
+    return this.users.find((x) => x.email === email)?.locale;
+  }
   confirm(email: string) {
     const u = this.users.find((x) => x.email === email);
     if (u) u.confirmed = true;
@@ -137,7 +141,7 @@ export class FakeSupabase {
       email: u.email,
       email_confirmed_at: u.confirmed ? new Date().toISOString() : null,
       app_metadata: { provider: "email" },
-      user_metadata: { name: u.name, role: u.role, user_type: u.role, company: u.company },
+      user_metadata: { name: u.name, role: u.role, user_type: u.role, company: u.company, locale: u.locale },
       identities: [{ id: u.id, provider: "email" }],
       created_at: new Date().toISOString(),
     };
@@ -234,7 +238,9 @@ export class FakeSupabase {
       if (url.pathname === "/auth/v1/user" && req.method() === "PUT") {
         const u = this.userFromRequest(route);
         if (!u) return json(401, { code: 401, msg: "invalid JWT" });
-        const next = (req.postDataJSON() as { password?: string }).password;
+        const body = req.postDataJSON() as { password?: string; data?: { locale?: string } };
+        if (body.data?.locale) u.locale = body.data.locale;
+        const next = body.password;
         if (next === undefined) return json(200, this.authUser(u)); // metadata-only update (e.g. language)
         if (next === u.password) return json(422, { code: "same_password", error_code: "same_password", msg: "New password should be different from the old password." });
         u.password = next;
