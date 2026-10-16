@@ -234,7 +234,10 @@ export class FakeSupabase {
       if (url.pathname === "/auth/v1/user" && req.method() === "PUT") {
         const u = this.userFromRequest(route);
         if (!u) return json(401, { code: 401, msg: "invalid JWT" });
-        u.password = (req.postDataJSON() as { password: string }).password;
+        const next = (req.postDataJSON() as { password?: string }).password;
+        if (next === undefined) return json(200, this.authUser(u)); // metadata-only update (e.g. language)
+        if (next === u.password) return json(422, { code: "same_password", error_code: "same_password", msg: "New password should be different from the old password." });
+        u.password = next;
         this.passwordUpdates.push(u.email);
         return json(200, this.authUser(u));
       }

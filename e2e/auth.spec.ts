@@ -114,6 +114,16 @@ test.describe("forgot password", () => {
     expect(backend.users[0].password).toBe("brand-new-pass-9");
   });
 
+  test("saving the old password again shows a translated error", async ({ page }) => {
+    backend.seed({ email: "karim@example.com", password: "old-password-123", role: "client", name: "Karim Client" });
+    await page.goto(`/reset-password${backend.recoveryHash("karim@example.com")}`);
+    await page.fill("#new-password", "old-password-123");
+    await page.fill("#confirm-password", "old-password-123");
+    await page.getByRole("button", { name: /save password/i }).click();
+    await expect(page.getByRole("alert")).toContainText(/must be different/i);
+    expect(backend.passwordUpdates).toHaveLength(0);
+  });
+
   test("an expired or invalid link says so and offers a new one", async ({ page }) => {
     await page.goto("/reset-password#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired");
     await expect(page.getByRole("alert")).toContainText(/invalid or has expired/i);
