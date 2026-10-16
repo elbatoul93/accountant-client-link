@@ -25,6 +25,7 @@ import { loadSharedDocsForClient, signSharedDocDb, loadInvoices, loadDecls } fro
 import { loadClients, loadEmployees } from "@/features/accountant/lib/businessStore";
 import { loadDocuments, myAccountantId, sendNotification } from "@/lib/portalStore";
 import { sortVault, vaultFromInvoiceDocs, vaultFromShared, type VaultEntry } from "@/lib/vault";
+import { todayIso } from "@/lib/isoDate";
 import { Decl, DeclType, Doc, Invoice, MAX_UPLOAD_BYTES, REGIME_DECLS, SharedDoc, TaxRegime, fmtDZD, regimeShort, safeParse } from "@/features/client/components/shared";
 import { SignDialog } from "@/features/client/components/SignAndVault";
 
@@ -298,7 +299,10 @@ const ClientDashboard = () => {
     const myD = regime ? ownDecls.filter((d) => requiredSet.has(d.type)) : ownDecls;
     const myI = biz.invoices.filter((i) => ids.has(i.clientId));
     const myS = dbSharedDocs;
-    const due = myD.filter((d) => d.status !== "filed").reduce((s, d) => s + d.amount, 0);
+    // A filed declaration is declared, not paid. There is no "paid" state yet, so it counts as still to pay
+    // until its due date has passed (the accountant's own "pending" totals count only what is not yet filed).
+    const today = todayIso();
+    const due = myD.filter((d) => d.status !== "filed" || (!!d.due && d.due >= today)).reduce((s, d) => s + d.amount, 0);
     const v = sortVault([...vaultFromShared(dbSharedDocs), ...vaultFromInvoiceDocs(biz.invoiceDocs, user.name, user.email)]);
     return { myDecls: myD, myInvoices: myI, mySharedDocs: myS, totalDue: due, myRegime: regime, requiredTypes: required, vault: v, myEmpCount: empCount, myHasCacobatph: hasCaco };
   }, [user, biz, dbSharedDocs]);
@@ -550,17 +554,26 @@ const ClientDashboard = () => {
                   <h2 className="text-base font-bold text-primary mb-3 flex items-center gap-2">
                     <ShieldCheck className="h-4 w-4" /> {t("cli_from_accountant")}
                   </h2>
-                  {myInvoices.length === 0 ? (
+                  {myInvoices.length === 0 && mySharedDocs.length === 0 ? (
                     <div className="text-center py-6 border border-dashed border-border rounded-lg">
                       <div className="text-xs text-muted-foreground">{t("empty_pending_acc")}</div>
                     </div>
                   ) : (
                     <div className="space-y-1.5">
-                      <div className="text-xs text-muted-foreground mb-2">{myInvoices.length} {t("cli_invoices_received")}</div>
+                      {myInvoices.length > 0 && (
+                        <div className="text-xs text-muted-foreground mb-2">{myInvoices.length} {t("cli_invoices_received")}</div>
+                      )}
                       {myInvoices.slice(0, 5).map((inv) => (
                         <div key={inv.id} className="flex items-center justify-between p-2 rounded border border-border/60 text-xs">
                           <span className="font-mono text-muted-foreground">{inv.id}</span>
                           <span className="font-semibold text-gold-deep">{fmtDZD(inv.amount)}</span>
+                        </div>
+                      ))}
+                      {mySharedDocs.slice(0, 5).map((s) => (
+                        <div key={s.id} className="flex items-center justify-between gap-2 p-2 rounded border border-border/60 text-xs">
+                          <Badge variant="outline" className="font-mono text-[10px]">{s.type}</Badge>
+                          <span className="flex-1 min-w-0 truncate">{s.label}</span>
+                          <span className="text-muted-foreground">{s.date}</span>
                         </div>
                       ))}
                     </div>

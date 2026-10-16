@@ -176,3 +176,29 @@ test("example data: a G50 asks for the client to accept the invite first, and re
   await expect.poll(() => backend.rows("acc_clients").length).toBe(0);
   expect(backend.rows("acc_invoices")).toHaveLength(0);
 });
+
+test("client sees a filed G50 in the total due and the shared document under 'from my accountant'", async ({ page }) => {
+  const amel = backend.users.find((u) => u.email === "amel@example.com")!;
+  backend.seed({ email: "karim@example.com", password: "right-password-1", role: "client", name: "Karim Client", linkedAccountantId: amel.id });
+  const karim = backend.users.find((u) => u.email === "karim@example.com")!;
+  backend.rows("acc_clients").push({
+    id: "c-1", accountant_id: amel.id, client_ref: karim.id, name: "Karim Client", tax_regime: "REEL", status: "active", data: {},
+  });
+  backend.rows("acc_declarations").push({
+    id: "d-1", accountant_id: amel.id, client_ref: karim.id, client_name: "Karim Client",
+    decl_type: "G50", amount: 264500, due_date: "2999-12-20", status: "filed", created_at: "2026-10-01T10:00:00Z",
+  });
+  backend.rows("acc_shared_documents").push({
+    id: "doc-1", accountant_id: amel.id, client_ref: karim.id, client_name: "Karim Client", client_email: "karim@example.com",
+    doc_type: "G50", label: "G50 2026-10 — 264 500 DA", doc_date: "2026-10-01", workflow: "sent", payload: JSON.stringify({ total: 264500 }),
+    created_at: "2026-10-01T10:00:00Z", signed_at: null,
+  });
+  await signIn(page, "karim@example.com");
+  const obligations = page.locator("div", { has: page.getByRole("heading", { name: /tax & social obligations/i }) }).last();
+  await expect(obligations.getByText(/total amount due/i)).toBeVisible();
+  await expect(obligations.getByText(/264[\s\u202f,.]?500/).first()).toBeVisible();
+  await expect(obligations.getByText(/^0\s*DA$/)).toHaveCount(0);
+  const fromAcc = page.locator("div", { has: page.getByRole("heading", { name: /documents from my accountant/i }) }).last();
+  await expect(fromAcc.getByText("G50 2026-10 — 264 500 DA")).toBeVisible();
+  await expect(fromAcc.getByText(/pending sync/i)).toHaveCount(0);
+});
