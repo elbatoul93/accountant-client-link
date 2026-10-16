@@ -219,7 +219,7 @@ export const PayrollAdvanced = ({
           {(() => {
             const a = buildCnasAvis(list, period, frequency);
             return (
-              <Card className="p-5 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+              <Card className="p-5 border-2 border-primary/20 bg-linear-to-br from-primary/5 to-transparent">
                 <div className="text-center mb-4 pb-3 border-b">
                   <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("payx_cnas_republic")}</p>
                   <h3 className="text-lg font-bold text-primary">{t("payx_cnas_avis")}</h3>
@@ -233,7 +233,7 @@ export const PayrollAdvanced = ({
                     <Row label={`${t("payx_ss_employer")} (${employerRate}%)`} value={fmtDZD(a.partPatronale)} muted />
                   </tbody>
                 </table>
-                <div className="mt-3 p-3 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 flex justify-between">
+                <div className="mt-3 p-3 rounded-lg bg-linear-to-br from-gold/15 to-gold/5 border border-gold/40 flex justify-between">
                   <span className="font-semibold text-primary">{t("payx_cnas_total")} (35%)</span>
                   <span className="text-xl font-bold text-gold-deep font-mono">{fmtDZD(a.total)}</span>
                 </div>
@@ -333,7 +333,7 @@ export const PayrollAdvanced = ({
 
         {/* ====== EMPLOYER CONTRIBUTIONS OVERVIEW ====== */}
         <TabsContent value="employer" className="mt-4">
-          <Card className="p-5 bg-gradient-to-br from-primary/5 to-transparent">
+          <Card className="p-5 bg-linear-to-br from-primary/5 to-transparent">
             <h3 className="text-base font-bold text-primary mb-3 flex items-center gap-2">
               <Wallet className="h-4 w-4" /> {t("payx_employer_overview")}
             </h3>
@@ -345,7 +345,7 @@ export const PayrollAdvanced = ({
               <Stat label={t("payx_irg_total")} value={fmtDZD(mass.irgMass)} muted />
               <Stat label={t("payx_net_mass")} value={fmtDZD(mass.netMass)} />
             </div>
-            <div className="mt-4 p-4 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 flex justify-between items-center">
+            <div className="mt-4 p-4 rounded-lg bg-linear-to-br from-gold/15 to-gold/5 border border-gold/40 flex justify-between items-center">
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("payx_employer_cost")}</p>
                 <p className="text-xs text-muted-foreground">{t("payx_employer_cost_hint")}</p>
@@ -502,7 +502,7 @@ const AddEmployeeDialog = ({
               <Line label={`${t("payx_ss_emp")} (9%)`} value={`- ${fmtDZD(preview.ssEmployee)}`} muted />
               <Line label={t("payx_taxable")} value={fmtDZD(preview.taxable)} />
               <Line label={t("pay_irg")} value={`- ${fmtDZD(preview.irg)}`} muted />
-              <div className="flex justify-between p-2 rounded-md bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 mt-2">
+              <div className="flex justify-between p-2 rounded-md bg-linear-to-br from-gold/15 to-gold/5 border border-gold/40 mt-2">
                 <span className="font-semibold text-primary text-sm">{t("pay_net")}</span>
                 <span className="text-base font-bold text-gold-deep font-mono">{fmtDZD(preview.net)}</span>
               </div>
@@ -636,7 +636,7 @@ const PayslipPdfDialog = ({ employee, onClose, t }: {
           <Line label={t("pay_ss")} value={`- ${fmtDZD(p.ssEmployee)}`} muted />
           <Line label={t("payx_taxable")} value={fmtDZD(p.taxable)} />
           <Line label={t("pay_irg")} value={`- ${fmtDZD(p.irg)}`} muted />
-          <div className="flex justify-between p-3 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 mt-2">
+          <div className="flex justify-between p-3 rounded-lg bg-linear-to-br from-gold/15 to-gold/5 border border-gold/40 mt-2">
             <span className="font-semibold text-primary">{t("pay_net")}</span>
             <span className="text-xl font-bold text-gold-deep">{fmtDZD(p.net)}</span>
           </div>

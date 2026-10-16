@@ -736,7 +736,7 @@ const AccountantDashboard = () => {
                             onClick={() => { setView(it.key); if (it.key !== "clients") setActiveClientId(null); }}
                             className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-smooth ${
                               active
-                                ? "bg-primary text-primary-foreground shadow-sm"
+                                ? "bg-primary text-primary-foreground shadow-xs"
                                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
                             }`}
                           >
@@ -761,7 +761,7 @@ const AccountantDashboard = () => {
               </nav>
             </Card>
 
-            <Card className="p-4 mt-3 bg-gradient-to-br from-gold/10 to-card border-gold/30 shadow-card">
+            <Card className="p-4 mt-3 bg-linear-to-br from-gold/10 to-card border-gold/30 shadow-card">
               <div className="text-xs text-muted-foreground mb-1">{user?.name}</div>
               <div className="text-xs font-semibold text-gold-deep">{t("auth_role_accountant")}</div>
             </Card>
@@ -1010,7 +1010,7 @@ const AccountantDashboard = () => {
             )}
 
             {view === "tools" && (
-              <Card className="p-5 shadow-card border-gold/30 bg-gradient-to-br from-card to-gold/5">
+              <Card className="p-5 shadow-card border-gold/30 bg-linear-to-br from-card to-gold/5">
                 <div className="flex items-center justify-between mb-1">
                   <h2 className="text-lg font-bold text-primary flex items-center gap-2">
                     <Wrench className="h-4 w-4 text-gold-deep" /> {t("tools_title")}

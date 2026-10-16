@@ -58,7 +58,7 @@ export const PcnPicker = ({ value, onChange, classes, placeholder, className }: 
         <PopoverContent className="w-[360px] p-0" align="start">
           <div className="p-2 border-b border-border">
             <div className="relative">
-              <Search className="absolute start-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Search className="absolute inset-s-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 autoFocus
                 value={q}

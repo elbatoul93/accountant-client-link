@@ -416,7 +416,7 @@ const ClientDashboard = () => {
                   </div>
                 </Card>
 
-                <Card className="p-5 sm:p-6 shadow-card border-gold/30 bg-gradient-to-br from-card to-gold/5">
+                <Card className="p-5 sm:p-6 shadow-card border-gold/30 bg-linear-to-br from-card to-gold/5">
                   <div className="flex items-center justify-between mb-1">
                     <h2 className="text-lg font-bold text-primary flex items-center gap-2">
                       <FolderOpen className="h-4 w-4 text-gold-deep" /> {t("cli_docs_acc_title")}
@@ -433,7 +433,7 @@ const ClientDashboard = () => {
                       {mySharedDocs.map((s) => (
                         <div key={s.id} className="p-3 rounded-lg border border-border/60 hover:border-gold/60 hover:shadow-gold transition-smooth bg-card">
                           <div className="flex items-start gap-3">
-                            <div className="p-2 rounded-md bg-gradient-gold text-gold-foreground flex-shrink-0 shadow-gold">
+                            <div className="p-2 rounded-md bg-gradient-gold text-gold-foreground shrink-0 shadow-gold">
                               <FileText className="h-4 w-4" />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -458,7 +458,7 @@ const ClientDashboard = () => {
                 </Card>
 
                 {accountantPdfs.length > 0 && (
-                  <Card className="p-5 sm:p-6 shadow-card border-gold/30 bg-gradient-to-br from-card to-gold/5">
+                  <Card className="p-5 sm:p-6 shadow-card border-gold/30 bg-linear-to-br from-card to-gold/5">
                     <div className="flex items-center justify-between mb-1">
                       <h2 className="text-lg font-bold text-primary flex items-center gap-2">
                         <FolderOpen className="h-4 w-4 text-gold-deep" /> {t("cli_docs_acc_title")}
@@ -506,7 +506,7 @@ const ClientDashboard = () => {
                     <div className="space-y-2">
                       {docs.map((d, i) => (
                         <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border/60 hover:border-primary/40 transition-smooth">
-                          <div className="p-2 rounded-md bg-primary/10 text-primary flex-shrink-0">
+                          <div className="p-2 rounded-md bg-primary/10 text-primary shrink-0">
                             {d.name.toLowerCase().endsWith(".pdf") ? <FileText className="h-4 w-4" /> : <FileImage className="h-4 w-4" />}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -537,7 +537,7 @@ const ClientDashboard = () => {
                     </div>
                   ) : (
                     <>
-                      <div className="p-3 rounded-lg bg-gradient-to-br from-gold/10 to-gold/5 border border-gold/30 mb-3">
+                      <div className="p-3 rounded-lg bg-linear-to-br from-gold/10 to-gold/5 border border-gold/30 mb-3">
                         <div className="text-xs text-muted-foreground">{t("cli_total_due")}</div>
                         <div className="text-2xl font-bold text-gold-deep">{fmtDZD(totalDue)}</div>
                       </div>

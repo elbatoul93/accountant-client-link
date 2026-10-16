@@ -83,7 +83,7 @@ export const ClientsListView = ({
 
     <Card className="p-5 shadow-card">
       <div className="relative mb-4">
-        <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input className="ps-9" placeholder={t("acc_search_clients")} value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
       {clients.length === 0 ? (

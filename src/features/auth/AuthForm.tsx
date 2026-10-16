@@ -287,7 +287,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
                     aria-label={t(showPassword ? "auth_hide_password" : "auth_show_password")}
-                    className="absolute inset-y-0 end-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                    className="absolute inset-y-0 inset-e-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>

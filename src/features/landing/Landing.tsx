@@ -62,7 +62,7 @@ const Landing = () => {
 
           {/* Mock dashboard preview */}
           <div className="mt-16 max-w-5xl mx-auto">
-            <div className="rounded-2xl bg-background/95 backdrop-blur shadow-elegant p-3 sm:p-4 border border-gold/20">
+            <div className="rounded-2xl bg-background/95 backdrop-blur-sm shadow-elegant p-3 sm:p-4 border border-gold/20">
               <div className="rounded-xl bg-gradient-subtle p-6 sm:p-8">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                   {[
@@ -116,7 +116,7 @@ const Landing = () => {
             <ul className="space-y-3 mb-8">
               {[t("feat_1_desc"), t("feat_2_desc"), t("feat_4_desc")].map((s, i) => (
                 <li key={i} className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-gold-deep flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="h-5 w-5 text-gold-deep shrink-0 mt-0.5" />
                   <span className="text-sm text-foreground">{s}</span>
                 </li>
               ))}
