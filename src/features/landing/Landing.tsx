@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 const Landing = () => {
-  const { t, dir, user } = useApp();
+  const { t, dir } = useApp();
   const navigate = useNavigate();
 
   const features = [
@@ -25,10 +25,7 @@ const Landing = () => {
     { icon: ShieldCheck, title: t("feat_4_title"), desc: t("feat_4_desc") },
   ];
 
-  const goStarted = () => {
-    if (user) navigate(user.role === "accountant" ? "/dashboard/accountant" : "/dashboard/client");
-    else navigate("/signup");
-  };
+  const goStarted = () => navigate("/signup");
 
   return (
     <div className="min-h-screen bg-background" dir={dir}>

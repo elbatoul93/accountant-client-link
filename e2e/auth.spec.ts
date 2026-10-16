@@ -95,6 +95,36 @@ test("an account with no saved language keeps the device language", async ({ pag
   await expect.poll(() => backend.userLocale("karim@example.com")).toBe("en");
 });
 
+test("home page is for visitors only: signed-in users are sent to their dashboard", async ({ page }) => {
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("button", { name: /^log ?in|^sign ?in/i }).last()).toBeVisible();
+
+  backend.seed({ email: "karim@example.com", password: "right-password-1", role: "client", name: "Karim Client" });
+  await page.goto("/login");
+  await page.fill("#email", "karim@example.com");
+  await page.fill("#password", "right-password-1");
+  await page.getByRole("button", { name: /sign ?in|log ?in/i }).click();
+  await expect(page).toHaveURL(/\/dashboard\/client$/);
+
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/dashboard\/client$/);
+  // Public pages stay reachable while signed in.
+  await page.goto("/privacy");
+  await expect(page).toHaveURL(/\/privacy$/);
+});
+
+test("a signed-in accountant opening home reaches the accountant dashboard without a redirect loop", async ({ page }) => {
+  backend.seed({ email: "amel@example.com", password: "right-password-1", role: "accountant", name: "Amel Test" });
+  await page.goto("/login");
+  await page.fill("#email", "amel@example.com");
+  await page.fill("#password", "right-password-1");
+  await page.getByRole("button", { name: /sign ?in|log ?in/i }).click();
+  await expect(page).toHaveURL(/\/dashboard\/accountant$/);
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/dashboard\/accountant$/);
+});
+
 test("signed-out visitors are sent to the login page", async ({ page }) => {
   await page.goto("/dashboard/client");
   await expect(page).toHaveURL(/\/login$/);

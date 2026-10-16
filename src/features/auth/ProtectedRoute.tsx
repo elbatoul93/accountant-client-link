@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
   role?: Role;
 }
 
-const FullScreenSpinner = () => (
+export const FullScreenSpinner = () => (
   <div className="min-h-screen grid place-items-center bg-background">
     <div className="h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
   </div>
