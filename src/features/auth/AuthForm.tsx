@@ -12,6 +12,7 @@ import { Logo } from "@/components/layout/Logo";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { ArrowLeft, Briefcase, Building2, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { authRedirectUrl } from "@/features/auth/authRedirect";
 
 interface AuthFormProps {
   mode: "login" | "signup";
@@ -58,7 +59,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: unconfirmedEmail,
-        options: { emailRedirectTo: `${window.location.origin}/login` },
+        options: { emailRedirectTo: authRedirectUrl("/login", lang) },
       });
       if (error) {
         toast.error(error.message);
@@ -117,7 +118,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
       }
       if (mode === "signup") {
         const role = isInvite ? "client" : "accountant";
-        const redirectUrl = `${window.location.origin}/login`;
+        const redirectUrl = authRedirectUrl("/login", lang);
         const resolvedName = isInvite ? (prefillName || name.trim()) : name.trim();
         const resolvedCompany = (isInvite ? prefillCompany : company).trim();
         const { data, error } = await supabase.auth.signUp({
