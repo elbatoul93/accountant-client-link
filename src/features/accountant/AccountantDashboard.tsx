@@ -11,6 +11,7 @@ import { removeClientsWithRecords } from "@/features/accountant/lib/exampleData"
 import { OnboardingChecklist, buildSampleData, isDemoClient } from "@/features/accountant/components/Onboarding";
 import { SubscriptionBanner } from "@/features/billing/SubscriptionBanner";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { PANEL_SCROLL } from "@/components/layout/panelScroll";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, FileText, Bell, Receipt, ShieldCheck, Plus, FileDown, Wrench, BookOpen, Calculator, Send, LayoutDashboard, Building2, Upload, FileCheck2, Wallet, Landmark, ListChecks, MessageCircle } from "lucide-react";
@@ -691,7 +692,7 @@ const AccountantDashboard = () => {
         <SubscriptionBanner t={t} />
         <div className="grid lg:grid-cols-[240px_1fr] gap-6">
           {/* Sidebar */}
-          <aside className="lg:sticky lg:top-24 self-start">
+          <aside className={`self-start ${PANEL_SCROLL}`}>
             <Card className="p-3 shadow-card">
               <Button
                 variant="gold"

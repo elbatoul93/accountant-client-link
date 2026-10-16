@@ -240,3 +240,15 @@ test("a filed G50 drops out of the total due once the next period's G50 is filed
   await expect(obligations.getByText(/333[\s\u202f,.]?000/)).toHaveCount(0);
   await expect(obligations.getByText(/^overdue$/i)).toHaveCount(0);
 });
+
+test("on a short desktop screen the accountant sidebar scrolls on its own, without moving the page", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 500 });
+  await signIn(page, "amel@example.com");
+  const aside = page.locator("aside").first();
+  await expect(aside).toBeVisible();
+  const box = await aside.evaluate((el) => ({ overflowY: getComputedStyle(el).overflowY, scrollable: el.scrollHeight > el.clientHeight }));
+  expect(box).toEqual({ overflowY: "auto", scrollable: true });
+  await aside.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+  expect(await aside.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+});
