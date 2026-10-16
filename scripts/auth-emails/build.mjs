@@ -49,8 +49,8 @@ ${fromRedirect(path)}
 {{ if eq $l "ar" }}${render("ar")}{{ else if eq $l "fr" }}${render("fr")}{{ else if eq $l "en" }}${render("en")}{{ else }}${bilingual}{{ end }}`;
 
 // Supabase caps the subject at 255 characters, too short for the language checks the body uses,
-// so the subject is a fixed Arabic / French line that reads right for every recipient.
-const subjectFor = (c) => `${c.ar.subject} / ${c.fr.subject}`;
+// so the subject is a fixed English line (Mo's choice: one language, not several at once).
+const subjectFor = (c) => c.en.subject;
 
 const files = {};
 for (const [name, c] of Object.entries(copy)) {
