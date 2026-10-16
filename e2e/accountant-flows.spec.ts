@@ -202,3 +202,41 @@ test("client sees a filed G50 in the total due and the shared document under 'fr
   await expect(fromAcc.getByText("G50 2026-10 — 264 500 DA")).toBeVisible();
   await expect(fromAcc.getByText(/pending sync/i)).toHaveCount(0);
 });
+
+test("a filed G50 past its due date stays in the total due as overdue until the next period is filed", async ({ page }) => {
+  const amel = backend.users.find((u) => u.email === "amel@example.com")!;
+  backend.seed({ email: "karim@example.com", password: "right-password-1", role: "client", name: "Karim Client", linkedAccountantId: amel.id });
+  const karim = backend.users.find((u) => u.email === "karim@example.com")!;
+  backend.rows("acc_clients").push({
+    id: "c-1", accountant_id: amel.id, client_ref: karim.id, name: "Karim Client", tax_regime: "REEL", status: "active", data: {},
+  });
+  backend.rows("acc_declarations").push({
+    id: "d-1", accountant_id: amel.id, client_ref: karim.id, client_name: "Karim Client",
+    decl_type: "G50", amount: 264500, due_date: "2020-01-20", status: "filed", created_at: "2020-01-05T10:00:00Z",
+  });
+  await signIn(page, "karim@example.com");
+  const obligations = page.locator("div", { has: page.getByRole("heading", { name: /tax & social obligations/i }) }).last();
+  await expect(obligations.getByText(/264[\s\u202f,.]?500/).first()).toBeVisible();
+  await expect(obligations.getByText(/^overdue$/i)).toBeVisible();
+});
+
+test("a filed G50 drops out of the total due once the next period's G50 is filed", async ({ page }) => {
+  const amel = backend.users.find((u) => u.email === "amel@example.com")!;
+  backend.seed({ email: "karim@example.com", password: "right-password-1", role: "client", name: "Karim Client", linkedAccountantId: amel.id });
+  const karim = backend.users.find((u) => u.email === "karim@example.com")!;
+  backend.rows("acc_clients").push({
+    id: "c-1", accountant_id: amel.id, client_ref: karim.id, name: "Karim Client", tax_regime: "REEL", status: "active", data: {},
+  });
+  for (const [id, due, amount] of [["d-1", "2020-01-20", 111000], ["d-2", "2999-02-20", 222000]] as const) {
+    backend.rows("acc_declarations").push({
+      id, accountant_id: amel.id, client_ref: karim.id, client_name: "Karim Client",
+      decl_type: "G50", amount, due_date: due, status: "filed", created_at: "2020-01-05T10:00:00Z",
+    });
+  }
+  await signIn(page, "karim@example.com");
+  const obligations = page.locator("div", { has: page.getByRole("heading", { name: /tax & social obligations/i }) }).last();
+  await expect(obligations.getByText(/total amount due/i)).toBeVisible();
+  await expect(obligations.getByText(/222[\s\u202f,.]?000/).first()).toBeVisible();
+  await expect(obligations.getByText(/333[\s\u202f,.]?000/)).toHaveCount(0);
+  await expect(obligations.getByText(/^overdue$/i)).toHaveCount(0);
+});
