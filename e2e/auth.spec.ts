@@ -87,7 +87,7 @@ test.describe("forgot password", () => {
     await page.getByRole("button", { name: /send reset link/i }).click();
     await expect(page.getByRole("status")).toContainText(/if an account exists/i);
     expect(backend.recoverCalls[0]).toMatchObject({ email: "nobody@example.com" });
-    expect(backend.recoverCalls[0].redirectTo).toMatch(/\/reset-password$/);
+    expect(backend.recoverCalls[0].redirectTo).toMatch(/\/reset-password\?lang=(ar|fr|en)$/);
   });
 
   test("an email rate limit shows a clear message", async ({ page }) => {

@@ -17,5 +17,11 @@ describe("Supabase auth email templates", () => {
     // ar, fr, en, plus the ar+fr fallback shown when no language is known
     expect(html.match(/\{\{ \.ConfirmationURL \}\}/g)).toHaveLength(5);
     expect(read(`${name}.subject.txt`)).toContain("Managementik");
+    // the ?lang= on the redirect URL set by src/features/auth/authRedirect.ts is read first
+    const path = name === "confirmation" ? "/login" : "/reset-password";
+    expect(html).toContain(`eq .RedirectTo "https://managementik.com${path}?lang=fr"`);
+    expect(html).toContain(`eq .RedirectTo "https://www.managementik.com${path}?lang=en"`);
+    expect(html).toContain(`eq .RedirectTo "https://accountant-client-link.pages.dev${path}?lang=ar"`);
+    expect(read(`${name}.subject.txt`)).toContain(`eq .RedirectTo "https://managementik.com${path}?lang=fr"`);
   });
 });

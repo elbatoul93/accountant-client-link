@@ -22,6 +22,14 @@ const copy = {
   },
 };
 
+// The app sends ?lang=xx on the redirect URL (src/features/auth/authRedirect.ts). Go templates
+// have no substring match, so the exact production URLs are listed; any other redirect URL
+// (previews, localhost) falls through to user_metadata.locale, then to the ar+fr email.
+const HOSTS = ["https://managementik.com", "https://www.managementik.com", "https://accountant-client-link.pages.dev"];
+const PATHS = { confirmation: "/login", recovery: "/reset-password" };
+const fromRedirect = (path) => ["ar", "fr", "en"].map((l) =>
+  `{{- if or ${HOSTS.map((h) => `(eq .RedirectTo "${h}${path}?lang=${l}")`).join(" ")} }}{{ $l = "${l}" }}{{ end -}}`).join("\n");
+
 const LANGS = ["ar", "fr", "en"];
 const rtl = (l) => l === "ar";
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
@@ -35,12 +43,13 @@ const block = (c, l) => `<div dir="${rtl(l) ? "rtl" : "ltr"}" lang="${l}" style=
 
 // The language comes from user_metadata.locale, written by the app at signup. Without it
 // (accounts created before this change) the email shows Arabic and French together.
-const pick = (render, bilingual) => `{{- $l := "" -}}
+const pick = (render, bilingual, path) => `{{- $l := "" -}}
 {{- with .Data }}{{ with .locale }}{{ $l = printf "%v" . }}{{ end }}{{ end -}}
+${fromRedirect(path)}
 {{ if eq $l "ar" }}${render("ar")}{{ else if eq $l "fr" }}${render("fr")}{{ else if eq $l "en" }}${render("en")}{{ else }}${bilingual}{{ end }}`;
 
-const subjectFor = (c) =>
-  `{{- $l := "" }}{{ with .Data }}{{ with .locale }}{{ $l = printf "%v" . }}{{ end }}{{ end }}{{ if eq $l "fr" }}${c.fr.subject}{{ else if eq $l "en" }}${c.en.subject}{{ else if eq $l "ar" }}${c.ar.subject}{{ else }}${c.ar.subject} / ${c.fr.subject}{{ end -}}`;
+const subjectFor = (c, path) =>
+  `{{- $l := "" }}{{ with .Data }}{{ with .locale }}{{ $l = printf "%v" . }}{{ end }}{{ end }}${fromRedirect(path).replace(/\n/g, "")}{{ if eq $l "fr" }}${c.fr.subject}{{ else if eq $l "en" }}${c.en.subject}{{ else if eq $l "ar" }}${c.ar.subject}{{ else }}${c.ar.subject} / ${c.fr.subject}{{ end -}}`;
 
 const files = {};
 for (const [name, c] of Object.entries(copy)) {
@@ -49,12 +58,12 @@ for (const [name, c] of Object.entries(copy)) {
 <html>
   <body style="margin:0;padding:24px;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;">
     <div style="max-width:520px;margin:0 auto;padding:28px;background:#ffffff;border-radius:8px;">
-${pick((l) => "\n" + block(c[l], l) + "\n", "\n" + bilingual + "\n")}
+${pick((l) => "\n" + block(c[l], l) + "\n", "\n" + bilingual + "\n", PATHS[name])}
     </div>
   </body>
 </html>
 `;
-  files[`${name}.subject.txt`] = subjectFor(c) + "\n";
+  files[`${name}.subject.txt`] = subjectFor(c, PATHS[name]) + "\n";
 }
 
 const check = process.argv.includes("--check");

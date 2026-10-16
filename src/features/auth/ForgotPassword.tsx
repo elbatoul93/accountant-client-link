@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { supabase } from "@/integrations/supabase/client";
+import { authRedirectUrl } from "@/features/auth/authRedirect";
 import { AuthLayout } from "@/features/auth/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 
 const ForgotPassword = () => {
-  const { t } = useApp();
+  const { t, lang } = useApp();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -21,7 +22,7 @@ const ForgotPassword = () => {
     setError(null);
     try {
       const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: authRedirectUrl("/reset-password", lang),
       });
       // Same message whether or not the account exists, so the form can't be used to probe emails.
       if (err && err.status !== 400 && err.status !== 422) {

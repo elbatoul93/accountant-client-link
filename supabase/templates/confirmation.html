@@ -4,6 +4,9 @@
     <div style="max-width:520px;margin:0 auto;padding:28px;background:#ffffff;border-radius:8px;">
 {{- $l := "" -}}
 {{- with .Data }}{{ with .locale }}{{ $l = printf "%v" . }}{{ end }}{{ end -}}
+{{- if or (eq .RedirectTo "https://managementik.com/login?lang=ar") (eq .RedirectTo "https://www.managementik.com/login?lang=ar") (eq .RedirectTo "https://accountant-client-link.pages.dev/login?lang=ar") }}{{ $l = "ar" }}{{ end -}}
+{{- if or (eq .RedirectTo "https://managementik.com/login?lang=fr") (eq .RedirectTo "https://www.managementik.com/login?lang=fr") (eq .RedirectTo "https://accountant-client-link.pages.dev/login?lang=fr") }}{{ $l = "fr" }}{{ end -}}
+{{- if or (eq .RedirectTo "https://managementik.com/login?lang=en") (eq .RedirectTo "https://www.managementik.com/login?lang=en") (eq .RedirectTo "https://accountant-client-link.pages.dev/login?lang=en") }}{{ $l = "en" }}{{ end -}}
 {{ if eq $l "ar" }}
 <div dir="rtl" lang="ar" style="text-align:right;">
   <h2 style="margin:0 0 12px;font-size:20px;color:#0f172a;">مرحباً بكم في Managementik</h2>
