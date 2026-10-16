@@ -124,7 +124,7 @@ export const VaultView = ({ entries, t }: { entries: VaultEntry[]; t: (k: string
       <p className="text-xs text-muted-foreground mb-5">{t("vault_subtitle")}</p>
 
       {entries.length === 0 ? (
-        <div className="text-center py-10 border border-dashed border-border rounded-lg">
+        <div className="text-center px-4 py-10 border border-dashed border-border rounded-lg">
           <p className="text-sm text-muted-foreground">{t("vault_empty")}</p>
         </div>
       ) : (

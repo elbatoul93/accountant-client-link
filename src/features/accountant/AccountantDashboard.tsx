@@ -696,7 +696,7 @@ const AccountantDashboard = () => {
             <Card className="p-3 shadow-card">
               <Button
                 variant="gold"
-                className="w-full justify-start mb-3"
+                className="mb-3 h-auto min-h-10 w-full justify-start whitespace-normal py-2 text-start"
                 onClick={() => setOpenAdd(true)}
               >
                 <Plus className="h-4 w-4" /> {t("acc_new_client")}

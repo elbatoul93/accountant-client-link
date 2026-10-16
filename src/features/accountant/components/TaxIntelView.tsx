@@ -344,7 +344,7 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
             </div>
 
             {etat104.rows.length === 0 ? (
-              <div className="text-center py-10 border border-dashed border-border rounded-lg text-sm text-muted-foreground">
+              <div className="text-center px-4 py-10 border border-dashed border-border rounded-lg text-sm text-muted-foreground">
                 {t("tax_etat104_empty")}
               </div>
             ) : (

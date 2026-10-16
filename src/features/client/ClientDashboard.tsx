@@ -425,7 +425,7 @@ const ClientDashboard = () => {
                   </div>
                   <p className="text-xs text-muted-foreground mb-4">{t("cli_docs_acc_subtitle")}</p>
                   {mySharedDocs.length === 0 ? (
-                    <div className="text-center py-8 border border-dashed border-gold/30 rounded-lg">
+                    <div className="text-center px-4 py-8 border border-dashed border-gold/30 rounded-lg">
                       <p className="text-sm text-muted-foreground">{t("cli_docs_empty")}</p>
                     </div>
                   ) : (
@@ -532,7 +532,7 @@ const ClientDashboard = () => {
                     <Receipt className="h-4 w-4" /> {t("cli_my_obligations")}
                   </h2>
                   {myDecls.length === 0 ? (
-                    <div className="text-center py-6 border border-dashed border-border rounded-lg">
+                    <div className="text-center px-4 py-6 border border-dashed border-border rounded-lg">
                       <div className="text-xs text-muted-foreground">{t("cli_no_obligations")}</div>
                     </div>
                   ) : (
@@ -562,7 +562,7 @@ const ClientDashboard = () => {
                     <ShieldCheck className="h-4 w-4" /> {t("cli_from_accountant")}
                   </h2>
                   {myInvoices.length === 0 && mySharedDocs.length === 0 ? (
-                    <div className="text-center py-6 border border-dashed border-border rounded-lg">
+                    <div className="text-center px-4 py-6 border border-dashed border-border rounded-lg">
                       <div className="text-xs text-muted-foreground">{t("empty_pending_acc")}</div>
                     </div>
                   ) : (
@@ -614,7 +614,7 @@ const ClientDashboard = () => {
               </h2>
               <p className="text-xs text-muted-foreground mb-5">{t("sig_subtitle")}</p>
               {declsForApproval.length === 0 ? (
-                <div className="text-center py-10 border border-dashed border-border rounded-lg">
+                <div className="text-center px-4 py-10 border border-dashed border-border rounded-lg">
                   <p className="text-sm text-muted-foreground">{t("cli_decls_empty")}</p>
                 </div>
               ) : (
