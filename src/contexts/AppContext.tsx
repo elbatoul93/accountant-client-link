@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
-import { LANG_STORAGE_KEY, loadTranslations, type Dict, type Lang } from "@/lib/i18n";
+import { LANG_CHOSEN_KEY, LANG_STORAGE_KEY, clearLangChosen, isLangChosen, markLangChosen, loadTranslations, type Dict, type Lang } from "@/lib/i18n";
 import { detectBrowserLang, interpolate } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
@@ -39,7 +39,7 @@ const stashLocalAppData = (uid: string | null) => {
   if (!uid) return;
   try {
     Object.keys(localStorage)
-      .filter((k) => k.startsWith("mgmtk_") && k !== LANG_STORAGE_KEY && k !== LAST_UID_KEY)
+      .filter((k) => k.startsWith("mgmtk_") && k !== LANG_STORAGE_KEY && k !== LANG_CHOSEN_KEY && k !== LAST_UID_KEY)
       .forEach((k) => {
         const v = localStorage.getItem(k);
         if (v !== null) localStorage.setItem(`${BACKUP_PREFIX}${uid}__${k}`, v);
@@ -79,9 +79,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const activeUid = useRef<string | null>(null);
   // Uid whose profile (the trusted source of the role) has been loaded.
   const profileUid = useRef<string | null>(null);
-  // True once a signed-in user picks a language in the switcher; that choice beats the saved account language.
-  // A switch before signing in (login page) does not count: the account's saved language wins on sign-in.
-  const langChosen = useRef(false);
   // Uid whose saved language (user_metadata.locale) has already been applied on this device.
   const localeUid = useRef<string | null>(null);
 
@@ -100,18 +97,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       profileUid.current = null;
       // The next account to sign in on this page gets its own saved language.
       localeUid.current = null;
-      langChosen.current = false;
       setUser(null);
       setLoading(false);
       return;
     }
     activeUid.current = session.user.id;
-    // The language saved on the account follows the user to a new device or a cleared browser,
-    // unless they already picked one on this visit (the sync effect below then saves that choice).
+    // The language saved on the account follows the user to a new device or a cleared browser. A language
+    // picked in the switcher in this browser (even before signing in) wins instead, and the sync effect
+    // below saves it on the account; the flag is cleared once that choice has been handed over.
     if (localeUid.current !== session.user.id) {
       localeUid.current = session.user.id;
       const saved = (session.user.user_metadata as { locale?: unknown } | null)?.locale;
-      if (!langChosen.current && (saved === "ar" || saved === "fr" || saved === "en")) setLangState(saved);
+      if (!isLangChosen() && (saved === "ar" || saved === "fr" || saved === "en")) setLangState(saved);
     }
     try {
       const last = localStorage.getItem(LAST_UID_KEY);
@@ -190,13 +187,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data }) => {
       const current = data.session?.user.user_metadata?.locale;
       if (data.session && current !== lang) {
-        void supabase.auth.updateUser({ data: { locale: lang } }).catch(() => { /* best effort */ });
+        void supabase.auth.updateUser({ data: { locale: lang } })
+          .then(({ error }) => {
+            // Only hand the pick over if a newer one has not replaced it meanwhile.
+            let latest: string | null = null;
+            try { latest = localStorage.getItem(LANG_STORAGE_KEY); } catch { /* storage unavailable */ }
+            if (!error && latest === lang) clearLangChosen();
+          })
+          .catch(() => { /* best effort */ });
+      } else if (data.session) {
+        clearLangChosen(); // the account already has this language
       }
     });
   }, [signedIn, lang]);
 
   const setLang = useCallback((l: Lang) => {
-    langChosen.current = activeUid.current !== null;
+    markLangChosen();
     setLangState(l);
   }, []);
 

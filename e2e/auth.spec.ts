@@ -83,6 +83,21 @@ test("signing in on a new device applies the language saved on the account", asy
   await expect(page.locator("html")).toHaveAttribute("lang", "fr");
 });
 
+test("a language picked before signing in wins over the one saved on the account", async ({ page }) => {
+  backend.seed({ email: "karim@example.com", password: "right-password-1", role: "client", name: "Karim Client", locale: "ar" });
+  await page.goto("/login");
+  await page.getByRole("button", { name: "English" }).click();
+  await page.getByRole("menuitem", { name: "Français" }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "fr");
+  await page.fill("#email", "karim@example.com");
+  await page.fill("#password", "right-password-1");
+  await page.press("#password", "Enter");
+  await expect(page).toHaveURL(/\/dashboard\/client$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "fr");
+  // The choice replaces the saved language instead of being replaced by it.
+  await expect.poll(() => backend.userLocale("karim@example.com")).toBe("fr");
+});
+
 test("an account with no saved language keeps the device language", async ({ page }) => {
   backend.seed({ email: "karim@example.com", password: "right-password-1", role: "client", name: "Karim Client" });
   await page.goto("/login");
