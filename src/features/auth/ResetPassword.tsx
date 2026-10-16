@@ -10,6 +10,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 
+/** Fixed, translated text for the errors Supabase returns when saving the new password. */
+const resetErrorKey = (err: { status?: number; code?: string }) => {
+  if (err.code === "same_password") return "auth_reset_same_password";
+  if (err.code === "weak_password") return "auth_reset_weak";
+  if (err.status === 429) return "auth_reset_rate_limited";
+  if (err.code === "session_not_found" || err.code === "not_authenticated" || err.status === 401) return "auth_reset_session_expired";
+  return "auth_reset_failed";
+};
+
 /** Landing page of the password-recovery email link; Supabase signs the user in from the URL. */
 const ResetPassword = () => {
   const { t, user, loading } = useApp();
@@ -38,7 +47,7 @@ const ResetPassword = () => {
       }
       const { error: err } = await supabase.auth.updateUser({ password });
       if (err) {
-        setError(err.message);
+        setError(t(resetErrorKey(err)));
         return;
       }
       toast.success(t("auth_reset_done"));
