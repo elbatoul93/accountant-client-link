@@ -54,7 +54,7 @@ export const NotificationBell = ({ t }: { t: (k: string) => string }) => {
         <Button variant="ghost" size="icon" className="relative" aria-label={t("notif_title")}>
           <Bell className="h-4 w-4" />
           {unread > 0 && (
-            <Badge className="absolute -top-1 -end-1 h-4 min-w-[16px] px-1 rounded-full bg-gold text-gold-foreground border-0 text-[10px] font-bold leading-none flex items-center justify-center">
+            <Badge className="absolute -top-1 -inset-e-1 h-4 min-w-[16px] px-1 rounded-full bg-gold text-gold-foreground border-0 text-[10px] font-bold leading-none flex items-center justify-center">
               {unread > 9 ? "9+" : unread}
             </Badge>
           )}
@@ -83,7 +83,7 @@ export const NotificationBell = ({ t }: { t: (k: string) => string }) => {
                 }`}
               >
                 <div className="flex items-start gap-2">
-                  {!n.read && <span className="mt-1.5 h-2 w-2 rounded-full bg-gold-deep flex-shrink-0" />}
+                  {!n.read && <span className="mt-1.5 h-2 w-2 rounded-full bg-gold-deep shrink-0" />}
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-semibold text-foreground truncate">{n.title}</div>
                     <div className="text-[11px] text-muted-foreground line-clamp-2">{n.message}</div>

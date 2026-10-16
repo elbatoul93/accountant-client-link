@@ -88,7 +88,7 @@ export const DocChecklist = ({ t, clientRef, accountantMode, monthKey }: Props) 
           const tone2 = e.status === "validated" ? "text-success" : e.status === "received" ? "text-gold-deep" : "text-destructive";
           return (
             <li key={e.id} className={`flex items-center gap-3 p-3 rounded-lg border ${tone}`}>
-              <Icon className={`h-4 w-4 flex-shrink-0 ${tone2}`} />
+              <Icon className={`h-4 w-4 shrink-0 ${tone2}`} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold text-foreground">{labelOf(e.kind)}</div>
                 <div className="text-[10px] text-muted-foreground">

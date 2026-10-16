@@ -39,7 +39,7 @@ export const ClientProfileView = ({
       </Button>
 
       {/* Header card */}
-      <Card className="p-6 shadow-card border-primary/20 bg-gradient-to-br from-primary/5 to-card">
+      <Card className="p-6 shadow-card border-primary/20 bg-linear-to-br from-primary/5 to-card">
         <div className="flex items-start gap-4 flex-wrap">
           <div className="h-14 w-14 rounded-xl bg-gradient-primary text-primary-foreground flex items-center justify-center text-xl font-bold shadow-elegant">
             {client.name.charAt(0).toUpperCase()}

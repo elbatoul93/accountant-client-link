@@ -172,7 +172,7 @@ export const ReportsView = ({ t, journal, locks, clients, precompte = {} }: Prop
               <Total label={t("rep_total_passif")} value={bilan.totalPassif} />
             </Card>
           </div>
-          <Card className="p-4 mt-3 shadow-card border-gold/40 bg-gradient-to-br from-gold/10 to-card">
+          <Card className="p-4 mt-3 shadow-card border-gold/40 bg-linear-to-br from-gold/10 to-card">
             <div className="flex items-center justify-between">
               <span className="font-bold text-primary">{t("rep_result_period")}</span>
               <span className={`text-2xl font-bold ${bilan.result >= 0 ? "text-gold-deep" : "text-destructive"}`}>
@@ -196,7 +196,7 @@ export const ReportsView = ({ t, journal, locks, clients, precompte = {} }: Prop
               <Total label={t("rep_total_charges")} value={tcr.totalCharges} />
             </Card>
           </div>
-          <Card className="p-4 mt-3 shadow-card border-gold/40 bg-gradient-to-br from-gold/10 to-card">
+          <Card className="p-4 mt-3 shadow-card border-gold/40 bg-linear-to-br from-gold/10 to-card">
             <div className="flex items-center justify-between">
               <span className="font-bold text-primary">{t("rep_net_result")}</span>
               <span className={`text-2xl font-bold ${tcr.result >= 0 ? "text-gold-deep" : "text-destructive"}`}>
@@ -242,7 +242,7 @@ export const ReportsView = ({ t, journal, locks, clients, precompte = {} }: Prop
               <G50Row label={`IRG / Salaires`} base={g50.salaries} value={g50.irgSalaries} />
               {g50.ibs > 0 && <G50Row label={`IBS acompte (${g50.ibsRate}% IBS N-1)`} base={Math.round((g50.ibs * 100) / g50.ibsRate)} value={g50.ibs} />}
             </div>
-            <div className="mt-4 p-4 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 flex items-center justify-between">
+            <div className="mt-4 p-4 rounded-lg bg-linear-to-br from-gold/15 to-gold/5 border border-gold/40 flex items-center justify-between">
               <span className="font-bold text-primary">{t("tools_g50_total")}</span>
               <span className="text-2xl font-bold text-gold-deep">{fmtDZD(g50.total)}</span>
             </div>
@@ -310,7 +310,7 @@ const TcrCol = ({ rows, side }: { rows: any[]; side: "debit" | "credit" }) => {
 };
 
 const KpiBox = ({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) => (
-  <Card className={`p-3 shadow-card ${highlight ? "border-gold/40 bg-gradient-to-br from-gold/10 to-card" : ""}`}>
+  <Card className={`p-3 shadow-card ${highlight ? "border-gold/40 bg-linear-to-br from-gold/10 to-card" : ""}`}>
     <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
     <div className={`text-base font-bold mt-0.5 ${highlight ? "text-gold-deep" : "text-foreground"} font-mono`}>{value}</div>
   </Card>

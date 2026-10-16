@@ -17,7 +17,7 @@ const Flag = ({ code }: { code: string }) => (
     height={15}
     alt=""
     aria-hidden="true"
-    className="inline-block rounded-[2px] shadow-sm"
+    className="inline-block rounded-[2px] shadow-xs"
     loading="lazy"
   />
 );

@@ -75,7 +75,7 @@ export function AdminAlerts({ onChange }: { onChange: () => void }) {
           <div key={r.id} className="flex flex-wrap items-center gap-3 p-4">
             <div className="min-w-0 flex-1">
               <div className="font-semibold">{KIND_LABEL[r.kind] ?? r.kind}</div>
-              <div className="text-xs text-muted-foreground break-words">
+              <div className="text-xs text-muted-foreground wrap-break-word">
                 {new Date(r.at).toLocaleString()}
                 {r.detail ? ` · ${typeof r.detail === "string" ? r.detail : JSON.stringify(r.detail)}` : ""}
               </div>

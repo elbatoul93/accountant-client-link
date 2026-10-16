@@ -144,7 +144,7 @@ export const LiasseFiscaleView = ({ t, journal, employees, clients }: Props) => 
               <FiscalTable t={t} title={t("liasse_assets")} rows={bilan.actif} side="debit" total={bilan.totalActif} />
               <FiscalTable t={t} title={t("liasse_liabilities")} rows={bilan.passif} side="credit" total={bilan.totalPassif} />
             </div>
-            <div className="mt-3 p-3 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 flex justify-between text-sm">
+            <div className="mt-3 p-3 rounded-lg bg-linear-to-br from-gold/15 to-gold/5 border border-gold/40 flex justify-between text-sm">
               <span className="font-semibold">{t("liasse_period_result")}</span>
               <span className={`font-bold font-mono ${bilan.result >= 0 ? "text-success" : "text-destructive"}`}>
                 {bilan.result >= 0 ? "+" : ""}{fmtDZD(bilan.result)}
@@ -298,7 +298,7 @@ const FiscalTable = ({ t, title, rows, side, total }: {
             <td className="num py-2 px-3 text-xs font-mono">{fmtDZD(Math.abs(side === "debit" ? Math.max(0, r.balance) : Math.max(0, -r.balance)) || (r[side] - r[side === "debit" ? "credit" : "debit"]))}</td>
           </tr>
         ))}
-        <tr className="total bg-gradient-to-br from-gold/15 to-gold/5 border-t border-gold/40">
+        <tr className="total bg-linear-to-br from-gold/15 to-gold/5 border-t border-gold/40">
           <td className="py-2 px-3 text-xs font-bold uppercase">{t("liasse_total")}</td>
           <td className="num py-2 px-3 text-xs font-mono font-bold text-gold-deep">{fmtDZD(total)}</td>
         </tr>

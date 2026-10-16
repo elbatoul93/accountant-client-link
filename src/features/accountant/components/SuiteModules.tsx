@@ -355,7 +355,7 @@ const PayslipDialog = ({ employee, onClose, t }: { employee: Employee | null; on
           <Row label={t("pay_gross")} value={fmtDZD(gross)} bold />
           <Row label={t("pay_ss")} value={`- ${fmtDZD(ss)}`} muted />
           <Row label={t("pay_irg")} value={`- ${fmtDZD(irg)}`} muted />
-          <div className="flex justify-between p-3 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 mt-2">
+          <div className="flex justify-between p-3 rounded-lg bg-linear-to-br from-gold/15 to-gold/5 border border-gold/40 mt-2">
             <span className="font-semibold text-primary">{t("pay_net")}</span>
             <span className="text-xl font-bold text-gold-deep">{fmtDZD(net)}</span>
           </div>
@@ -507,7 +507,7 @@ export const BillingView = ({
 };
 
 const Mini = ({ label, value, gold }: { label: string; value: string; gold?: boolean }) => (
-  <Card className={`p-4 shadow-card ${gold ? "border-gold/40 bg-gradient-to-br from-gold/10 to-card" : ""}`}>
+  <Card className={`p-4 shadow-card ${gold ? "border-gold/40 bg-linear-to-br from-gold/10 to-card" : ""}`}>
     <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
     <div className={`text-lg font-bold mt-1 ${gold ? "text-gold-deep" : "text-foreground"}`}>{value}</div>
   </Card>
@@ -616,7 +616,7 @@ const AddBillDialog = ({
               </Select>
             </div>
           </div>
-          <div className="p-3 rounded-lg bg-gradient-to-br from-gold/10 to-card border border-gold/30 space-y-1">
+          <div className="p-3 rounded-lg bg-linear-to-br from-gold/10 to-card border border-gold/30 space-y-1">
             <div className="flex justify-between text-sm"><span>{t("bill_tva")}</span><span className="font-mono">{fmtDZD(tva)}</span></div>
             <div className="flex justify-between text-base font-bold"><span className="text-primary">{t("bill_ttc")}</span><span className="font-mono text-gold-deep">{fmtDZD(ttc)}</span></div>
             <div className="text-[10px] text-muted-foreground pt-1 border-t border-border/40 font-mono">

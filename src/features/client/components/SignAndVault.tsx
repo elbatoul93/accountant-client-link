@@ -151,7 +151,7 @@ export const VaultView = ({ entries, t }: { entries: VaultEntry[]; t: (k: string
                         )
                       )}
                     </div>
-                    <span className="text-muted-foreground text-[11px] ms-2 flex-shrink-0">
+                    <span className="text-muted-foreground text-[11px] ms-2 shrink-0">
                       {fmt.date(e.date)}
                     </span>
                   </div>

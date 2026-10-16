@@ -215,7 +215,7 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
               <KpiBox label={t("tax_ibs_total_3")} value={fmtDZD(ibsAcompte.totalThreeAcomptes)} />
             </div>
 
-            <div className="mt-4 p-4 rounded-lg bg-gradient-to-br from-primary/5 to-card border border-primary/20">
+            <div className="mt-4 p-4 rounded-lg bg-linear-to-br from-primary/5 to-card border border-primary/20">
               <div className="text-xs uppercase text-muted-foreground tracking-wide">{t("tax_ibs_annual")}</div>
               <div className="flex items-baseline justify-between mt-1">
                 <span className="text-sm text-muted-foreground">{t("tax_ibs_taxable")} × {ibsAnnual.rate}%</span>
@@ -319,7 +319,7 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
               <KpiBox label={`TAPP (${tfpTapp.tappRate}%)`} value={fmtDZD(tfpTapp.tapp)} highlight />
             </div>
 
-            <div className="mt-4 p-4 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 flex items-center justify-between">
+            <div className="mt-4 p-4 rounded-lg bg-linear-to-br from-gold/15 to-gold/5 border border-gold/40 flex items-center justify-between">
               <span className="font-bold text-primary">{t("tax_tfp_total")}</span>
               <span className="text-2xl font-bold text-gold-deep">{fmtDZD(tfpTapp.total)}</span>
             </div>
@@ -394,7 +394,7 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
         <TabsContent value="g50" className="mt-4">
           <Card className="p-0 shadow-card overflow-hidden">
             {/* Official-form heading */}
-            <div className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground p-5">
+            <div className="bg-linear-to-r from-primary to-primary/90 text-primary-foreground p-5">
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div>
                   <div className="text-xs opacity-80 uppercase tracking-wider">{t("ps_republic")}</div>
@@ -438,7 +438,7 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
               <G50SectionCard section={g50.sections.D} t={t} titleKey="g50s_d" icon={<Wallet className="h-4 w-4" />} />
 
               {/* Grand total */}
-              <div className="rounded-lg bg-gradient-to-r from-gold/15 to-gold/5 border-2 border-gold/40 p-4 flex items-center justify-between">
+              <div className="rounded-lg bg-linear-to-r from-gold/15 to-gold/5 border-2 border-gold/40 p-4 flex items-center justify-between">
                 <span className="font-bold text-primary uppercase tracking-wide">{t("tax_g50_total")}</span>
                 <span className="text-3xl font-bold text-gold-deep font-mono">{fmtDZD(g50.total)}</span>
               </div>
@@ -472,7 +472,7 @@ export const TaxIntelView = ({ t, journal, clients, bills, precompte, setPrecomp
 };
 
 const KpiBox = ({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) => (
-  <Card className={`p-3 shadow-card ${highlight ? "border-gold/40 bg-gradient-to-br from-gold/10 to-card" : ""}`}>
+  <Card className={`p-3 shadow-card ${highlight ? "border-gold/40 bg-linear-to-br from-gold/10 to-card" : ""}`}>
     <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
     <div className={`text-base font-bold mt-0.5 font-mono ${highlight ? "text-gold-deep" : "text-foreground"}`}>{value}</div>
   </Card>

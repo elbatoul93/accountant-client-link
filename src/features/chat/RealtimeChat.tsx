@@ -406,7 +406,7 @@ const Bubble = ({ m, mine }: { m: Message; mine: boolean }) => {
           : "bg-card border rounded-es-sm"
       }`}
     >
-      <div className="whitespace-pre-wrap break-words">{m.content}</div>
+      <div className="whitespace-pre-wrap wrap-break-word">{m.content}</div>
       <div className={`text-[9px] mt-1 ${mine ? "opacity-70" : "text-muted-foreground"}`}>
         {formatDateTime(m.created_at, lang, { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })}
       </div>

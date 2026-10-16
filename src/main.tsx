@@ -1,3 +1,23 @@
+// Fonts are self-hosted (npm @fontsource) so no third-party request is made.
+// Imported here, not in index.css: Tailwind 4 inlines CSS @imports and loses the font file paths.
+import "@fontsource/inter/latin-400.css";
+import "@fontsource/inter/latin-500.css";
+import "@fontsource/inter/latin-600.css";
+import "@fontsource/inter/latin-700.css";
+import "@fontsource/inter/latin-800.css";
+import "@fontsource/playfair-display/latin-600.css";
+import "@fontsource/playfair-display/latin-700.css";
+import "@fontsource/playfair-display/latin-800.css";
+import "@fontsource/cairo/latin-400.css";
+import "@fontsource/cairo/arabic-400.css";
+import "@fontsource/cairo/latin-500.css";
+import "@fontsource/cairo/arabic-500.css";
+import "@fontsource/cairo/latin-600.css";
+import "@fontsource/cairo/arabic-600.css";
+import "@fontsource/cairo/latin-700.css";
+import "@fontsource/cairo/arabic-700.css";
+import "@fontsource/cairo/latin-800.css";
+import "@fontsource/cairo/arabic-800.css";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";

@@ -276,13 +276,13 @@ export const G50GeneratorDialog = ({
             </div>
           </div>
 
-          <div className="p-3 rounded-lg bg-gradient-to-br from-gold/15 to-gold/5 border border-gold/40 flex items-center justify-between">
+          <div className="p-3 rounded-lg bg-linear-to-br from-gold/15 to-gold/5 border border-gold/40 flex items-center justify-between">
             <span className="text-sm font-semibold text-primary">{t("tools_g50_total")}</span>
             <span className="text-2xl font-bold text-gold-deep">{fmtDZD(total)}</span>
           </div>
         </div>
         <DialogFooter className="sm:justify-end">
-          <div className="inline-flex rounded-md shadow-sm">
+          <div className="inline-flex rounded-md shadow-xs">
             <Button
               onClick={submit}
               variant="gold"

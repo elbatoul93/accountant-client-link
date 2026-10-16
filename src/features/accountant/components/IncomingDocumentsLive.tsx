@@ -117,7 +117,7 @@ export const IncomingDocumentsLive = ({ t }: Props) => {
         <div className="space-y-2">
           {rows.map((r) => (
             <div key={r.id} className="flex items-start gap-3 p-3 rounded-lg border border-border/60 hover:border-primary/40 transition-smooth">
-              <div className="p-2 rounded-md bg-primary/10 text-primary flex-shrink-0">
+              <div className="p-2 rounded-md bg-primary/10 text-primary shrink-0">
                 <FileText className="h-4 w-4" />
               </div>
               <div className="flex-1 min-w-0">
