@@ -14,6 +14,14 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+const HOLD_LABELS: Record<string, string> = {
+  signed_documents: "acctset_hold_signed_documents",
+  final_payroll_runs: "acctset_hold_final_payroll_runs",
+  locked_periods: "acctset_hold_locked_periods",
+  sent_g50: "acctset_hold_sent_g50",
+  delivered_documents: "acctset_hold_delivered_documents",
+  receipts: "acctset_hold_receipts",
+};
 interface Blocker { kind: string; n: number }
 type BlockerState = { status: "loading" } | { status: "unavailable" } | { status: "ready"; held: Blocker[] };
 
@@ -103,7 +111,7 @@ const Account = () => {
             <>
               <p className="text-sm text-muted-foreground">{t("acctset_delete_held")}</p>
               <ul className="text-sm list-disc ps-5">
-                {heldKinds.map((b) => <li key={b.kind}>{b.kind.replace(/_/g, " ")}: {b.n}</li>)}
+                {heldKinds.map((b) => <li key={b.kind}>{HOLD_LABELS[b.kind] ? t(HOLD_LABELS[b.kind]) : b.kind.replace(/_/g, " ")}</li>)}
               </ul>
             </>
           )}
