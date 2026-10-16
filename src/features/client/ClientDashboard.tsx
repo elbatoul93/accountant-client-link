@@ -282,10 +282,10 @@ const ClientDashboard = () => {
     disabled: uploading || !!pendingFile,
   });
 
-  const { myDecls, myInvoices, mySharedDocs, totalDue, myRegime, requiredTypes, vault, myEmpCount, myHasCacobatph } = useMemo(() => {
+  const { myDecls, myInvoices, mySharedDocs, totalDue, overdueIds, myRegime, requiredTypes, vault, myEmpCount, myHasCacobatph } = useMemo(() => {
     if (!user) return {
       myDecls: [] as Decl[], myInvoices: [] as Invoice[], mySharedDocs: [] as SharedDoc[],
-      totalDue: 0, myRegime: undefined as TaxRegime | undefined, requiredTypes: [] as DeclType[], vault: [] as VaultEntry[],
+      totalDue: 0, overdueIds: new Set<string>(), myRegime: undefined as TaxRegime | undefined, requiredTypes: [] as DeclType[], vault: [] as VaultEntry[],
       myEmpCount: 0, myHasCacobatph: false,
     };
     const mine = biz.clients;
@@ -299,12 +299,17 @@ const ClientDashboard = () => {
     const myD = regime ? ownDecls.filter((d) => requiredSet.has(d.type)) : ownDecls;
     const myI = biz.invoices.filter((i) => ids.has(i.clientId));
     const myS = dbSharedDocs;
-    // A filed declaration is declared, not paid. There is no "paid" state yet, so it counts as still to pay
-    // until its due date has passed (the accountant's own "pending" totals count only what is not yet filed).
+    // A filed declaration is declared, not paid, and there is no "paid" state yet. It keeps counting as still to pay
+    // until the same declaration for a later period has been filed (the accountant's own "pending" totals count
+    // only what is not yet filed). Once its due date has passed it is shown as overdue.
     const today = todayIso();
-    const due = myD.filter((d) => d.status !== "filed" || (!!d.due && d.due >= today)).reduce((s, d) => s + d.amount, 0);
+    const latestFiled = new Map<string, string>();
+    for (const d of myD) if (d.status === "filed" && d.due && d.due > (latestFiled.get(d.type) ?? "")) latestFiled.set(d.type, d.due);
+    const open = myD.filter((d) => d.status !== "filed" || !d.due || d.due >= (latestFiled.get(d.type) ?? ""));
+    const due = open.reduce((s, d) => s + d.amount, 0);
+    const overdueIds = new Set(open.filter((d) => !!d.due && d.due < today).map((d) => d.id));
     const v = sortVault([...vaultFromShared(dbSharedDocs), ...vaultFromInvoiceDocs(biz.invoiceDocs, user.name, user.email)]);
-    return { myDecls: myD, myInvoices: myI, mySharedDocs: myS, totalDue: due, myRegime: regime, requiredTypes: required, vault: v, myEmpCount: empCount, myHasCacobatph: hasCaco };
+    return { myDecls: myD, myInvoices: myI, mySharedDocs: myS, totalDue: due, overdueIds, myRegime: regime, requiredTypes: required, vault: v, myEmpCount: empCount, myHasCacobatph: hasCaco };
   }, [user, biz, dbSharedDocs]);
 
   // Auth/role guard handled by ProtectedRoute wrapper — keep all hooks unconditional below.
@@ -541,6 +546,7 @@ const ClientDashboard = () => {
                             <div className="flex items-center gap-2">
                               <Badge variant="outline" className="font-mono text-[10px]">{d.type}</Badge>
                               <span className="text-muted-foreground">{d.due}</span>
+                              {overdueIds.has(d.id) && <Badge variant="destructive" className="text-[10px]">{t("dash_overdue")}</Badge>}
                             </div>
                             <span className="font-semibold">{fmtDZD(d.amount)}</span>
                           </div>
