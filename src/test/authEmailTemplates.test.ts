@@ -22,6 +22,7 @@ describe("Supabase auth email templates", () => {
     expect(html).toContain(`eq .RedirectTo "https://managementik.com${path}?lang=fr"`);
     expect(html).toContain(`eq .RedirectTo "https://www.managementik.com${path}?lang=en"`);
     expect(html).toContain(`eq .RedirectTo "https://accountant-client-link.pages.dev${path}?lang=ar"`);
-    expect(read(`${name}.subject.txt`)).toContain(`eq .RedirectTo "https://managementik.com${path}?lang=fr"`);
+    // Supabase rejects subjects over 255 characters
+    expect(read(`${name}.subject.txt`).trim().length).toBeLessThanOrEqual(255);
   });
 });
