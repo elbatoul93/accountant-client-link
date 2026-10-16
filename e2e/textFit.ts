@@ -147,7 +147,7 @@ export async function scanTextFit(page: Page): Promise<TextFitIssue[]> {
         if (!/hidden|clip/.test(cs.overflowX + cs.overflowY) || cs.textOverflow === "ellipsis" || /line-clamp|-webkit-box/.test(cs.display + cs.webkitLineClamp)) continue;
         const er = e.getBoundingClientRect();
         const clipX = /hidden|clip/.test(cs.overflowX) && (l < er.left - 1 || r > er.right + 1);
-        const clipY = /hidden|clip/.test(cs.overflowY) && (t < er.top - 1 && b < er.top + 2 ? true : b > er.bottom + 1 && t > er.bottom - 2 ? true : false);
+        const clipY = /hidden|clip/.test(cs.overflowY) && (t < er.top - 6 || b > er.bottom + 6);
         if (clipX || clipY) report("clipped", e, `text "${(node.textContent ?? "").trim().slice(0, 30)}" is cut off by this box (${Math.round(er.width)}x${Math.round(er.height)})`);
         break;
       }

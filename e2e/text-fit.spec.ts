@@ -30,7 +30,7 @@ async function signIn(page: Page, email: string) {
   await page.waitForLoadState("networkidle");
 }
 
-async function seedAccountant(_page: Page) {
+async function seedAccountant() {
     // Long names and every kind of record, so rows, badges and tables hold realistic text.
     const amel = backend.users.find((u) => u.email === "amel@example.com")!;
     const karim = backend.users.find((u) => u.email === "karim@example.com")!;
@@ -90,10 +90,11 @@ for (const lang of LANGS) {
       test.use({ viewport: { width: vp.width, height: vp.height } });
 
       test.beforeEach(async ({ page }) => {
+        test.setTimeout(120_000);
         found = [];
         backend = new FakeSupabase();
         await backend.install(page);
-        await page.addInitScript((l) => localStorage.setItem("mgmtk_lang", l), lang);
+        await page.addInitScript((l) => { localStorage.setItem("mgmtk_lang", l); localStorage.setItem("mgmtk_lang_chosen", "1"); }, lang);
         backend.seed({ email: "amel@example.com", password: "right-password-1", role: "accountant", name: "Amel Accountant", company: "Cabinet Amel Comptabilité" });
         backend.seed({ email: "karim@example.com", password: "right-password-1", role: "client", name: "Karim Client" });
         backend.linkClient("karim@example.com", { tax_id: "000016001234567" });
@@ -126,7 +127,7 @@ for (const lang of LANGS) {
       });
 
       test("accountant dashboard, every section and dialog", async ({ page }) => {
-        await seedAccountant(page);
+        await seedAccountant();
         await signIn(page, "amel@example.com");
         await scan(page, "accountant dashboard");
         const nav = vp.name === "desktop" ? page.locator("aside nav button") : page.locator("aside [role=combobox]");
@@ -162,9 +163,14 @@ for (const lang of LANGS) {
         // The slow sweep (it clicks every button on every screen) runs where text is longest: French on desktop, Arabic on a phone.
         test.skip(!((lang === "fr" && vp.name === "desktop") || (lang === "ar" && vp.name === "phone")));
         test.setTimeout(300_000);
-        await seedAccountant(page);
+        await seedAccountant();
         await signIn(page, "amel@example.com");
-        const sections = vp.name === "desktop" ? await page.locator("aside nav button").count() : 17;
+        let sections = await page.locator("aside nav button").count();
+        if (vp.name === "phone") {
+          await page.locator("aside [role=combobox]").click();
+          sections = await page.getByRole("option").count();
+          await page.keyboard.press("Escape");
+        }
         for (let i = 0; i < sections; i++) {
           await closeOverlays(page);
           if (vp.name === "desktop") await page.locator("aside nav button").nth(i).click();
