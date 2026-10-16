@@ -13,7 +13,9 @@ export const initErrorReporting = () => {
       dsn,
       environment: import.meta.env.MODE,
       tracesSampleRate: 0,
-      sendDefaultPii: false,
+      // v11 replaced sendDefaultPii with dataCollection, whose defaults collect user info, cookies and
+      // headers: switch everything off explicitly (payroll and client data must never reach Sentry).
+      dataCollection: { userInfo: false, cookies: false, httpHeaders: false, httpBodies: [], urlQueryParams: false },
     });
     return S;
   });
