@@ -851,6 +851,7 @@ export const en = {
   auth_reset_failed: "The password could not be saved. Please try again.",
   auth_password_pwned: "This password appears in known data breaches. Please choose a different one.",
   auth_reset_invalid_link: "This reset link is invalid or has expired. Request a new one.",
+  auth_signup_failed: "Sign-up failed. Please check your details and try again.",
   auth_password_hint: "At least 8 characters.",
   auth_consent_prefix: "I accept the",
   auth_consent_and: "and the",

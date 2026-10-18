@@ -138,7 +138,11 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
           },
         });
         if (error) {
-          if (error.message.toLowerCase().includes("already")) {
+          if (error.code === "weak_password") {
+            setFormError(t("auth_reset_weak"));
+          } else if (error.status === 429 || error.code === "over_email_send_rate_limit" || error.code === "over_request_rate_limit") {
+            setFormError(t("auth_reset_rate_limited"));
+          } else if (error.message.toLowerCase().includes("already")) {
             setFormError(t("auth_account_exists"));
           } else if (
             error.message.toLowerCase().includes("invit") ||
@@ -148,7 +152,8 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
           ) {
             setFormError(t("auth_invite_link_expired"));
           } else {
-            setFormError(error.message);
+            // Never show Supabase's English text to an ar/fr user
+            setFormError(t("auth_signup_failed"));
           }
           return;
         }
