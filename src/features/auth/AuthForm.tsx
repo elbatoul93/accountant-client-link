@@ -138,11 +138,10 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
           },
         });
         if (error) {
+          console.error("signUp failed", error.code, error.status, error.message);
           if (error.code === "weak_password") {
             setFormError(t("auth_reset_weak"));
-          } else if (error.status === 429 || error.code === "over_email_send_rate_limit" || error.code === "over_request_rate_limit") {
-            setFormError(t("auth_reset_rate_limited"));
-          } else if (error.message.toLowerCase().includes("already")) {
+          } else if (error.code === "user_already_exists" || error.code === "email_exists" || error.message.toLowerCase().includes("already")) {
             setFormError(t("auth_account_exists"));
           } else if (
             error.message.toLowerCase().includes("invit") ||
@@ -151,6 +150,8 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
             (isInvite && error.message.toLowerCase().includes("database error"))
           ) {
             setFormError(t("auth_invite_link_expired"));
+          } else if (error.status === 429 || error.code === "over_email_send_rate_limit" || error.code === "over_request_rate_limit") {
+            setFormError(t("auth_reset_rate_limited"));
           } else {
             // Never show Supabase's English text to an ar/fr user
             setFormError(t("auth_signup_failed"));
