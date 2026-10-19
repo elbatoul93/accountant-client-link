@@ -44,7 +44,7 @@ jobs:
       - uses: supabase/setup-cli@v3
         if: steps.gate.outputs.run == 'true'
         with:
-          version: latest
+          version: 2.121.0
       - name: Link project and find the pooler address
         if: steps.gate.outputs.run == 'true'
         run: |

@@ -45,3 +45,6 @@ Cloudflare Pages builds every pushed commit, previews included, and the free pla
 
 ## Lockfiles
 Both `package-lock.json` (npm) and `bun.lock` (bun) are kept in sync; the `lockfiles` CI job fails if either drifts from `package.json`. After changing dependencies run `npm install` and `npx bun@1.2.15 install` and commit both (newer bun versions write lockfileVersion 2, which the bun on Cloudflare cannot parse, so use 1.2.15). `bun.lock` was regenerated from the public registry (the old one pointed at a private Lovable mirror that returns 403) and the stale binary `bun.lockb` was removed.
+
+## Supabase CLI version
+The deploy and backup workflows pin the Supabase CLI (`version:` under `supabase/setup-cli`, currently 2.121.0, the release that was current on 16 October 2026 when deploys last ran) so a new CLI release cannot change what `db push` does in production. To upgrade, change both files in one PR, run the deploy workflow as a dry run first, then apply.
