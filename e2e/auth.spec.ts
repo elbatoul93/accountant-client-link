@@ -200,3 +200,20 @@ test.describe("forgot password", () => {
     await expect(page).toHaveURL(/\/forgot-password$/);
   });
 });
+
+test("client invite: a valid password is accepted and the client is sent to confirm the email", async ({ page }) => {
+  backend.rpcs.get_invitation_by_token = () => [
+    { is_valid: true, email: "client@example.com", prefill_name: "Client Test", prefill_company: null, accountant_name: "Amel Test" },
+  ];
+  await page.goto("/invite/tok-123");
+  await expect(page.locator("#email")).toHaveValue("client@example.com");
+  await page.fill("#password", "correct-horse-1");
+  await page.locator("#accept-terms").click();
+  await page.getByRole("button", { name: /sign ?up|create/i }).click();
+
+  await expect(page).toHaveURL(/\/login$/);
+  expect(backend.signupCalls[0]).toMatchObject({
+    email: "client@example.com",
+    data: { role: "client", invite_token: "tok-123" },
+  });
+});
