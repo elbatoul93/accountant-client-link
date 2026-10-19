@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { supabase } from "@/integrations/supabase/client";
+import { weakPasswordKey } from "@/features/auth/weakPassword";
 import { AuthLayout } from "@/features/auth/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 
 /** Fixed, translated text for the errors Supabase returns when saving the new password. */
-const resetErrorKey = (err: { status?: number; code?: string }) => {
+const resetErrorKey = (err: { status?: number; code?: string; reasons?: unknown }) => {
   if (err.code === "same_password") return "auth_reset_same_password";
-  if (err.code === "weak_password") return "auth_reset_weak";
+  if (err.code === "weak_password") return weakPasswordKey(err);
   if (err.status === 429) return "auth_reset_rate_limited";
   if (err.code === "session_not_found" || err.code === "not_authenticated" || err.status === 401) return "auth_reset_session_expired";
   return "auth_reset_failed";

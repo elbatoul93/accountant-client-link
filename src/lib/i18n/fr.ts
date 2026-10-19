@@ -832,6 +832,7 @@ export const fr: typeof en = {
   auth_password_pwned: "Ce mot de passe apparaît dans des fuites de données connues. Veuillez en choisir un autre.",
   auth_reset_invalid_link: "Ce lien de réinitialisation est invalide ou a expiré. Demandez-en un nouveau.",
   auth_signup_failed: "L'inscription a échoué. Vérifiez vos informations et réessayez.",
+  auth_password_characters: "Ce mot de passe n'utilise pas le mélange de caractères requis (lettres, chiffres, symboles).",
   auth_password_hint: "Au moins 8 caractères.",
   auth_consent_prefix: "J'accepte les",
   auth_consent_and: "et la",
