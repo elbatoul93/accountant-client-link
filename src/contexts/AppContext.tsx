@@ -231,6 +231,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try { uid = localStorage.getItem(LAST_UID_KEY); } catch { /* storage unavailable */ }
     await supabase.auth.signOut();
     stashLocalAppData(uid);
+    // Forget whose data was just stashed. Left behind, the next sign-in (another account on a shared
+    // browser) would stash whatever was written while signed out into this account's backup.
+    try { localStorage.removeItem(LAST_UID_KEY); } catch { /* storage unavailable */ }
     setUser(null);
   }, []);
 
