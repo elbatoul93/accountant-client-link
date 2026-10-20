@@ -12,6 +12,7 @@ import { Logo } from "@/components/layout/Logo";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { ArrowLeft, Briefcase, Building2, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { weakPasswordKey } from "@/features/auth/weakPassword";
 import { authRedirectUrl } from "@/features/auth/authRedirect";
 
 interface AuthFormProps {
@@ -140,7 +141,7 @@ export const AuthForm = ({ mode, inviteToken }: AuthFormProps) => {
         if (error) {
           console.error("signUp failed", error.code, error.status, error.message);
           if (error.code === "weak_password") {
-            setFormError(t("auth_reset_weak"));
+            setFormError(t(weakPasswordKey(error as { reasons?: unknown })));
           } else if (error.code === "user_already_exists" || error.code === "email_exists" || error.message.toLowerCase().includes("already")) {
             setFormError(t("auth_account_exists"));
           } else if (

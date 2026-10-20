@@ -832,6 +832,7 @@ export const ar: typeof en = {
   auth_password_pwned: "كلمة المرور هذه ظهرت في تسريبات بيانات معروفة. يرجى اختيار كلمة مرور أخرى.",
   auth_reset_invalid_link: "رابط إعادة التعيين غير صالح أو منتهي الصلاحية. اطلب رابطًا جديدًا.",
   auth_signup_failed: "فشل التسجيل. يرجى التحقق من بياناتك والمحاولة مرة أخرى.",
+  auth_password_characters: "كلمة المرور لا تستخدم المزيج المطلوب من الأحرف (حروف وأرقام ورموز).",
   auth_password_hint: "8 أحرف على الأقل.",
   auth_consent_prefix: "أوافق على",
   auth_consent_and: "و",
