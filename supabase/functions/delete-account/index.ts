@@ -2,7 +2,9 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 // Self-service erasure. Refuses while records under the 10-year retention rule exist (support handles those),
-// otherwise deletes the caller's storage folders and then the auth user (which cascades profile, messages, etc.).
+// otherwise deletes the auth user first (which cascades profile, messages, etc.) and then clears the storage folders.
+// Order matters: a failed deleteUser must leave the account and its files intact; leftover files after a successful
+// deleteUser are private, so cleanup is best effort: failures are logged and reported as cleanup_incomplete.
 const BUCKET = "client-uploads";
 const FOLDERS = (uid: string) => [uid, `accountant-shared/${uid}`, `accountant-legal/${uid}`];
 
@@ -22,6 +24,7 @@ async function removeFolder(admin: ReturnType<typeof createClient>, prefix: stri
     const { error: rmErr } = await admin.storage.from(BUCKET).remove(data.map((o) => `${prefix}/${o.name}`));
     if (rmErr) throw rmErr;
   }
+  throw new Error(`folder ${prefix} not emptied`);
 }
 
 Deno.serve(async (req) => {
@@ -61,14 +64,16 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
-    for (const prefix of FOLDERS(uid)) await removeFolder(admin, prefix);
     const { error: delErr } = await admin.auth.admin.deleteUser(uid);
     if (delErr) {
       console.error("[delete-account] deleteUser failed:", delErr.message);
       return json({ error: "Deletion failed", code: "delete_failed" }, 500);
     }
-    console.log(`[delete-account] erased ${uid}`);
-    return json({ ok: true }, 200);
+    const cleanup = await Promise.allSettled(FOLDERS(uid).map((prefix) => removeFolder(admin, prefix)));
+    const failed = cleanup.flatMap((r, i) => (r.status === "rejected" ? [FOLDERS(uid)[i]] : []));
+    for (const prefix of failed) console.error(`[delete-account] orphaned files under ${prefix}`);
+    console.log(`[delete-account] erased ${uid}${failed.length ? " (storage cleanup incomplete)" : ""}`);
+    return json({ ok: true, cleanup_incomplete: failed.length > 0 }, 200);
   } catch (e) {
     console.error("[delete-account] unexpected:", e instanceof Error ? e.message : String(e));
     return json({ error: "Unexpected error", code: "unexpected" }, 500);
